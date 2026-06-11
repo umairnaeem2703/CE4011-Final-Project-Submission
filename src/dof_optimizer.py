@@ -77,6 +77,10 @@ class DOFOptimizer:
         self.node_to_master = {}       # Maps slave node IDs to master node IDs
         self.node_to_master_axial = {} # Initialize axial mapping dictionary
         self.node_to_master_ux = {}    # Initialize UX mapping dictionary
+        self.dof_map = {}
+        self.free_dofs = []
+        self.restrained_dofs = []
+        self.active_dynamic_dofs = []
 
     def optimize(self) -> tuple[int, int, int]:
         """Runs the optimization and returns (num_equations, semi_bandwidth, full_bandwidth)."""
@@ -88,16 +92,15 @@ class DOFOptimizer:
         adj_list = self._build_adjacency_list()
         rcm_order = self._reverse_cuthill_mckee(adj_list)
         self._assign_dofs(rcm_order)
+        self._collect_dof_data()
         self._calculate_bandwidth()
         return self.num_equations, self.semi_bandwidth, self.full_bandwidth
 
     def _identify_rigid_groups(self) -> None:
         """
         Identifies rigid constraints from:
-        1. Axially rigid members (is_axially_rigid=true in XML)
-        
-        Does NOT apply automatic floor-level rigid diaphragm assumption.
-        Each node is independent unless explicitly coupled.
+        1. Axially rigid members (is_axially_rigid=true in XML), coupling all DOFs.
+        2. Explicit model diaphragm groups, coupling UX only for listed nodes.
         """
         # Use Union-Find for explicitly-defined axially rigid members only
         uf = UnionFind(self.model.elements)
@@ -116,17 +119,34 @@ class DOFOptimizer:
                 for node_id_in_comp in component:
                     self.node_to_master_axial[node_id_in_comp] = master_id
         
-        # UX direction: same as axial (no separate floor-based grouping)
+        # UX direction: axially rigid groups plus explicit diaphragm grouping.
         self.node_to_master_ux = self.node_to_master_axial.copy()
+        for node_ids in self.model.diaphragm_ux_groups.values():
+            axial_masters = [
+                self.node_to_master_axial.get(node_id, node_id)
+                for node_id in node_ids
+                if node_id in self.model.nodes
+            ]
+            if not axial_masters:
+                continue
+
+            diaphragm_master = min(axial_masters)
+            for node_id in node_ids:
+                if node_id not in self.model.nodes:
+                    continue
+                axial_master = self.node_to_master_axial.get(node_id, node_id)
+                self.node_to_master_ux[axial_master] = diaphragm_master
+                self.node_to_master_ux[node_id] = diaphragm_master
         
-        # For backward compatibility
-        self.node_to_master = self.node_to_master_ux
+        # For backward compatibility, node_to_master remains the all-DOF axial map.
+        self.node_to_master = self.node_to_master_axial.copy()
 
     def _get_master_ux(self, node_id: int) -> int:
         """
         Returns the master node ID for UX DOF (floor-based rigid diaphragm).
         """
-        return self.node_to_master_ux.get(node_id, node_id)
+        axial_master_id = self._get_effective_node(node_id)
+        return self.node_to_master_ux.get(axial_master_id, axial_master_id)
     
     def _get_effective_node(self, node_id: int) -> int:
         """
@@ -232,7 +252,22 @@ class DOFOptimizer:
         for node in self.model.nodes.values():
             node.dofs = [-1, -1, -1]
         
-        # First: assign DOFs for axially-rigid group masters
+        # First: assign UX once per diaphragm master.
+        assigned_ux_masters = set()
+        for node_id in rcm_order:
+            ux_master_id = self._get_master_ux(node_id)
+            if ux_master_id in assigned_ux_masters:
+                continue
+            assigned_ux_masters.add(ux_master_id)
+
+            support = self.model.supports.get(ux_master_id)
+            if support and support.restrain_ux:
+                continue
+
+            self.model.nodes[ux_master_id].dofs[0] = self.num_equations
+            self.num_equations += 1
+
+        # Second: assign UY/RZ for axially-rigid group masters.
         assigned_masters = set()
         for node_id in rcm_order:
             axial_master_id = self._get_effective_node(node_id)
@@ -244,11 +279,6 @@ class DOFOptimizer:
             node = self.model.nodes[axial_master_id]
             support = self.model.supports.get(axial_master_id)
             
-            # Assign UX independently (no floor-level ridging)
-            if not (support and support.restrain_ux):
-                node.dofs[0] = self.num_equations
-                self.num_equations += 1
-            
             # Assign UY independently
             if not (support and support.restrain_uy):
                 node.dofs[1] = self.num_equations
@@ -259,7 +289,7 @@ class DOFOptimizer:
                 node.dofs[2] = self.num_equations
                 self.num_equations += 1
         
-        # Second: propagate master DOFs to all slave nodes (axially rigid groups)
+        # Third: propagate master DOFs to all slave nodes (axially rigid groups)
         for node_id in self.model.nodes.keys():
             node = self.model.nodes[node_id]
             axial_master_id = self._get_effective_node(node_id)
@@ -268,6 +298,40 @@ class DOFOptimizer:
                 # This is a slave node: copy master's DOFs
                 master_node = self.model.nodes[axial_master_id]
                 node.dofs = master_node.dofs.copy()
+
+        # Fourth: apply diaphragm UX sharing to every non-restrained node.
+        for node_id, node in self.model.nodes.items():
+            support = self.model.supports.get(node_id)
+            if support and support.restrain_ux:
+                node.dofs[0] = -1
+                continue
+
+            ux_master_id = self._get_master_ux(node_id)
+            node.dofs[0] = self.model.nodes[ux_master_id].dofs[0]
+
+    def _collect_dof_data(self):
+        """Stores Phase 1 DOF map and free/restrained DOF lists."""
+        self.dof_map = {node_id: node.dofs.copy() for node_id, node in self.model.nodes.items()}
+        self.free_dofs = list(range(self.num_equations))
+        self.restrained_dofs = []
+        self.active_dynamic_dofs = []
+
+        for node_id, node in self.model.nodes.items():
+            support = self.model.supports.get(node_id)
+            restraints = [
+                bool(support and support.restrain_ux),
+                bool(support and support.restrain_uy),
+                bool(support and support.restrain_rz),
+            ]
+            for local_index, dof in enumerate(node.dofs):
+                if dof < 0:
+                    self.restrained_dofs.append((node_id, local_index))
+                elif not restraints[local_index]:
+                    self.active_dynamic_dofs.append(dof)
+
+        self.active_dynamic_dofs = sorted(set(self.active_dynamic_dofs))
+        self.model.cached_dof_map = self.dof_map.copy()
+        self.model.is_dirty = False
 
     def _calculate_bandwidth(self):
         """Calculates semi-bandwidth m = max(|DOF_a - DOF_b|) + 1, and full bandwidth."""
@@ -282,3 +346,16 @@ class DOFOptimizer:
                     
         self.semi_bandwidth = max_m if max_m > 0 else 1
         self.full_bandwidth = 2 * self.semi_bandwidth - 1
+
+
+class DOFManager(DOFOptimizer):
+    """Phase 1 DOF API returning educational mapping data."""
+
+    def build(self):
+        self.optimize()
+        return (
+            self.num_equations,
+            self.dof_map.copy(),
+            self.free_dofs.copy(),
+            self.restrained_dofs.copy(),
+        )

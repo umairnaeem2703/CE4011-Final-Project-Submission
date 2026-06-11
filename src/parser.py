@@ -226,6 +226,42 @@ class StructuralModel:
     elements: Dict[str, Element] = field(default_factory=dict)
     supports: Dict[int, Support] = field(default_factory=dict)
     load_cases: Dict[str, LoadCase] = field(default_factory=dict)
+    lumped_masses: Dict[int, float] = field(default_factory=dict)
+    diaphragm_ux_groups: Dict[str, List[int]] = field(default_factory=dict)
+    is_dirty: bool = True
+    cached_dof_map: dict = None
+    cached_K: list = None
+    cached_F: list = None
+    cached_Kff: list = None
+    cached_Ff: list = None
+    cached_M: list = None
+    cached_C: list = None
+    damping_model: str = "rayleigh"
+    rayleigh_alpha: float = 0.0
+    rayleigh_beta: float = 0.0
+    excitation_file: str = None
+    excitation_direction: str = "x"
+    time_step: float = 0.01
+    num_steps: int = 0
+
+    def mark_dirty(self):
+        """Mark model data as changed and clear cached analysis artifacts."""
+        self.is_dirty = True
+        self.cached_dof_map = None
+        self.cached_K = None
+        self.cached_F = None
+        self.cached_Kff = None
+        self.cached_Ff = None
+        self.cached_M = None
+        self.cached_C = None
+
+
+@dataclass
+class LumpedMass:
+    node: Node
+    mass_ux: float = 0.0
+    mass_uy: float = 0.0
+    inertia_rz: float = 0.0
 
 # ==========================================
 # 2. THE PARSER LOGIC
@@ -244,6 +280,7 @@ class XMLParser:
         self._parse_sections()
         self._parse_nodes()
         self._parse_elements()
+        self._parse_diaphragms()
         self._parse_boundaries()
         self._parse_loads()
         return self.model
@@ -304,6 +341,25 @@ class XMLParser:
                 release_start=release_start, release_end=release_end,
                 is_axially_rigid=is_axially_rigid
             )
+
+    def _parse_diaphragms(self):
+        diaphragms_node = self.root.find('diaphragms')
+        if diaphragms_node is None:
+            return
+
+        for index, diaphragm in enumerate(diaphragms_node.findall('diaphragm'), start=1):
+            group_id = diaphragm.attrib.get('id', f'D{index}')
+            node_ids = []
+
+            nodes_attr = diaphragm.attrib.get('nodes')
+            if nodes_attr:
+                node_ids.extend(int(value.strip()) for value in nodes_attr.split(',') if value.strip())
+
+            for node_ref in diaphragm.findall('node'):
+                node_ids.append(int(node_ref.attrib['id']))
+
+            if node_ids:
+                self.model.diaphragm_ux_groups[group_id] = node_ids
 
     def _parse_boundaries(self):
         for sup in self.root.find('boundary_conditions').findall('support'):
