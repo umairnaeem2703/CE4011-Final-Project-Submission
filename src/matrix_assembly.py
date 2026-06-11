@@ -44,6 +44,34 @@ class MatrixAssembler:
 
         return K_full
 
+    def banded_to_full(self, K_banded: list) -> list:
+        """Expand the symmetric banded active stiffness matrix into a full matrix."""
+        n = len(K_banded)
+        K_full = math_utils.zeros(n, n)
+
+        for i, row in enumerate(K_banded):
+            for offset, value in enumerate(row):
+                j = i + offset
+                if j >= n:
+                    break
+                K_full[i][j] = value
+                K_full[j][i] = value
+
+        return K_full
+
+    def reduce_free_system(self, K_full: list, F_full: list) -> tuple[list, list]:
+        """
+        Return the Phase 2 reduced free-DOF system.
+
+        Current DOF numbering contains only active/free equations, with restrained
+        DOFs represented by -1 in the model map. Therefore Kff/Ff are the active
+        assembled system after prescribed-support effects have been moved to F.
+        """
+        free_dofs = list(range(self.num_active_dofs))
+        Kff = [[K_full[i][j] for j in free_dofs] for i in free_dofs]
+        Ff = [[F_full[i][0]] for i in free_dofs]
+        return Kff, Ff
+
     def assemble(self, load_case_id: str) -> tuple[list, list]:
         """
         Assembles banded stiffness matrix [K] and load vector {F}.
@@ -154,6 +182,13 @@ class MatrixAssembler:
                 dof = element_dofs[dof_idx]
                 if dof >= 0:
                     F_global[dof][0] -= f_unbalanced[dof_idx][0]
+
+        K_full = self.banded_to_full(K_banded)
+        Kff, Ff = self.reduce_free_system(K_full, F_global)
+        self.model.cached_K = K_full
+        self.model.cached_F = F_global
+        self.model.cached_Kff = Kff
+        self.model.cached_Ff = Ff
 
         return K_banded, F_global
 

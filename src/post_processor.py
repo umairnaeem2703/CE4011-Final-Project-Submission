@@ -3,7 +3,8 @@
 import os
 import math_utils
 from element_physics import ElementPhysics
-from parser import StructuralModel, NodalLoad
+from parser import StructuralModel, NodalLoad, MemberLoad, PointLoad, UniformlyDL
+from results import StaticResults
 
 class PostProcessor:
     def __init__(self, model: StructuralModel, D_active: list, load_case_id: str):
@@ -13,6 +14,7 @@ class PostProcessor:
         
         self.displacements = {}  # node_id -> [ux, uy, rz]
         self.member_forces = {}  # el_id -> list of local forces
+        self.nvm_data = {}       # el_id -> {"x": [...], "N": [...], "V": [...], "M": [...]}
         self.reactions = {}      # node_id -> [Fx, Fy, Mz]
         
         self._build_full_displacements()
@@ -150,6 +152,87 @@ class PostProcessor:
                     self.reactions[n_id][0] -= nodal_forces[0]
                     self.reactions[n_id][1] -= nodal_forces[1]
                     self.reactions[n_id][2] -= nodal_forces[2]
+
+        self._build_nvm_data()
+
+    def _get_element_loads(self, element):
+        wx_total = 0.0
+        wy_total = 0.0
+        point_loads = []
+
+        for load in self.load_case.loads:
+            if not isinstance(load, MemberLoad) or load.element.id != element.id:
+                continue
+            if isinstance(load, UniformlyDL):
+                wx_total += load.wx
+                wy_total += load.wy
+            elif isinstance(load, PointLoad):
+                point_loads.append((load.position, load.fx, load.fy))
+
+        point_loads.sort(key=lambda item: item[0])
+        return wx_total, wy_total, point_loads
+
+    def _build_nvm_data(self, n_steps: int = 20):
+        """Build axial, shear, and bending data using visualizer-compatible signs."""
+        for el_id, el in self.model.elements.items():
+            phys = ElementPhysics(el)
+            L = phys.L
+            forces = self.member_forces[el_id]
+
+            if el.type == 'truss':
+                N1, V1, M1 = forces[0][0], forces[1][0], 0.0
+            else:
+                N1, V1, M1 = forces[0][0], forces[1][0], forces[2][0]
+
+            wx, wy, point_loads = self._get_element_loads(el)
+            stations = {L * i / n_steps for i in range(n_steps + 1)}
+            eps = L * 1e-6
+            for position, _, _ in point_loads:
+                if 0.0 < position < L:
+                    stations.update([position - eps, position, position + eps])
+
+            x_values = sorted(stations)
+            n_values = []
+            v_values = []
+            m_values = []
+
+            for x in x_values:
+                N = N1 - wx * x
+                V = V1 + wy * x
+                M = M1 + V1 * x + (wy * x * x) / 2.0
+
+                for position, pfx, pfy in point_loads:
+                    if position <= x:
+                        N -= pfx
+                        V += pfy
+                        M += pfy * (x - position)
+
+                n_values.append(N)
+                v_values.append(-V)
+                m_values.append(M)
+
+            self.nvm_data[el_id] = {
+                "x": x_values,
+                "N": n_values,
+                "V": v_values,
+                "M": m_values,
+            }
+
+    def to_static_results(self, K: list, Kff: list, F: list, Ff: list,
+                          dof_map: dict, load_case_id: str) -> StaticResults:
+        """Package post-processed static analysis data into the Phase 2 result contract."""
+        return StaticResults(
+            K=K,
+            Kff=Kff,
+            F=F,
+            Ff=Ff,
+            displacements=self.displacements,
+            reactions=self.reactions,
+            element_forces=self.member_forces,
+            nvm_data=self.nvm_data,
+            dof_map=dof_map,
+            load_case_id=load_case_id,
+        )
 
     def write_results(self, filepath: str):
         """Formats and writes the engineering results to a text file."""
