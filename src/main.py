@@ -11,6 +11,8 @@ from visualizer import save_deformed_shape_from_active
 from visualizer import plot_nvm_diagrams
 from educational_exporter import EducationalExporter
 from modal_solver import ModalSolver, ModalSolverError  # <-- Added Import
+from ground_motion import GroundMotionConfig, read_ground_motion
+from newmark_solver import NewmarkTimeHistorySolver
 
 def run_analysis(xml_filepath: str, output_dir: str = "./results", plot: bool = True):
     print(f"--- Starting Analysis: {os.path.basename(xml_filepath)} ---")
@@ -117,6 +119,13 @@ def run_analysis(xml_filepath: str, output_dir: str = "./results", plot: bool = 
         if plot:
             nvm_path = os.path.join(output_dir, f"{model.name}_{lc_id}_NVM.png")
             plot_nvm_diagrams(model, processor, lc_id, save_path=nvm_path)
+
+
+def run_time_history_analysis(K: list, M: list, C: list, ground_motion_config: GroundMotionConfig, r: list, damping_ratio: float = 0.0):
+    """Backend Phase 5 entry point for earthquake Newmark time-history analysis."""
+    record = read_ground_motion(ground_motion_config)
+    solver = NewmarkTimeHistorySolver(K, M, C)
+    return solver.solve_ground_motion(record, r, damping_ratio=damping_ratio)
 
 if __name__ == "__main__":
     # Run analysis on provided models
