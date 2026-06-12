@@ -5,9 +5,11 @@ from __future__ import annotations
 try:
     from .model_input import build_model_from_tables, build_model_from_xml_upload, mark_model_dirty, store_model_in_state
     from .state import NAVIGATION_SECTIONS, initialize_session_state
+    from .static_analysis import load_case_ids, run_static_analysis_into_state
 except ImportError:  # pragma: no cover - supports direct `streamlit run src/ui/app.py`
     from model_input import build_model_from_tables, build_model_from_xml_upload, mark_model_dirty, store_model_in_state
     from state import NAVIGATION_SECTIONS, initialize_session_state
+    from static_analysis import load_case_ids, run_static_analysis_into_state
 
 
 def render_shell(st_module) -> None:
@@ -29,6 +31,8 @@ def render_shell(st_module) -> None:
     st_module.header(selected_section)
     if selected_section == "Model Input":
         render_model_input(st_module)
+    elif selected_section == "Static Analysis":
+        render_static_analysis(st_module)
     else:
         st_module.info("Select or build a model before running analysis.")
 
@@ -73,6 +77,43 @@ def render_model_input(st_module) -> None:
         else:
             st_module.session_state["model_input_error"] = result.error
             st_module.error(result.error)
+
+
+def render_static_analysis(st_module) -> None:
+    """Render static-analysis controls and cached result summary."""
+    model = st_module.session_state.get("model")
+    cases = load_case_ids(model)
+    if model is None:
+        st_module.info("Build or load a model before running static analysis.")
+        return
+    if not cases:
+        st_module.error("Add at least one load case before running static analysis.")
+        return
+
+    selected_load_case = st_module.selectbox("Load case", cases, key="static_load_case_id")
+    if st_module.button("Run Static Analysis"):
+        result = run_static_analysis_into_state(st_module.session_state, selected_load_case)
+        if result.ok:
+            st_module.success(f"Static analysis complete for {result.results.load_case_id}.")
+        else:
+            st_module.error(result.error)
+
+    error = st_module.session_state.get("static_analysis_error")
+    if error:
+        st_module.error(error)
+        return
+
+    results = st_module.session_state.get("static_results")
+    if results is not None:
+        st_module.subheader("Static Results")
+        st_module.caption(f"Load case: {results.load_case_id}")
+        st_module.write(
+            {
+                "nodes": len(results.displacements),
+                "reactions": len(results.reactions),
+                "elements": len(results.element_forces),
+            }
+        )
 
 
 def main() -> None:
