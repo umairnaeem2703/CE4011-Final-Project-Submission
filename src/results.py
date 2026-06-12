@@ -34,3 +34,23 @@ class DynamicAssemblyData:
     unit_system: str
     rayleigh_alpha: float
     rayleigh_beta: float
+
+
+@dataclass
+class ModalResults:
+    """Modal analysis output and educational intermediate data."""
+
+    K: list
+    M: list
+    eigenvalues: list
+    frequencies: list
+    periods: list
+    mode_shapes: list
+    modal_masses: list
+    participation_factors: list
+    effective_masses: list
+    mass_participation_ratios: list
+    influence_vector: list
+    total_participating_mass: float
+    num_modes_requested: int
+    num_modes_extracted: int

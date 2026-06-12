@@ -1,6 +1,7 @@
 # src/modal_solver.py
 
 import math
+from results import ModalResults
 
 class ModalSolverError(Exception):
     """Custom exception raised for errors during modal analysis."""
@@ -22,15 +23,9 @@ class ModalSolver:
         self.K = [row[:] for row in K]
         self.M = [row[:] for row in M]
         
-        # Regularize the mass matrix to prevent singularities from massless DOFs
-        # (e.g., rotational DOFs in frames where rotational inertia is neglected)
-        for i in range(self.n):
-            if self.M[i][i] < 1e-9:
-                self.M[i][i] = 1e-9
-                
-        self.results = []
+        self.results = None
 
-    def solve(self, r: list, num_modes: int = 10) -> list:
+    def solve(self, r: list | None = None, num_modes: int = 10) -> ModalResults:
         """
         Executes the full modal analysis pipeline, sorts the modes, extracts
         the specified number of fundamental modes, and computes physical properties.
@@ -38,16 +33,30 @@ class ModalSolver:
         if self.n == 0:
             return []
 
+        if r is None:
+            r = [1.0] * self.n
+        if len(r) != self.n:
+            raise ModalSolverError("Influence vector length must match matrix size.")
+
+        active, massless_coupled, disconnected = self._dynamic_dofs()
+        if not active:
+            raise ModalSolverError("No positive-mass dynamic DOFs available for modal analysis.")
+
+        K_work = self._condense_stiffness(active, massless_coupled)
+        M_work = self._submatrix(self.M, active, active)
+        r_work = [r[i] for i in active]
+        n_work = len(active)
+
         try:
             # 1. Cholesky Decomposition of Mass Matrix: M = L * L^T
-            L = self._cholesky(self.M)
+            L = self._cholesky(M_work)
             
             # 2. Invert Lower Triangular Matrix L
             L_inv = self._invert_lower_triangular(L)
             L_inv_T = self._transpose(L_inv)
             
             # 3. Transform to Standard Eigenvalue Problem: A = L^-1 * K * L^-T
-            temp = self._matmul(L_inv, self.K)
+            temp = self._matmul(L_inv, K_work)
             A = self._matmul(temp, L_inv_T)
             
             # 4. Extract eigenvalues and standard eigenvectors using Jacobi method
@@ -60,31 +69,40 @@ class ModalSolver:
             
         # Extract columns into individual vector lists
         Phi = []
-        for j in range(self.n):
-            col = [Phi_matrix[i][j] for i in range(self.n)]
+        for j in range(n_work):
+            col = [Phi_matrix[i][j] for i in range(n_work)]
             Phi.append(col)
             
         # 6. Mass-Orthonormalization of Eigenvectors (Phi^T * M * Phi = I)
-        for j in range(self.n):
-            M_phi = self._mat_vec_mul(self.M, Phi[j])
+        for j in range(n_work):
+            M_phi = self._mat_vec_mul(M_work, Phi[j])
             m_i = self._dot(Phi[j], M_phi)
             scale = 1.0 / math.sqrt(m_i) if m_i > 0 else 1.0
-            for i in range(self.n):
+            for i in range(n_work):
                 Phi[j][i] *= scale
                 
         # 7. Sort by eigenvalue in ascending order (Fundamental mode first)
         sorted_pairs = sorted(zip(lambdas, Phi), key=lambda x: x[0])
         
         # Limit to requested number of modes
-        num_modes = min(num_modes, self.n)
+        sorted_pairs = [(lam, phi) for lam, phi in sorted_pairs if lam > 1e-10]
+        num_modes_requested = num_modes
+        num_modes = min(num_modes, len(sorted_pairs))
         sorted_pairs = sorted_pairs[:num_modes]
         
         # 8. Calculate total reactive physical mass in the direction of r
-        M_r = self._mat_vec_mul(self.M, r)
-        total_mass_dir = self._dot(r, M_r)
+        M_r = self._mat_vec_mul(M_work, r_work)
+        total_mass_dir = self._dot(r_work, M_r)
         
         # 9. Compute Modal Properties
-        self.results = []
+        eigenvalues = []
+        frequencies = []
+        periods = []
+        mode_shapes = []
+        modal_masses = []
+        participation_factors = []
+        effective_masses = []
+        mass_participation_ratios = []
         for i, (lam, phi) in enumerate(sorted_pairs):
             # Angular Frequency (omega)
             omega_sq = lam if lam > 0 else 0.0
@@ -96,23 +114,38 @@ class ModalSolver:
             
             # Modal Participation Factor & Effective Mass
             # (Modal mass is strictly 1.0 due to orthonormalization)
-            M_phi = self._mat_vec_mul(self.M, phi)
+            M_phi = self._mat_vec_mul(M_work, phi)
+            modal_mass = self._dot(phi, M_phi)
             gamma = self._dot(phi, M_r)
             eff_mass = gamma**2
-            mass_part_pct = (eff_mass / total_mass_dir * 100.0) if total_mass_dir > 1e-9 else 0.0
-            
-            self.results.append({
-                "mode": i + 1,
-                "eigenvalue": lam,
-                "omega": omega,
-                "freq_hz": freq,
-                "period_s": period,
-                "part_factor": gamma,
-                "eff_mass": eff_mass,
-                "mass_part_pct": mass_part_pct,
-                "phi": phi
-            })
-            
+            mass_ratio = (eff_mass / total_mass_dir) if total_mass_dir > 1e-9 else 0.0
+            full_phi = self._expand_condensed_mode(phi, active, massless_coupled)
+
+            eigenvalues.append(lam)
+            frequencies.append(freq)
+            periods.append(period)
+            mode_shapes.append(full_phi)
+            modal_masses.append(modal_mass)
+            participation_factors.append(gamma)
+            effective_masses.append(eff_mass)
+            mass_participation_ratios.append(mass_ratio)
+
+        self.results = ModalResults(
+            K=[row[:] for row in self.K],
+            M=[row[:] for row in self.M],
+            eigenvalues=eigenvalues,
+            frequencies=frequencies,
+            periods=periods,
+            mode_shapes=mode_shapes,
+            modal_masses=modal_masses,
+            participation_factors=participation_factors,
+            effective_masses=effective_masses,
+            mass_participation_ratios=mass_participation_ratios,
+            influence_vector=r[:],
+            total_participating_mass=total_mass_dir,
+            num_modes_requested=num_modes_requested,
+            num_modes_extracted=len(eigenvalues),
+        )
         return self.results
 
     def print_summary(self):
@@ -128,16 +161,17 @@ class ModalSolver:
         print("-" * 85)
         
         cumulative_mass = 0.0
-        for res in self.results:
-            cumulative_mass += res['mass_part_pct']
-            print(f"{res['mode']:<6} | {res['freq_hz']:<12.4f} | {res['period_s']:<12.4f} | "
-                  f"{res['part_factor']:<15.4f} | {res['eff_mass']:<12.4f} | {res['mass_part_pct']:<6.2f}%")
+        for i, freq in enumerate(self.results.frequencies):
+            mass_part_pct = self.results.mass_participation_ratios[i] * 100.0
+            cumulative_mass += mass_part_pct
+            print(f"{i + 1:<6} | {freq:<12.4f} | {self.results.periods[i]:<12.4f} | "
+                  f"{self.results.participation_factors[i]:<15.4f} | {self.results.effective_masses[i]:<12.4f} | {mass_part_pct:<6.2f}%")
         
         print("-" * 85)
         print(f"Cumulative Mass Participation: {cumulative_mass:.2f}%")
         print("="*85 + "\n")
 
-    def export_educational_output(self, filepath: str, modal_results: list):
+    def export_educational_output(self, filepath: str, modal_results: ModalResults):
         """Exports detailed modal properties and mode shape vectors to a text file."""
         import os
         os.makedirs(os.path.dirname(filepath), exist_ok=True)
@@ -148,19 +182,19 @@ class ModalSolver:
             
             f.write(f"{'Mode':<6} {'Freq (Hz)':<12} {'Period (s)':<12} {'Eff. Mass':<12} {'Mass Part (%)':<15}\n")
             f.write("-" * 70 + "\n")
-            for res in modal_results:
-                f.write(f"{res['mode']:<6} {res['freq_hz']:<12.4f} {res['period_s']:<12.4f} "
-                        f"{res['eff_mass']:<12.4f} {res['mass_part_pct']:<6.2f}%\n")
+            for i, freq in enumerate(modal_results.frequencies):
+                f.write(f"{i + 1:<6} {freq:<12.4f} {modal_results.periods[i]:<12.4f} "
+                        f"{modal_results.effective_masses[i]:<12.4f} {modal_results.mass_participation_ratios[i] * 100.0:<6.2f}%\n")
             
             f.write("\n\n")
             f.write("MASS-ORTHONORMALIZED MODE SHAPES (EIGENVECTORS)\n")
             f.write("=" * 70 + "\n")
             
-            for res in modal_results:
-                f.write(f"\nMode {res['mode']} (f = {res['freq_hz']:.4f} Hz, T = {res['period_s']:.4f} s)\n")
+            for mode_index, shape in enumerate(modal_results.mode_shapes):
+                f.write(f"\nMode {mode_index + 1} (f = {modal_results.frequencies[mode_index]:.4f} Hz, T = {modal_results.periods[mode_index]:.4f} s)\n")
                 f.write("-" * 40 + "\n")
                 f.write(f"{'DOF':<8} {'Displacement':<15}\n")
-                for i, val in enumerate(res['phi']):
+                for i, val in enumerate(shape):
                     f.write(f"{i:<8} {val:<15.6e}\n")
 
     # ==========================================
@@ -168,7 +202,7 @@ class ModalSolver:
     # ==========================================
 
     def _jacobi(self, A: list, tol: float = 1e-12, max_iter: int = 1000):
-        n = self.n
+        n = len(A)
         V = [[1.0 if i == j else 0.0 for j in range(n)] for i in range(n)]
         D = [row[:] for row in A]
         
@@ -219,7 +253,7 @@ class ModalSolver:
         return eigenvalues, V
 
     def _cholesky(self, A: list):
-        n = self.n
+        n = len(A)
         L = [[0.0] * n for _ in range(n)]
         for i in range(n):
             for j in range(i + 1):
@@ -231,7 +265,7 @@ class ModalSolver:
         return L
 
     def _invert_lower_triangular(self, L: list):
-        n = self.n
+        n = len(L)
         inv = [[0.0] * n for _ in range(n)]
         for i in range(n):
             inv[i][i] = 1.0 / L[i][i]
@@ -254,7 +288,73 @@ class ModalSolver:
         return result
 
     def _mat_vec_mul(self, A: list, v: list):
-        return [sum(A[i][j] * v[j] for j in range(self.n)) for i in range(self.n)]
+        return [sum(A[i][j] * v[j] for j in range(len(v))) for i in range(len(A))]
 
     def _dot(self, v1: list, v2: list):
         return sum(x * y for x, y in zip(v1, v2))
+
+    def _dynamic_dofs(self):
+        active = []
+        disconnected = []
+        for i in range(self.n):
+            row_mass = sum(abs(value) for value in self.M[i])
+            col_mass = sum(abs(self.M[j][i]) for j in range(self.n))
+            stiffness_coupling = sum(abs(value) for value in self.K[i]) + sum(abs(self.K[j][i]) for j in range(self.n))
+            if row_mass + col_mass > 1e-10:
+                active.append(i)
+            elif stiffness_coupling <= 1e-10:
+                disconnected.append(i)
+        massless_coupled = [i for i in range(self.n) if i not in active and i not in disconnected]
+        return active, massless_coupled, disconnected
+
+    def _submatrix(self, A: list, rows: list, cols: list):
+        return [[A[i][j] for j in cols] for i in rows]
+
+    def _condense_stiffness(self, active: list, massless: list):
+        Kaa = self._submatrix(self.K, active, active)
+        if not massless:
+            return Kaa
+
+        Kab = self._submatrix(self.K, active, massless)
+        Kba = self._submatrix(self.K, massless, active)
+        Kbb = self._submatrix(self.K, massless, massless)
+        correction = [[0.0 for _ in active] for _ in active]
+        for col in range(len(active)):
+            rhs = [Kba[row][col] for row in range(len(massless))]
+            solved_col = self._gaussian_solve(Kbb, rhs)
+            for i in range(len(active)):
+                correction[i][col] = sum(Kab[i][j] * solved_col[j] for j in range(len(massless)))
+
+        return [[Kaa[i][j] - correction[i][j] for j in range(len(active))] for i in range(len(active))]
+
+    def _expand_condensed_mode(self, phi_active: list, active: list, massless: list):
+        full_phi = [0.0] * self.n
+        for reduced_i, original_i in enumerate(active):
+            full_phi[original_i] = phi_active[reduced_i]
+        if massless:
+            Kbb = self._submatrix(self.K, massless, massless)
+            Kba = self._submatrix(self.K, massless, active)
+            rhs = [-sum(Kba[i][j] * phi_active[j] for j in range(len(active))) for i in range(len(massless))]
+            phi_massless = self._gaussian_solve(Kbb, rhs)
+            for reduced_i, original_i in enumerate(massless):
+                full_phi[original_i] = phi_massless[reduced_i]
+        return full_phi
+
+    def _gaussian_solve(self, A: list, b: list):
+        n = len(b)
+        aug = [A[i][:] + [b[i]] for i in range(n)]
+        for col in range(n):
+            pivot = max(range(col, n), key=lambda row: abs(aug[row][col]))
+            if abs(aug[pivot][col]) < 1e-14:
+                raise ModalSolverError("Cannot statically condense singular massless stiffness block.")
+            aug[col], aug[pivot] = aug[pivot], aug[col]
+            for row in range(col + 1, n):
+                factor = aug[row][col] / aug[col][col]
+                for k in range(col, n + 1):
+                    aug[row][k] -= factor * aug[col][k]
+
+        x = [0.0] * n
+        for row in range(n - 1, -1, -1):
+            rhs = aug[row][n] - sum(aug[row][col] * x[col] for col in range(row + 1, n))
+            x[row] = rhs / aug[row][row]
+        return x
