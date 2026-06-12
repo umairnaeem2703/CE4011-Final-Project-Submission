@@ -9,6 +9,7 @@ import matplotlib.patches as mpatches
 from parser import StructuralModel, UniformlyDL, PointLoad, MemberLoad, LoadCase
 from post_processor import PostProcessor
 from element_physics import ElementPhysics
+from results import ModalResults, RSAResults, StaticResults, THAResults
 
 N_STEPS = 30  # discretization points per element
 
@@ -370,6 +371,288 @@ def save_deformed_shape_from_active(
     fig.savefig(filepath, dpi=dpi)
     print(f"✅ Deformed shape plot written to {filepath}")
     plt.close(fig)
+
+
+# ============================================================
+# Result-object plotting adapters
+# ============================================================
+
+def plot_model_preview(
+    model: StructuralModel,
+    ax: Optional[plt.Axes] = None,
+) -> tuple:
+    """Plot model geometry, node/element labels, supports, and hinges."""
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(9, 6))
+    else:
+        fig = ax.figure
+
+    _draw_structure(ax, model)
+
+    for node in model.nodes.values():
+        ax.text(node.x, node.y, str(node.id), fontsize=8, ha="right", va="bottom")
+
+    for element in model.elements.values():
+        mx = 0.5 * (element.node_i.x + element.node_j.x)
+        my = 0.5 * (element.node_i.y + element.node_j.y)
+        ax.text(mx, my, str(element.id), fontsize=8, ha="center", va="bottom")
+
+    for node_id, support in model.supports.items():
+        node = model.nodes[node_id]
+        _draw_support(ax, node.x, node.y, support)
+
+    _draw_hinges(ax, model)
+    ax.set_aspect("equal", adjustable="box")
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_title("Model Preview")
+    ax.grid(True, linestyle=":", linewidth=0.6)
+    return fig, ax
+
+
+def plot_static_deformed_shape(
+    model: StructuralModel,
+    results: StaticResults,
+    scale_factor: Optional[float] = None,
+    sub_segments: int = 20,
+    show_undeformed: bool = True,
+    ax: Optional[plt.Axes] = None,
+) -> tuple:
+    """Plot deformed shape directly from StaticResults."""
+    ax = plot_deformed_shape(
+        model=model,
+        displacements=getattr(results, "displacements", {}) or {},
+        scale_factor=scale_factor,
+        sub_segments=sub_segments,
+        show_undeformed=show_undeformed,
+        lc_id=getattr(results, "load_case_id", None),
+        ax=ax,
+    )
+    return ax.figure, ax
+
+
+def _draw_element_diagram_from_nvm(ax, el, nvm: dict, diagram_key: str, dynamic_scale: float):
+    phys = ElementPhysics(el)
+    cos_x, sin_x = phys.cos_x, phys.sin_x
+    nx, ny = -sin_x, cos_x
+    xi, yi = el.node_i.x, el.node_i.y
+    raw_values = nvm.get(diagram_key, []) if nvm else []
+    stations = nvm.get("x", []) if nvm else []
+    if raw_values and not stations:
+        if len(raw_values) == 1:
+            stations = [0.0]
+        else:
+            stations = [phys.L * i / (len(raw_values) - 1) for i in range(len(raw_values))]
+    count = min(len(stations), len(raw_values))
+    stations = stations[:count]
+    raw_values = raw_values[:count]
+
+    base_pts = []
+    diag_pts = []
+    for station, raw_value in zip(stations, raw_values):
+        plot_val = -raw_value if diagram_key == "M" else raw_value
+        bx = xi + station * cos_x
+        by = yi + station * sin_x
+        base_pts.append((bx, by))
+        diag_pts.append((bx + plot_val * dynamic_scale * nx, by + plot_val * dynamic_scale * ny))
+
+    pos_color = "tab:green"
+    neg_color = "tab:red"
+    for i in range(len(base_pts) - 1):
+        v0 = raw_values[i]
+        v1 = raw_values[i + 1]
+        b0, b1 = base_pts[i], base_pts[i + 1]
+        d0, d1 = diag_pts[i], diag_pts[i + 1]
+        if v0 * v1 >= 0:
+            color = pos_color if (v0 + v1) >= 0 else neg_color
+            ax.fill(
+                [b0[0], b1[0], d1[0], d0[0]],
+                [b0[1], b1[1], d1[1], d0[1]],
+                alpha=0.35,
+                color=color,
+                edgecolor="none",
+                zorder=2,
+            )
+        else:
+            t = v0 / (v0 - v1)
+            zx = b0[0] + t * (b1[0] - b0[0])
+            zy = b0[1] + t * (b1[1] - b0[1])
+            c0 = pos_color if v0 >= 0 else neg_color
+            c1 = pos_color if v1 >= 0 else neg_color
+            ax.fill(
+                [b0[0], zx, zx, d0[0]],
+                [b0[1], zy, zy, d0[1]],
+                alpha=0.35,
+                color=c0,
+                edgecolor="none",
+                zorder=2,
+            )
+            ax.fill(
+                [zx, b1[0], d1[0], zx],
+                [zy, b1[1], d1[1], zy],
+                alpha=0.35,
+                color=c1,
+                edgecolor="none",
+                zorder=2,
+            )
+
+    if diag_pts:
+        ax.plot([p[0] for p in diag_pts], [p[1] for p in diag_pts], color="black", linewidth=1.0, zorder=3)
+
+
+def plot_static_nvm_diagrams(
+    model: StructuralModel,
+    results: StaticResults,
+    scale: Optional[float] = None,
+    axes: Optional[List[plt.Axes]] = None,
+):
+    """Plot axial, shear, and moment diagrams from StaticResults.nvm_data."""
+    if axes is None:
+        fig, axes = plt.subplots(1, 3, figsize=(18, 6))
+    else:
+        fig = axes[0].figure
+
+    x_coords = [node.x for node in model.nodes.values()]
+    y_coords = [node.y for node in model.nodes.values()]
+    max_dim = max(max(x_coords) - min(x_coords), max(y_coords) - min(y_coords)) if x_coords and y_coords else 1.0
+    nvm_data = getattr(results, "nvm_data", {}) or {}
+    labels = [("N", "Axial Force (N)"), ("V", "Shear Force (V)"), ("M", "Bending Moment (M)")]
+
+    for ax, (key, label) in zip(axes, labels):
+        _draw_structure(ax, model)
+        max_value = max(
+            (abs(value) for data in nvm_data.values() for value in data.get(key, [])),
+            default=1.0,
+        )
+        dynamic_scale = scale if scale is not None else (0.15 * max_dim) / max_value if max_value > 0 else 1.0
+
+        for element_id, element in model.elements.items():
+            if element_id in nvm_data:
+                _draw_element_diagram_from_nvm(ax, element, nvm_data[element_id], key, dynamic_scale)
+
+        ax.set_title(label, fontsize=11, fontweight="bold")
+        ax.set_aspect("equal")
+        ax.grid(True, alpha=0.3)
+        ax.set_xlabel("X (m)")
+        ax.set_ylabel("Y (m)")
+
+    fig.suptitle(f"NVM Diagrams - {getattr(results, 'load_case_id', '')}", fontsize=13, fontweight="bold")
+    fig.tight_layout()
+    return fig, axes
+
+
+def _mode_shape_displacements(model: StructuralModel, mode_shape: list) -> Dict[int, List[float]]:
+    displacements: Dict[int, List[float]] = {}
+    for node_id, node in model.nodes.items():
+        values = []
+        for dof in node.dofs:
+            value = mode_shape[dof] if dof >= 0 and dof < len(mode_shape) else 0.0
+            if isinstance(value, list):
+                value = value[0] if value else 0.0
+            values.append(value)
+        while len(values) < 3:
+            values.append(0.0)
+        displacements[node_id] = values[:3]
+    return displacements
+
+
+def plot_mode_shape(
+    model: StructuralModel,
+    results: ModalResults,
+    mode_index: int = 0,
+    scale_factor: Optional[float] = None,
+    ax: Optional[plt.Axes] = None,
+) -> tuple:
+    """Plot one modal deformed shape from ModalResults."""
+    mode_shapes = getattr(results, "mode_shapes", []) or []
+    if mode_index < 0 or mode_index >= len(mode_shapes):
+        raise ValueError("mode_index is outside available mode_shapes.")
+
+    ax = plot_deformed_shape(
+        model=model,
+        displacements=_mode_shape_displacements(model, mode_shapes[mode_index]),
+        scale_factor=scale_factor,
+        show_undeformed=True,
+        ax=ax,
+    )
+    periods = getattr(results, "periods", []) or []
+    period = periods[mode_index] if mode_index < len(periods) else None
+    suffix = f", T = {period:.3g} s" if period is not None else ""
+    ax.set_title(f"Mode Shape {mode_index + 1}{suffix}")
+    return ax.figure, ax
+
+
+def _response_component(history: list, dof: int) -> list:
+    values = []
+    for step in history:
+        if isinstance(step, dict):
+            values.append(step.get(dof, 0.0))
+        elif isinstance(step, (list, tuple)):
+            values.append(step[dof] if dof < len(step) else 0.0)
+        else:
+            values.append(step)
+    return values
+
+
+def plot_tha_history(
+    results: THAResults,
+    response: str = "displacement",
+    dof: int = 0,
+    ax: Optional[plt.Axes] = None,
+) -> tuple:
+    """Plot a THA response history from THAResults."""
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 4))
+    else:
+        fig = ax.figure
+
+    histories = {
+        "displacement": (getattr(results, "displacement_history", []) or [], "Displacement", "m"),
+        "velocity": (getattr(results, "velocity_history", []) or [], "Velocity", "m/s"),
+        "acceleration": (getattr(results, "acceleration_history", []) or [], "Acceleration", "m/s^2"),
+        "base_shear": (getattr(results, "base_shear_history", []) or [], "Base Shear", "kN"),
+        "overturning_moment": (getattr(results, "overturning_moment_history", []) or [], "Overturning Moment", "kN-m"),
+    }
+    if response not in histories:
+        raise ValueError(f"Unknown THA response: {response}")
+
+    history, label, unit = histories[response]
+    if response in {"base_shear", "overturning_moment"}:
+        values = history
+    else:
+        values = _response_component(history, dof)
+
+    time_vector = getattr(results, "time_vector", []) or []
+    count = min(len(time_vector), len(values))
+    ax.plot(time_vector[:count], values[:count], color="tab:blue", linewidth=1.5)
+    ax.set_xlabel("Time (s)")
+    ax.set_ylabel(f"{label} ({unit})")
+    ax.set_title(f"THA {label} History")
+    ax.grid(True, linestyle=":", linewidth=0.6)
+    return fig, ax
+
+
+def plot_response_spectrum(
+    results: RSAResults,
+    ax: Optional[plt.Axes] = None,
+) -> tuple:
+    """Plot the input response spectrum from RSAResults."""
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(8, 4))
+    else:
+        fig = ax.figure
+
+    periods = getattr(results, "spectrum_periods", []) or []
+    accelerations = getattr(results, "spectrum_accelerations", []) or []
+    if not accelerations:
+        accelerations = getattr(results, "spectrum_values", []) or []
+    count = min(len(periods), len(accelerations))
+    ax.plot(periods[:count], accelerations[:count], color="tab:blue", linewidth=1.5)
+    ax.set_xlabel("Period (s)")
+    ax.set_ylabel("Spectral Acceleration")
+    ax.set_title("Response Spectrum")
+    ax.grid(True, linestyle=":", linewidth=0.6)
+    return fig, ax
 
 
 # ============================================================
