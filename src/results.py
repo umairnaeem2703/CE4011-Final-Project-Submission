@@ -54,3 +54,30 @@ class ModalResults:
     total_participating_mass: float
     num_modes_requested: int
     num_modes_extracted: int
+
+
+@dataclass
+class THAResults:
+    """Time-history analysis output and educational intermediate data."""
+
+    time_vector: list
+    excitation_history: list
+    applied_force_history: list
+    displacement_history: list
+    velocity_history: list
+    acceleration_history: list
+    base_shear_history: list
+    overturning_moment_history: list
+    peak_displacement: dict
+    peak_velocity: dict
+    peak_acceleration: dict
+    peak_base_shear: float
+    peak_overturning_moment: float
+    step_table: list
+    damping_ratio: float
+    dt: float
+    num_steps: int
+    source_file: str
+    acceleration_unit: str
+    scale_factor: float
+    input_format: str

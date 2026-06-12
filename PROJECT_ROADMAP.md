@@ -219,7 +219,7 @@ def check_phase_3_complete(model, assembly_data):
 **What:** Generalized eigenvalue solver, frequencies/periods/modes, normalization, participation/effective mass.
 
 **Files to modify:**
-- `src/solvers/modal_solver.py` (or `src/modal_solver.py`)
+- `src/modal_solver.py` (or `src/modal_solver.py`)
 - `src/results.py` (ModalResults dataclass from ARCHITECTURE.md)
 - Add modal solver entry point in `src/main.py`
 
@@ -278,12 +278,15 @@ def check_phase_4_complete(results_modal):
 
 ---
 
-## Phase 5: Time-History Analysis (Newmark)
+## Phase 5: Ground Motion Input + Time-History Analysis (Newmark)
 
-**What:** Newmark average acceleration solver, earthquake excitation, response histories (u, v, a, base shear, OTM).
+**What:** Newmark average acceleration solver, earthquake excitation, response histories (u, v, a, base shear, OTM), Convert user-selected acceleration units to internal solver units, Build excitation force history P(t) = -M r ag(t), Return THAResults.
 
 **Files to modify:**
-- `src/solvers/newmark_solver.py` (create new file)
+
+- src/ground_motion.py
+- tests/test_time_history.py
+- `src/newmark_solver.py` (create new file)
 - `src/results.py` (THAResults dataclass)
 - `src/main.py` (add THA entry point)
 
@@ -293,39 +296,28 @@ def check_phase_4_complete(results_modal):
 
 ### Phase 5 Complete When:
 
-✓ **Test 1: SDOF Newmark benchmark (textbook example)**
-```
-SDOF: m=1, k=100, c=2, omega=10, zeta=0.1
-Input: sinusoidal acceleration 0.1g for 2 seconds, dt=0.01 s
-Expected: peak displacement ≈ closed-form SDOF response (from textbook).
-Tolerance: <2%
-```
+✓ **Test 1: Read two-column time + acceleration file**
+Input: time in column 1, acceleration in column 2, cm/s².
+Verify time_vector, raw acceleration, dt, and acceleration_si.
 
-✓ **Test 2: Earthquake excitation P(t) = -M r ag(t)**
-```
-3-DOF shear frame, apply ag(t) horizontally.
-Verify: first few time steps P = -M * [1,0,0,1,0,0,...] * ag.
-Tolerance: machine precision (< 1e-10).
-```
+✓ **Test 2: Read acceleration-only file with user dt**
+Input: one acceleration value per line, dt = 0.004.
+Verify generated time_vector length and spacing.
 
-✓ **Test 3: Displacement, velocity, acceleration histories**
-```
-Run Newmark on simple cantilever under step excitation.
-Verify: u(0)=0, v(0)=0, a(0)=P(0)/m (initial conditions correct).
-Verify: histories are smooth (no numerical noise).
-```
+✓ **Test 3: Unit conversion and scale factor**
+Verify:
+1 g = 9.80665 m/s²
+100 cm/s² = 1 m/s²
+1000 mm/s² = 1 m/s²
+scale_factor is applied after unit conversion.
 
-✓ **Test 4: Base shear and OTM histories**
-```
-Compute base shear at each step as sum of element shear forces.
-Verify: base shear magnitude is reasonable (related to inertial forces).
-```
+✓ **Test 4: Earthquake force history**
+For a simple mass matrix and r vector, verify:
+P(t) = -M r ag(t).
 
-✓ **Test 5: Peak response quantities**
-```
-Extract max(|u|), max(|v|), max(|a|), max(|V_base|), max(|OTM|).
-Verify: they match time-domain search in results.
-```
+✓ **Test 5: Newmark THA result histories and peaks**
+Run a small SDOF or simple frame.
+Verify displacement_history, velocity_history, acceleration_history, time_vector, peak values, dt, num_steps, and THAResults metadata.
 
 **Dependency check:**
 ```python
@@ -345,7 +337,7 @@ def check_phase_5_complete(results_tha):
 **What:** Spectrum interpolation, modal responses, SRSS/CQC combination, base shear/OTM.
 
 **Files to modify:**
-- `src/solvers/rsa_solver.py` (create new file)
+- `src/rsa_solver.py` (create new file)
 - `src/results.py` (RSAResults dataclass)
 - `src/main.py` (add RSA entry point)
 - `src/core/interpolation.py` (1D spectrum interpolation utility, if not present)

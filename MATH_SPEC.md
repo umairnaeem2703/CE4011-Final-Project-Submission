@@ -305,6 +305,26 @@ r = [1, 0, 0, 1, 0, 0, ...]  (1 at every active ux DOF)
 P(t) = -M * r * ag(t)
 ```
 
+### Ground Motion Units (Phase 5)
+
+All ground accelerations must be converted to internal acceleration units before solving.
+
+If the structural unit system is kN-m-tonne, then:
+1 tonne * 1 m/s² = 1 kN
+Therefore ag should be stored internally as m/s².
+
+Acceleration conversion:
+- m/s²: ag_si = value
+- cm/s²: ag_si = value / 100
+- mm/s²: ag_si = value / 1000
+- g: ag_si = value * 9.80665
+
+After conversion:
+ag(t) = scale_factor * ag_si(t)
+
+Earthquake force:
+P(t) = -M r ag(t)
+
 ### Outputs
 - Time vector
 - Excitation history ag(t)

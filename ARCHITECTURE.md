@@ -73,6 +73,35 @@ class StaticResults:
     load_case_id: str
 ```
 
+### DynamicAssemblyData (Phase 3)
+```python
+@dataclass
+class DynamicAssemblyData:
+    """Dynamic assembly output and educational intermediate data."""
+    K: list  # Full global stiffness matrix (n_dof x n_dof)
+    M: list  # Full global mass matrix (n_dof x n_dof)
+    C: list  # Full global damping matrix (n_dof x n_dof)
+
+    Kff: list  # Condensed dynamic stiffness matrix on active dynamic DOFs
+    Mff: list  # Condensed mass matrix on active dynamic DOFs
+    Cff: list  # Condensed damping matrix on active dynamic DOFs
+
+    dof_map: dict
+    free_dofs: list
+    active_dynamic_dofs: list
+    condensed_massless_dofs: list
+    unit_system: str
+
+    rayleigh_alpha: float
+    rayleigh_beta: float
+```
+
+Notes:
+- `Kff` is the condensed dynamic stiffness matrix produced by massless-DOF condensation, not merely a raw submatrix of the full `K`.
+- `active_dynamic_dofs` identifies the DOFs retained for dynamic analysis after removing zero-mass or massless stiffness-coupled DOFs as required.
+
+---
+
 ### ModalResults (Phase 4)
 ```python
 @dataclass
@@ -100,35 +129,6 @@ class ModalResults:
     
     num_modes_requested: int
     num_modes_extracted: int
-```
-
-### RSAResults (Phase 6)
-```python
-@dataclass
-class RSAResults:
-    """Response Spectrum Analysis output."""
-    spectrum_periods: list  # T values (seconds)
-    spectrum_accelerations: list  # Sa(T) values (m/s^2 or g)
-    
-    # Modal data
-    num_modes: int
-    periods: list  # T_n for each mode
-    
-    # Response quantities per mode (before combination)
-    modal_response_vectors: list  # {mode_n: {dof: response_value}}
-    modal_base_shears: list  # V_base,n per mode
-    modal_overturning_moments: list  # OTM_n per mode
-    
-    # Combined response (SRSS or CQC)
-    combination_method: str  # "SRSS" or "CQC"
-    combined_response: dict  # {dof: combined_value}
-    combined_base_shear: float
-    combined_overturning_moment: float
-    
-    # CQC coupling coefficients (if used)
-    rho_matrix: list  # (n_modes x n_modes) coupling factors
-    
-    damping_ratio: float  # zeta (%)
 ```
 
 ### THAResults (Phase 5)
@@ -163,36 +163,77 @@ class THAResults:
     damping_ratio: float  # zeta
     dt: float  # time step
     num_steps: int
+    
+    # Ground motion source metadata
+    source_file: str  # path to the ground motion file used as input
+    acceleration_unit: str  # unit of input acceleration (e.g. "m/s2", "cm/s2", "mm/s2", "g")
+    scale_factor: float  # user-specified scale factor applied to the raw acceleration values
+    input_format: str  # "acceleration_only" or "time_acceleration"
 ```
 
-### DynamicAssemblyData (Phase 3)
+### Ground Motion Input Contract (also Phase 5)
+
+Create a backend ground-motion reader before UI implementation.
+
+Supported input formats:
+- acceleration_only: one acceleration value per line, dt supplied by user
+- time_acceleration: two columns, time column + acceleration column
+- optional header/metadata lines skipped by user setting
+
+GroundMotionConfig:
+- file_path
+- input_format: "acceleration_only" or "time_acceleration"
+- time_step_dt
+- time_column
+- acceleration_column
+- first_line
+- last_line
+- skip_header_lines
+- acceleration_unit: "m/s2", "cm/s2", "mm/s2", "g"
+- scale_factor
+- excitation_direction: "x" or "y"
+
+GroundMotionRecord:
+- time_vector
+- acceleration_raw
+- acceleration_si
+- dt
+- num_steps
+- source_file
+- acceleration_unit
+- scale_factor
+
+Internal solver acceleration must use m/s².
+---
+
+### RSAResults (Phase 6)
 ```python
 @dataclass
-class DynamicAssemblyData:
-    """Dynamic assembly output and educational intermediate data."""
-    K: list  # Full global stiffness matrix (n_dof x n_dof)
-    M: list  # Full global mass matrix (n_dof x n_dof)
-    C: list  # Full global damping matrix (n_dof x n_dof)
-
-    Kff: list  # Condensed dynamic stiffness matrix on active dynamic DOFs
-    Mff: list  # Condensed mass matrix on active dynamic DOFs
-    Cff: list  # Condensed damping matrix on active dynamic DOFs
-
-    dof_map: dict
-    free_dofs: list
-    active_dynamic_dofs: list
-    condensed_massless_dofs: list
-    unit_system: str
-
-    rayleigh_alpha: float
-    rayleigh_beta: float
+class RSAResults:
+    """Response Spectrum Analysis output."""
+    spectrum_periods: list  # T values (seconds)
+    spectrum_accelerations: list  # Sa(T) values (m/s^2 or g)
+    
+    # Modal data
+    num_modes: int
+    periods: list  # T_n for each mode
+    
+    # Response quantities per mode (before combination)
+    modal_response_vectors: list  # {mode_n: {dof: response_value}}
+    modal_base_shears: list  # V_base,n per mode
+    modal_overturning_moments: list  # OTM_n per mode
+    
+    # Combined response (SRSS or CQC)
+    combination_method: str  # "SRSS" or "CQC"
+    combined_response: dict  # {dof: combined_value}
+    combined_base_shear: float
+    combined_overturning_moment: float
+    
+    # CQC coupling coefficients (if used)
+    rho_matrix: list  # (n_modes x n_modes) coupling factors
+    
+    damping_ratio: float  # zeta (%)
 ```
-
-Notes:
-- `Kff` is the condensed dynamic stiffness matrix produced by massless-DOF condensation, not merely a raw submatrix of the full `K`.
-- `active_dynamic_dofs` identifies the DOFs retained for dynamic analysis after removing zero-mass or massless stiffness-coupled DOFs as required.
-
----
 
 ## Reserved Model Attributes (Implement in Phase Indicated)
 
