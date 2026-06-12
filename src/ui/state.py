@@ -16,6 +16,7 @@ NAVIGATION_SECTIONS = (
 
 SESSION_DEFAULTS = {
     "model": None,
+    "model_input_error": None,
     "static_results": None,
     "modal_results": None,
     "rsa_results": None,
