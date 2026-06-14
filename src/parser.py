@@ -219,6 +219,13 @@ class LoadCase:
     loads: List[Load] = field(default_factory=list)
 
 @dataclass
+class LumpedMass:
+    node: Node
+    mass_ux: float = 0.0
+    mass_uy: float = 0.0
+    inertia_rz: float = 0.0
+
+@dataclass
 class StructuralModel:
     name: str = "Untitled Model"
     materials: Dict[str, Material] = field(default_factory=dict)
@@ -227,7 +234,7 @@ class StructuralModel:
     elements: Dict[str, Element] = field(default_factory=dict)
     supports: Dict[int, Support] = field(default_factory=dict)
     load_cases: Dict[str, LoadCase] = field(default_factory=dict)
-    lumped_masses: Dict[int, float] = field(default_factory=dict)
+    lumped_masses: Dict[int, LumpedMass | float] = field(default_factory=dict)
     diaphragm_ux_groups: Dict[str, List[int]] = field(default_factory=dict)
     unit_system: str = "kN_m_tonne"
     is_dirty: bool = True
@@ -258,13 +265,6 @@ class StructuralModel:
         self.cached_C = None
 
 
-@dataclass
-class LumpedMass:
-    node: Node
-    mass_ux: float = 0.0
-    mass_uy: float = 0.0
-    inertia_rz: float = 0.0
-
 # ==========================================
 # 2. THE PARSER LOGIC
 # ==========================================
@@ -284,6 +284,7 @@ class XMLParser:
         self._parse_nodes()
         self._parse_elements()
         self._parse_diaphragms()
+        self._parse_lumped_masses()
         self._parse_boundaries()
         self._parse_loads()
         return self.model
@@ -365,6 +366,20 @@ class XMLParser:
             if node_ids:
                 self.model.diaphragm_ux_groups[group_id] = node_ids
 
+    def _parse_lumped_masses(self):
+        lumped_masses_node = self.root.find('lumped_masses')
+        if lumped_masses_node is None:
+            return
+
+        for mass_node in lumped_masses_node.findall('lumped_mass'):
+            node = self.model.nodes[int(mass_node.attrib['node'])]
+            self.model.lumped_masses[node.id] = LumpedMass(
+                node=node,
+                mass_ux=float(mass_node.attrib.get('mass_ux', 0.0)),
+                mass_uy=float(mass_node.attrib.get('mass_uy', 0.0)),
+                inertia_rz=float(mass_node.attrib.get('inertia_rz', 0.0)),
+            )
+
     def _parse_boundaries(self):
         for sup in self.root.find('boundary_conditions').findall('support'):
             node = self.model.nodes[int(sup.attrib['node'])]
@@ -388,8 +403,9 @@ class XMLParser:
             # Extract settlement values (default to 0.0 if not provided)
             settlement_ux = float(sup.attrib.get('settlement_ux', 0.0))
             settlement_uy = float(sup.attrib.get('settlement_uy', 0.0))
+            settlement_rz = float(sup.attrib.get('settlement_rz', 0.0))
 
-            self.model.supports[node.id] = Support(node, ux, uy, rz, settlement_ux, settlement_uy)
+            self.model.supports[node.id] = Support(node, ux, uy, rz, settlement_ux, settlement_uy, settlement_rz)
 
     def _parse_loads(self):
         loads_node = self.root.find('load_cases')

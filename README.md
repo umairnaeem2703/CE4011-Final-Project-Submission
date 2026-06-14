@@ -1,121 +1,52 @@
-# Structural Analysis Solver
+# CE 4011 Structural Analysis Application
 
-A matrix-based 2D structural analysis solver for **truss**, **frame**, and **beam** models defined in XML — built entirely with standard Python libraries (no NumPy required). Includes static analysis, dynamic modal analysis, and frequency-response computation.
+An educational 2D structural analysis application for building, solving, and visualizing truss, frame, beam, and benchmark models. The project is designed to expose the full analysis pipeline for learning: model input, DOF mapping, stiffness/mass/damping assembly, solver execution, result objects, diagrams, and exportable intermediate data.
 
----
+XML remains the backend save/load and reproducibility format. Students are not expected to manually write XML; table-style input is intended as an editable backup workflow, and future graphical input can be built on top of the same internal model creation path.
 
-## Features
+## Implemented
 
-- **XML-driven models** — define nodes, elements, constraints, and loads in a clean XML schema
-- **DOF optimization** — Reverse Cuthill-McKee reordering minimizes bandwidth for efficient solving
-- **Banded system solver** — custom banded stiffness matrix assembly and linear solver
-- **Advanced constraints** — Rigid Diaphragm and Axially Rigid member support via Union-Find
-- **Dynamic analysis** — modal extraction, natural frequencies, mode shapes, and damped modal-superposition response
-- **Rich visualizations** — deformed geometry and NVM (Axial/Shear/Moment) diagrams with SAP2000-compatible conventions
+- Static analysis for 2D truss, frame, and beam-style models using assembled global stiffness matrices, reduced systems, displacements, reactions, element forces, and axial/shear/moment data.
+- Modal analysis with dynamic assembly, mass handling, eigenvalues, frequencies, periods, mode shapes, modal mass, participation factors, and effective modal mass outputs.
+- Response Spectrum Analysis (RSA) with spectrum interpolation, modal response vectors, SRSS/CQC combination, and peak response quantities.
+- Time-History Analysis (THA) using Newmark average-acceleration integration, ground-motion input handling, displacement/velocity/acceleration histories, and base response histories.
+- Educational intermediate outputs, including DOF maps, full and reduced matrices/vectors, solver inputs, solver outputs, and post-processing data for reports and tests.
+- XML parsing as the backend model format, including nodes, elements, supports, loads, masses, materials, sections, and analysis settings.
+- `ModelBuilder` as the internal API for programmatic, table, template, and future graphical input; builder-created models can be exported to XML and parsed back, including lumped masses.
+- A thin MVC-style controller layer that coordinates model building, validation, XML export, and analysis calls without owning solver math.
+- Shared structural validation through `StructuralValidator`.
+- Visualization and post-processing through matplotlib, including model preview, deformed shapes, axial/shear/moment diagrams, mode shapes, response spectrum plots, and THA histories.
+- A Streamlit local UI/dashboard for XML upload, table/form-based model input, static and dynamic analysis controls, cached results, and visualization display.
+- Focused pytest coverage for model input, static analysis, dynamic assembly, modal analysis, RSA, THA/Newmark, UI helpers, and visualization behavior.
 
----
+## Under Development
 
-## Quick Start
+- Full graphical drawing canvas and richer editable table workflows on top of `ModelBuilder`.
+- More complete export/report flows for classroom use.
+- Expanded templates and validation examples for common educational structures.
+- Final UI polish, result presentation, and end-to-end ergonomics.
+- Final documentation, manuals, and classroom-facing writeups.
 
-### Prerequisites
+## Architecture
 
-- Python 3.10+
-- `matplotlib` (for diagram generation)
+The project follows a layered educational pipeline:
 
-### Setup & Run
-
-```bash
-# Activate your virtual environment
-.venv\Scripts\activate
-
-# Run the analysis on the default test files in ./data/
-python src/main.py
+```text
+input tables/XML/templates -> StructuralModel -> DOF/K/M/C/F assembly -> solvers -> result objects -> plots/export
 ```
 
-Results (reports, deformed plots, NVM diagrams) are written to `./results/`.
+Solvers operate on assembled matrices and vectors rather than branching by structure type. Structure families such as shear frames, cantilevers, frames, trusses, and benchmarks are represented as ordinary models or templates. `ModelBuilder` creates `StructuralModel` instances for internal and future table/graphical input, `StructuralValidator` checks model validity, and the controller remains a thin coordination layer. The solver, model input, XML, UI, and visualization responsibilities are kept separate so the numerical workflow remains transparent and testable.
 
----
+## Repository Map
 
-## Analysis Workflow
-
-Each load case is processed through the following pipeline:
-
-1. **Parse XML** — load nodes, elements, constraints, and loads
-2. **Optimize DOF Numbering** — Reverse Cuthill-McKee reordering
-3. **Assemble System Matrix** — banded global stiffness matrix and load vector
-4. **Solve Linear System** — custom banded solver → nodal displacements
-5. **Dynamic Analysis** — modal extraction (natural frequencies and mode shapes) and modal-superposition response computed by `modal_solver.py` (supports damping and modal combination).
-6. **Post-Process** — member forces and support reactions
-7. **Generate Visuals** — reports, NVM diagrams, deformed shape plots
-
----
-
-## Visualization
-
-### Deformed Shape
-
-Computed via the `visualizer.py` pipeline:
-
-- **Recover Full DOFs** — merges active solver DOFs with restrained boundary conditions
-- **Transform Displacements** — converts to element local coordinates
-- **Hermite Interpolation** — cubic interpolation for transverse, linear for axial displacement
-- **Global Mapping** — back-transforms with a visual scale factor
-
-### NVM Diagrams (Axial · Shear · Moment)
-
-| Feature | Detail |
-|---|---|
-| Sign convention | SAP2000-compatible (moment on tension side) |
-| Coloring | Green = positive, Red = negative |
-| Labeling | Auto-tagged absolute max/min peaks per element |
-| Scaling | Auto-scales to structure dimensions; optional user override |
-| Distributed loads | Parabolic curves via high-resolution step intervals |
-
----
-
-## Advanced Constraints
-
-### Rigid Diaphragm
-
-Enforces rigid floor-slab behavior — nodes sharing the same Y-elevation share a single master UX DOF while retaining independent UY and RZ.
-
-### Axially Rigid Members
-
-Members tagged `is_axially_rigid="true"` couple all DOFs (UX, UY, RZ) between end nodes via a Union-Find (DSU) structure, simulating rigid links or composite elements.
-
-### DOF Assignment Strategy
-
-| Level | Scope | Shared DOFs |
-|---|---|---|
-| Rigid Diaphragm Masters | Per floor (same Y) | UX only |
-| Axially Rigid Masters | Per connected component | UX, UY, RZ |
-| Independent Nodes | All others | UX, UY, RZ (unique) |
-
-Slave nodes inherit their master's DOF indices, naturally reducing system size.
-
----
-
-## Project Structure
-
-```
+```text
 src/
-├── main.py                 # Entry point & run_analysis()
-├── parser.py               # XML model parsing
-├── dof_optimizer.py        # DOF numbering (RCM & Union-Find)
-├── matrix_assembly.py      # Stiffness matrix assembly
-├── banded_solver.py        # Custom banded linear solver
-├── modal_solver.py         # Modal analysis & dynamic response
-├── post_processor.py       # Results & reporting
-├── element_physics.py      # Element stiffness calculations
-├── structural_validator.py # Model validation
-├── math_utils.py           # Organic linear algebra utilities
-└── visualizer.py           # Deformed shape & NVM diagrams
+  flat module layout for parser, ModelBuilder, controller, validation
+  assembly, DOF, matrix, modal, RSA, and Newmark solver modules
+  result containers, post-processing, educational export, and visualization
+  ui/ Streamlit dashboard modules
 
-data/                       # Input XML files
-├── Assignment_4_Q2a.xml
-├── Assignment_4_Q2b.xml
-└── SCHEMA.xml              # XML schema documentation
-
-results/                    # Generated reports and PNG plots
-tests/                      # Unit and integration test suite
+data/      XML examples and schema material
+tests/     focused unit, integration, UI-helper, and visualization tests
+results/   generated reports and figures when analyses are run locally
 ```

@@ -5,7 +5,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from dof_optimizer import DOFOptimizer
 from matrix_assembly import DynamicAssembler, MatrixAssembler
-from parser import Element, LoadCase, LumpedMass, Material, Node, Section, StructuralModel, Support
+from model_builder import ModelBuilder
+from parser import Element, LoadCase, LumpedMass, Material, Node, Section, StructuralModel, Support, XMLParser
 
 
 def _cantilever(density=0.0, tip_mass=0.0, unit_system="kN_m_tonne"):
@@ -109,3 +110,22 @@ def test_dynamic_assembly_data_contains_phase4_ready_fields():
     assert data.unit_system == "kN_m_tonne"
     assert data.condensed_massless_dofs == []
     assert data.active_dynamic_dofs == [0, 1, 2]
+
+
+def test_parsed_lumped_mass_contributes_to_mass_matrix(tmp_path):
+    """Verify XML round-tripped nodal mass is scattered to dynamic DOFs."""
+    builder = ModelBuilder(name="parsed_mass")
+    builder.add_material("m", E=10.0, density=0.0)
+    builder.add_section("s", A=2.0, I=1.0)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 4.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m", "s")
+    builder.add_support(1, restrain_ux=True, restrain_uy=True, restrain_rz=True)
+    builder.model.load_cases = {"LC1": LoadCase("LC1")}
+    builder.add_lumped_mass(2, mass_ux=4.0, mass_uy=6.0, inertia_rz=1.5)
+
+    xml_path = tmp_path / "parsed_mass.xml"
+    builder.export_xml(xml_path)
+    data = _assemble(XMLParser(xml_path).parse())
+
+    assert [data.M[i][i] for i in range(3)] == [4.0, 6.0, 1.5]
