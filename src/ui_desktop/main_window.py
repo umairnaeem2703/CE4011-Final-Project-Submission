@@ -5,6 +5,10 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import ttk
 
+from .canvas import ModelCanvas
+from .property_panel import PropertyPanel
+from .template_dialog import ask_new_model
+
 
 TOOLBAR_ACTIONS = ("New", "Open XML", "Save XML", "Validate", "Run Analysis", "Results")
 DRAWING_TOOLS = (
@@ -34,7 +38,7 @@ class DesktopMainWindow:
         self._configure_grid()
         self._build_toolbar()
         self._build_left_tool_panel()
-        self._build_canvas_placeholder()
+        self._build_model_canvas()
         self._build_property_panel()
         self._build_status_panel()
 
@@ -75,42 +79,16 @@ class DesktopMainWindow:
 
         panel.columnconfigure(0, minsize=140)
 
-    def _build_canvas_placeholder(self) -> None:
-        frame = ttk.Frame(self.root, padding=4)
-        frame.grid(row=1, column=1, sticky="nsew", pady=4)
-        frame.columnconfigure(0, weight=1)
-        frame.rowconfigure(0, weight=1)
-
-        canvas = tk.Canvas(frame, background="white", highlightthickness=1, highlightbackground="#b8b8b8")
-        canvas.grid(row=0, column=0, sticky="nsew")
-        canvas.create_text(
-            600,
-            320,
-            text="2D model canvas placeholder",
-            fill="#555555",
-            font=("Segoe UI", 16),
-        )
-        canvas.create_text(
-            600,
-            350,
-            text="Drawing tools will create nodes, members, supports, loads, masses, and diaphragms here.",
-            fill="#777777",
-            font=("Segoe UI", 10),
-        )
-        self.canvas = canvas
+    def _build_model_canvas(self) -> None:
+        self.model_canvas = ModelCanvas(self.root, status_callback=self._write_status)
+        self.model_canvas.grid(row=1, column=1, sticky="nsew", pady=4)
+        self.canvas = self.model_canvas.canvas
 
     def _build_property_panel(self) -> None:
-        panel = ttk.LabelFrame(self.root, text="Properties / Settings", padding=8)
-        panel.grid(row=1, column=2, sticky="nse", padx=(4, 8), pady=4)
-        panel.columnconfigure(0, minsize=220)
-
-        ttk.Label(panel, text="No object selected.").grid(row=0, column=0, sticky="w")
-        ttk.Separator(panel).grid(row=1, column=0, sticky="ew", pady=8)
-        ttk.Label(panel, text="Model and analysis settings will appear here.", wraplength=210).grid(
-            row=2,
-            column=0,
-            sticky="nw",
-        )
+        self.property_panel = PropertyPanel(self.root, self.model_canvas, status_callback=self._write_status)
+        self.property_panel.grid(row=1, column=2, sticky="nse", padx=(4, 8), pady=4)
+        self.property_panel.columnconfigure(0, minsize=90)
+        self.property_panel.columnconfigure(1, minsize=130)
 
     def _build_status_panel(self) -> None:
         panel = ttk.Frame(self.root, padding=(8, 4))
@@ -124,10 +102,22 @@ class DesktopMainWindow:
         self.log.configure(state="disabled")
 
     def _select_tool(self, name: str) -> None:
+        self.model_canvas.set_active_tool(name)
         self._write_status(f"Selected tool: {name}")
 
     def _log_action(self, name: str) -> None:
+        if name == "New":
+            self._new_model()
+            return
         self._write_status(f"{name} action is not wired yet.")
+
+    def _new_model(self) -> None:
+        builder = ask_new_model(self.root)
+        if builder is None:
+            self._write_status("New model canceled.")
+            return
+        self.model_canvas.load_builder(builder)
+        self._write_status(f"New model created: {builder.model.name}.")
 
     def _write_status(self, message: str) -> None:
         self.status_message.set(message)
