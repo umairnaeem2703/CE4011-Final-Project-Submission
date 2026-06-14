@@ -33,12 +33,13 @@ class ShearFrameSettings:
     base_support_type: str
     lumped_mass_per_floor: float
     diaphragm_per_floor: bool
+    unit_system: str
 
 
 class NewModelDialog(tk.Toplevel):
-    """Modal dialog that creates a ModelBuilder-backed starter model."""
+    """Modal wizard-style dialog that creates a ModelBuilder-backed model."""
 
-    TEMPLATE_OPTIONS = ("Blank", "2D Frame-Truss", "2D Shear Frame")
+    TEMPLATE_OPTIONS = ("2D General Structure", "2D Shear Frame")
 
     def __init__(self, parent) -> None:
         super().__init__(parent)
@@ -47,7 +48,9 @@ class NewModelDialog(tk.Toplevel):
         self.result = None
         self.error_message = tk.StringVar(value="")
 
-        self.template_var = tk.StringVar(value="Blank")
+        self.project_name_var = tk.StringVar(value="Desktop Model")
+        self.unit_system_var = tk.StringVar(value="kN_m_tonne")
+        self.template_var = tk.StringVar(value="2D General Structure")
         self.stories_var = tk.StringVar(value="1")
         self.bays_var = tk.StringVar(value="1")
         self.story_height_var = tk.StringVar(value="3.0")
@@ -70,42 +73,52 @@ class NewModelDialog(tk.Toplevel):
         frame.grid(row=0, column=0, sticky="nsew")
         frame.columnconfigure(1, weight=1)
 
-        ttk.Label(frame, text="Template").grid(row=0, column=0, sticky="w", pady=2)
+        setup = ttk.LabelFrame(frame, text="Step 1: Units / Project Setup", padding=8)
+        setup.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        setup.columnconfigure(1, weight=1)
+        self._add_entry(setup, 0, "Project name", self.project_name_var)
+        self._add_entry(setup, 1, "Units", self.unit_system_var)
+
+        model_type = ttk.LabelFrame(frame, text="Step 2: Model Type", padding=8)
+        model_type.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        model_type.columnconfigure(1, weight=1)
+        ttk.Label(model_type, text="Template").grid(row=0, column=0, sticky="w", pady=2)
         template_box = ttk.Combobox(
-            frame,
+            model_type,
             textvariable=self.template_var,
             values=self.TEMPLATE_OPTIONS,
             state="readonly",
-            width=18,
+            width=22,
         )
         template_box.grid(row=0, column=1, sticky="ew", pady=2)
         template_box.bind("<<ComboboxSelected>>", lambda event: self._sync_template_fields())
 
-        self.shear_frame = ttk.LabelFrame(frame, text="2D Shear Frame", padding=8)
-        self.shear_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(10, 6))
-        self.shear_frame.columnconfigure(1, weight=1)
+        defaults = ttk.LabelFrame(frame, text="Step 3: Default Properties", padding=8)
+        defaults.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        defaults.columnconfigure(1, weight=1)
+        self._add_entry(defaults, 0, "Default material", self.material_var)
+        self._add_entry(defaults, 1, "Column section", self.column_section_var)
+        self._add_entry(defaults, 2, "Beam/member section", self.beam_section_var)
 
-        self._add_entry(self.shear_frame, 0, "Stories", self.stories_var)
-        self._add_entry(self.shear_frame, 1, "Bays", self.bays_var)
-        self._add_entry(self.shear_frame, 2, "Story height", self.story_height_var)
-        self._add_entry(self.shear_frame, 3, "Bay width", self.bay_width_var)
-        self._add_entry(self.shear_frame, 4, "Default material", self.material_var)
-        self._add_entry(self.shear_frame, 5, "Column section", self.column_section_var)
-        self._add_entry(self.shear_frame, 6, "Beam section", self.beam_section_var)
-
-        ttk.Label(self.shear_frame, text="Base support").grid(row=7, column=0, sticky="w", pady=2)
+        self.geometry_frame = ttk.LabelFrame(frame, text="Step 4: Geometry / Template Settings", padding=8)
+        self.geometry_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 8))
+        self.geometry_frame.columnconfigure(1, weight=1)
+        self._add_entry(self.geometry_frame, 0, "Stories", self.stories_var)
+        self._add_entry(self.geometry_frame, 1, "Bays", self.bays_var)
+        self._add_entry(self.geometry_frame, 2, "Story height", self.story_height_var)
+        self._add_entry(self.geometry_frame, 3, "Bay width", self.bay_width_var)
+        ttk.Label(self.geometry_frame, text="Base support").grid(row=4, column=0, sticky="w", pady=2)
         support_box = ttk.Combobox(
-            self.shear_frame,
+            self.geometry_frame,
             textvariable=self.support_var,
             values=("fixed", "pin", "roller_x", "roller_y"),
             state="readonly",
             width=14,
         )
-        support_box.grid(row=7, column=1, sticky="ew", pady=2)
-
-        self._add_entry(self.shear_frame, 8, "Mass/floor", self.mass_var)
-        ttk.Checkbutton(self.shear_frame, text="Diaphragm per floor", variable=self.diaphragm_var).grid(
-            row=9,
+        support_box.grid(row=4, column=1, sticky="ew", pady=2)
+        self._add_entry(self.geometry_frame, 5, "Mass/floor", self.mass_var)
+        ttk.Checkbutton(self.geometry_frame, text="Diaphragm per floor", variable=self.diaphragm_var).grid(
+            row=6,
             column=0,
             columnspan=2,
             sticky="w",
@@ -113,7 +126,7 @@ class NewModelDialog(tk.Toplevel):
         )
 
         ttk.Label(frame, textvariable=self.error_message, foreground="#a00000").grid(
-            row=2,
+            row=4,
             column=0,
             columnspan=2,
             sticky="w",
@@ -121,17 +134,17 @@ class NewModelDialog(tk.Toplevel):
         )
 
         actions = ttk.Frame(frame)
-        actions.grid(row=3, column=0, columnspan=2, sticky="e")
+        actions.grid(row=5, column=0, columnspan=2, sticky="e")
         ttk.Button(actions, text="Cancel", command=self._cancel).grid(row=0, column=0, padx=(0, 6))
         ttk.Button(actions, text="Create", command=self._create).grid(row=0, column=1)
 
     def _add_entry(self, parent, row: int, label: str, variable: tk.StringVar) -> None:
         ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=2)
-        ttk.Entry(parent, textvariable=variable, width=14).grid(row=row, column=1, sticky="ew", pady=2)
+        ttk.Entry(parent, textvariable=variable, width=16).grid(row=row, column=1, sticky="ew", pady=2)
 
     def _sync_template_fields(self) -> None:
         state = "normal" if self.template_var.get() == "2D Shear Frame" else "disabled"
-        for child in self.shear_frame.winfo_children():
+        for child in self.geometry_frame.winfo_children():
             try:
                 child.configure(state=state)
             except tk.TclError:
@@ -139,17 +152,18 @@ class NewModelDialog(tk.Toplevel):
 
     def _create(self) -> None:
         try:
-            template = self.template_var.get()
-            if template == "Blank":
-                self.result = create_blank_builder()
-            elif template == "2D Frame-Truss":
-                self.result = create_frame_truss_builder()
+            if self.template_var.get() == "2D General Structure":
+                self.result = create_general_structure_builder(
+                    self.project_name_var.get().strip() or "2D General Structure",
+                    self.unit_system_var.get().strip() or "kN_m_tonne",
+                    self.material_var.get().strip() or "M1",
+                    self.beam_section_var.get().strip() or "S1",
+                )
             else:
                 self.result = create_shear_frame_builder(self._read_shear_frame_settings())
         except ValueError as exc:
             self.error_message.set(str(exc))
             return
-
         self.destroy()
 
     def _read_shear_frame_settings(self) -> ShearFrameSettings:
@@ -159,7 +173,6 @@ class NewModelDialog(tk.Toplevel):
         bay_width = _positive_float(self.bay_width_var.get(), "Bay width")
         mass_text = self.mass_var.get().strip()
         mass = _nonnegative_float(mass_text, "Mass/floor") if mass_text else 0.0
-
         return ShearFrameSettings(
             stories=stories,
             bays=bays,
@@ -171,6 +184,7 @@ class NewModelDialog(tk.Toplevel):
             base_support_type=self.support_var.get(),
             lumped_mass_per_floor=mass,
             diaphragm_per_floor=self.diaphragm_var.get(),
+            unit_system=self.unit_system_var.get().strip() or "kN_m_tonne",
         )
 
     def _cancel(self) -> None:
@@ -184,25 +198,17 @@ def ask_new_model(parent):
     return dialog.result
 
 
-def create_blank_builder():
+def create_general_structure_builder(name: str, unit_system: str, material_id: str, section_id: str):
     ModelBuilder = _load_model_builder()
-    builder = ModelBuilder(name="Blank Model")
-    builder.add_material("M1", E=1.0)
-    builder.add_section("S1", A=1.0, I=1.0)
-    return builder
-
-
-def create_frame_truss_builder():
-    ModelBuilder = _load_model_builder()
-    builder = ModelBuilder(name="2D Frame-Truss Model")
-    builder.add_material("M1", E=1.0)
-    builder.add_section("S1", A=1.0, I=1.0)
+    builder = ModelBuilder(name=name, unit_system=unit_system)
+    builder.add_material(material_id, E=1.0)
+    builder.add_section(section_id, A=1.0, I=1.0)
     return builder
 
 
 def create_shear_frame_builder(settings: ShearFrameSettings):
     ModelBuilder = _load_model_builder()
-    builder = ModelBuilder(name="2D Shear Frame")
+    builder = ModelBuilder(name="2D Shear Frame", unit_system=settings.unit_system)
     builder.add_material(settings.material_id, E=1.0)
     builder.add_section(settings.column_section_id, A=1.0, I=1.0)
     builder.add_section(settings.beam_section_id, A=1.0, I=1.0)
