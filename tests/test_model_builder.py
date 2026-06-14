@@ -1,5 +1,6 @@
 import os
 import sys
+import xml.etree.ElementTree as ET
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
@@ -89,7 +90,7 @@ def test_model_builder_xml_export_round_trips_counts(tmp_path):
     builder.add_node(1, 0.0, 0.0)
     builder.add_node(2, 3.0, 0.0)
     builder.add_element("e1", "frame", 1, 2, "m1", "s1", release_end=True)
-    builder.add_support(1, restrain_ux=True, restrain_uy=True, restrain_rz=True)
+    builder.add_support(1, restrain_ux=True, restrain_uy=True, restrain_rz=True, settlement_rz=0.01)
     builder.add_nodal_load("LC1", 2, fy=-10.0)
 
     xml_path = tmp_path / "round_trip.xml"
@@ -112,3 +113,28 @@ def test_model_builder_xml_export_round_trips_counts(tmp_path):
         len(model.sections),
         len(model.load_cases),
     )
+    assert parsed.supports[1].settlement_rz == pytest.approx(model.supports[1].settlement_rz)
+
+
+def test_model_builder_xml_export_round_trips_lumped_mass(tmp_path):
+    builder = ModelBuilder(name="Mass Round Trip")
+    builder.add_material("m1", E=200000.0)
+    builder.add_section("s1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+    builder.add_support(1, restrain_ux=True, restrain_uy=True, restrain_rz=True)
+    builder.add_lumped_mass(2, mass_ux=10.0, mass_uy=12.5, inertia_rz=0.75)
+
+    xml_path = tmp_path / "lumped_mass_round_trip.xml"
+    builder.export_xml(xml_path)
+    mass_el = ET.parse(xml_path).getroot().find("./lumped_masses/lumped_mass")
+    parsed = XMLParser(xml_path).parse()
+    parsed_mass = parsed.lumped_masses[2]
+
+    assert mass_el.attrib == {"node": "2", "mass_ux": "10", "mass_uy": "12.5", "inertia_rz": "0.75"}
+    assert len(parsed.lumped_masses) == 1
+    assert parsed_mass.node.id == 2
+    assert parsed_mass.mass_ux == pytest.approx(10.0)
+    assert parsed_mass.mass_uy == pytest.approx(12.5)
+    assert parsed_mass.inertia_rz == pytest.approx(0.75)

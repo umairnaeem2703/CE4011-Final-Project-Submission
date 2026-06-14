@@ -247,6 +247,25 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
     for node in model.nodes.values():
         ET.SubElement(nodes_el, "node", {"id": str(node.id), "x": _fmt(node.x), "y": _fmt(node.y)})
 
+    if model.lumped_masses:
+        lumped_masses_el = ET.SubElement(root, "lumped_masses")
+        for node_id, mass in model.lumped_masses.items():
+            if isinstance(mass, (int, float)):
+                attrs = {
+                    "node": str(node_id),
+                    "mass_ux": _fmt(float(mass)),
+                    "mass_uy": _fmt(float(mass)),
+                    "inertia_rz": _fmt(0.0),
+                }
+            else:
+                attrs = {
+                    "node": str(mass.node.id),
+                    "mass_ux": _fmt(mass.mass_ux),
+                    "mass_uy": _fmt(mass.mass_uy),
+                    "inertia_rz": _fmt(mass.inertia_rz),
+                }
+            ET.SubElement(lumped_masses_el, "lumped_mass", attrs)
+
     elements_el = ET.SubElement(root, "elements")
     for element in model.elements.values():
         element_el = ET.SubElement(

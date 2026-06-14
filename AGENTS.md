@@ -18,6 +18,15 @@ input tables/XML/templates -> StructuralModel -> DOF/K/M/C/F assembly -> solvers
 ```
 Solvers must receive matrices/vectors and must not branch by structure type. Shear frames, cantilevers, frames, trusses, and benchmarks are models/templates, not separate solver families.
 
+## Input Workflow Architecture
+- Preserve the current flat `src/` layout unless explicitly asked to refactor.
+- Do not create `src/model/`, `src/io/`, `src/assembly/`, or `src/solvers/` package folders unless explicitly requested.
+- `ModelBuilder` is the internal model creation API for programmatic, table, template, and future graphical input.
+- Future graphical/table input should call `ModelBuilder` rather than directly constructing parser dataclasses.
+- XML is the backend save/load and reproducibility format; students should not be expected to manually write XML.
+- `Controller` is a thin coordination layer only. It must not contain solver math or Streamlit-specific code.
+- Reuse `StructuralValidator` for model validation; do not replace validation with parallel logic.
+
 ## Dependency Rules
 - Core numerical solver: Python standard library only unless approved.
 - Visualization: matplotlib allowed.
@@ -28,7 +37,9 @@ Solvers must receive matrices/vectors and must not branch by structure type. She
 ## Layer Rules
 - `StructuralModel` stores/validates data only; it does not solve or plot.
 - UI collects input, validates fields, builds model, calls solver, displays results; no solver math in UI.
+- View/UI code and `Controller` must not contain solver math.
 - Plotting consumes model + result objects only.
+- Solvers operate on assembled matrices/vectors and return result objects/intermediate data.
 - Keep solver, model, IO, UI, and visualization separate.
 
 ## Required Outputs
