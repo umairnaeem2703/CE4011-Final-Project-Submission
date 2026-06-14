@@ -2,28 +2,43 @@
 
 from __future__ import annotations
 
-try:
-    from ground_motion import GroundMotionConfig
+import sys
+from pathlib import Path
 
+if __package__ in (None, ""):  # pragma: no cover - direct `streamlit run src/ui/app.py`
+    src_root = Path(__file__).resolve().parents[1]
+    if str(src_root) not in sys.path:
+        sys.path.insert(0, str(src_root))
+
+try:
     from .dynamic_analysis import (
         run_modal_analysis_into_state,
         run_response_spectrum_analysis_into_state,
         run_time_history_analysis_into_state,
     )
     from .model_input import build_model_from_tables, build_model_from_xml_upload, mark_model_dirty, store_model_in_state
+    from .results_display import render_dynamic_results, render_static_results
     from .state import NAVIGATION_SECTIONS, initialize_session_state
     from .static_analysis import load_case_ids, run_static_analysis_into_state
+    from .visualization_display import (
+        render_dynamic_visualizations,
+        render_model_preview,
+        render_static_visualizations,
+    )
 except ImportError:  # pragma: no cover - supports direct `streamlit run src/ui/app.py`
-    from ground_motion import GroundMotionConfig
-
     from dynamic_analysis import (
         run_modal_analysis_into_state,
         run_response_spectrum_analysis_into_state,
         run_time_history_analysis_into_state,
     )
     from model_input import build_model_from_tables, build_model_from_xml_upload, mark_model_dirty, store_model_in_state
+    from results_display import render_dynamic_results, render_static_results
     from state import NAVIGATION_SECTIONS, initialize_session_state
     from static_analysis import load_case_ids, run_static_analysis_into_state
+    from visualization_display import render_dynamic_visualizations, render_model_preview, render_static_visualizations
+
+
+DEFAULT_GROUND_MOTION_PATH = Path(__file__).resolve().parents[2] / "data" / "ground_motion.txt"
 
 
 def render_shell(st_module) -> None:
@@ -49,8 +64,10 @@ def render_shell(st_module) -> None:
         render_static_analysis(st_module)
     elif selected_section == "Dynamic Analysis":
         render_dynamic_analysis(st_module)
+    elif selected_section == "Results":
+        render_results_section(st_module)
     else:
-        st_module.info("Select or build a model before running analysis.")
+        render_visualization_section(st_module)
 
 
 def render_model_input(st_module) -> None:
@@ -121,15 +138,8 @@ def render_static_analysis(st_module) -> None:
 
     results = st_module.session_state.get("static_results")
     if results is not None:
-        st_module.subheader("Static Results")
-        st_module.caption(f"Load case: {results.load_case_id}")
-        st_module.write(
-            {
-                "nodes": len(results.displacements),
-                "reactions": len(results.reactions),
-                "elements": len(results.element_forces),
-            }
-        )
+        render_static_results(st_module, results)
+        render_static_visualizations(st_module, model, results)
 
 
 def render_dynamic_analysis(st_module) -> None:
@@ -179,7 +189,11 @@ def render_dynamic_analysis(st_module) -> None:
                 _show_dynamic_run_message(st_module, result, "Response spectrum analysis complete.")
         _render_rsa_summary(st_module)
     else:
-        ground_motion_path = st_module.text_input("Ground motion file", key="tha_ground_motion_path")
+        ground_motion_path = st_module.text_input(
+            "Ground motion file",
+            value=_default_ground_motion_path(),
+            key="tha_ground_motion_path",
+        )
         input_format = st_module.selectbox("Ground motion format", ("time_acceleration", "acceleration_only"), key="tha_input_format")
         time_step = st_module.number_input("Time step", min_value=0.0, value=0.01, step=0.01, key="tha_time_step")
         acceleration_unit = st_module.selectbox("Acceleration unit", ("m/s2", "cm/s2", "mm/s2", "g"), key="tha_acceleration_unit")
@@ -188,18 +202,51 @@ def render_dynamic_analysis(st_module) -> None:
         if st_module.button("Run Time History"):
             config = None
             if ground_motion_path:
-                config = GroundMotionConfig(
-                    file_path=ground_motion_path,
-                    input_format=input_format,
-                    time_step_dt=time_step if input_format == "acceleration_only" else None,
-                    acceleration_column=0 if input_format == "acceleration_only" else 1,
-                    acceleration_unit=acceleration_unit,
-                    scale_factor=scale_factor,
-                    excitation_direction=direction,
+                config = _build_ground_motion_config(
+                    ground_motion_path,
+                    input_format,
+                    time_step,
+                    acceleration_unit,
+                    scale_factor,
+                    direction,
                 )
             result = run_time_history_analysis_into_state(st_module.session_state, config, damping_ratio, mass_matrix_type)
             _show_dynamic_run_message(st_module, result, "Time history analysis complete.")
         _render_tha_summary(st_module)
+
+
+def render_results_section(st_module) -> None:
+    """Render cached analysis results."""
+    state = st_module.session_state
+    static_results = state.get("static_results")
+    modal_results = state.get("modal_results")
+    rsa_results = state.get("rsa_results")
+    tha_results = state.get("tha_results")
+    if static_results is None and modal_results is None and rsa_results is None and tha_results is None:
+        st_module.info("Run an analysis to display results.")
+        return
+    if static_results is not None:
+        render_static_results(st_module, static_results)
+    if modal_results is not None or rsa_results is not None or tha_results is not None:
+        render_dynamic_results(st_module, modal_results, rsa_results, tha_results)
+
+
+def render_visualization_section(st_module) -> None:
+    """Render model and cached result visualizations."""
+    state = st_module.session_state
+    model = state.get("model")
+    if model is None:
+        st_module.info("Build or load a model before displaying plots.")
+        return
+    render_model_preview(st_module, model)
+    render_static_visualizations(st_module, model, state.get("static_results"))
+    render_dynamic_visualizations(
+        st_module,
+        model,
+        modal_results=state.get("modal_results"),
+        rsa_results=state.get("rsa_results"),
+        tha_results=state.get("tha_results"),
+    )
 
 
 def _show_dynamic_run_message(st_module, result, success_message: str) -> None:
@@ -209,6 +256,33 @@ def _show_dynamic_run_message(st_module, result, success_message: str) -> None:
         st_module.error(result.error)
 
 
+def _default_ground_motion_path() -> str:
+    if DEFAULT_GROUND_MOTION_PATH.exists():
+        return str(DEFAULT_GROUND_MOTION_PATH)
+    return ""
+
+
+def _build_ground_motion_config(
+    file_path: str,
+    input_format: str,
+    time_step: float,
+    acceleration_unit: str,
+    scale_factor: float,
+    direction: str,
+):
+    from ground_motion import GroundMotionConfig
+
+    return GroundMotionConfig(
+        file_path=file_path,
+        input_format=input_format,
+        time_step_dt=time_step if input_format == "acceleration_only" else None,
+        acceleration_column=0 if input_format == "acceleration_only" else 1,
+        acceleration_unit=acceleration_unit,
+        scale_factor=scale_factor,
+        excitation_direction=direction,
+    )
+
+
 def _render_modal_summary(st_module) -> None:
     error = st_module.session_state.get("modal_analysis_error")
     if error:
@@ -216,8 +290,8 @@ def _render_modal_summary(st_module) -> None:
         return
     results = st_module.session_state.get("modal_results")
     if results is not None:
-        st_module.subheader("Modal Results")
-        st_module.write({"modes": results.num_modes_extracted, "periods": results.periods})
+        render_dynamic_results(st_module, modal_results=results)
+        render_dynamic_visualizations(st_module, st_module.session_state.get("model"), modal_results=results)
 
 
 def _render_rsa_summary(st_module) -> None:
@@ -227,8 +301,8 @@ def _render_rsa_summary(st_module) -> None:
         return
     results = st_module.session_state.get("rsa_results")
     if results is not None:
-        st_module.subheader("Response Spectrum Results")
-        st_module.write({"method": results.combination_method, "base_shear": results.combined_base_shear})
+        render_dynamic_results(st_module, rsa_results=results)
+        render_dynamic_visualizations(st_module, st_module.session_state.get("model"), rsa_results=results)
 
 
 def _render_tha_summary(st_module) -> None:
@@ -238,8 +312,8 @@ def _render_tha_summary(st_module) -> None:
         return
     results = st_module.session_state.get("tha_results")
     if results is not None:
-        st_module.subheader("Time History Results")
-        st_module.write({"steps": results.num_steps, "peak_base_shear": results.peak_base_shear})
+        render_dynamic_results(st_module, tha_results=results)
+        render_dynamic_visualizations(st_module, st_module.session_state.get("model"), tha_results=results)
 
 
 def _parse_spectrum_text(text: str) -> tuple[list[float], list[float], str | None]:

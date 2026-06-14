@@ -6,10 +6,8 @@ from collections.abc import MutableMapping
 from dataclasses import dataclass
 
 from dof_optimizer import DOFOptimizer
-from ground_motion import GroundMotionConfig, read_ground_motion
 from matrix_assembly import DynamicAssembler, MatrixAssembler
 from modal_solver import ModalSolver, ModalSolverError
-from newmark_solver import NewmarkSolverError, NewmarkTimeHistorySolver
 from parser import StructuralModel
 from results import DynamicAssemblyData, ModalResults, RSAResults, THAResults
 from rsa_solver import RSASolverError, ResponseSpectrumSolver
@@ -90,6 +88,9 @@ def run_time_history_analysis(
         return DynamicAnalysisRun(None, "Provide a ground motion before running time history analysis.")
     if not _valid_damping(damping_ratio):
         return DynamicAnalysisRun(None, "Enter a damping ratio between 0 and 1.")
+
+    from ground_motion import read_ground_motion
+    from newmark_solver import NewmarkSolverError, NewmarkTimeHistorySolver
 
     try:
         data = _assemble_dynamic_data(model, mass_matrix_type)
