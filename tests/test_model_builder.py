@@ -5,7 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from model_builder import ModelBuilder
 from banded_solver import UnstableStructureError
-from parser import StructuralModel
+from parser import StructuralModel, XMLParser
 import pytest
 
 
@@ -80,3 +80,35 @@ def test_model_builder_validate_false_returns_incomplete_model():
 
     assert model is builder.model
     assert model.supports == {}
+
+
+def test_model_builder_xml_export_round_trips_counts(tmp_path):
+    builder = ModelBuilder(name="Round Trip")
+    builder.add_material("m1", E=200000.0, alpha=1.2e-5, density=7.85)
+    builder.add_section("s1", A=0.02, I=0.0001, d=0.3)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1", release_end=True)
+    builder.add_support(1, restrain_ux=True, restrain_uy=True, restrain_rz=True)
+    builder.add_nodal_load("LC1", 2, fy=-10.0)
+
+    xml_path = tmp_path / "round_trip.xml"
+    builder.export_xml(xml_path)
+    parsed = XMLParser(xml_path).parse()
+    model = builder.model
+
+    assert (
+        len(parsed.nodes),
+        len(parsed.elements),
+        len(parsed.supports),
+        len(parsed.materials),
+        len(parsed.sections),
+        len(parsed.load_cases),
+    ) == (
+        len(model.nodes),
+        len(model.elements),
+        len(model.supports),
+        len(model.materials),
+        len(model.sections),
+        len(model.load_cases),
+    )

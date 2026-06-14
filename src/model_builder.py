@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+import xml.etree.ElementTree as ET
 
 from parser import (
     Element,
@@ -15,6 +16,7 @@ from parser import (
     Section,
     StructuralModel,
     Support,
+    TemperatureL,
     UniformlyDL,
 )
 from structural_validator import StructuralValidator
@@ -169,6 +171,9 @@ class ModelBuilder:
             StructuralValidator(self.model).validate()
         return self.model
 
+    def export_xml(self, filepath: str) -> None:
+        export_model_to_xml(self.model, filepath)
+
     def _load_case(self, id: str, name: str = "") -> LoadCase:
         if id not in self.model.load_cases:
             self.model.load_cases[id] = LoadCase(id=id, name=name)
@@ -211,4 +216,140 @@ class ModelBuilder:
     def _mark_dirty(self) -> None:
         if hasattr(self.model, "mark_dirty"):
             self.model.mark_dirty()
+
+
+def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
+    """Write a StructuralModel using the XMLParser-compatible schema."""
+    root = ET.Element("structural_model", {"name": model.name, "unit_system": model.unit_system})
+
+    materials_el = ET.SubElement(root, "materials")
+    for material in model.materials.values():
+        ET.SubElement(
+            materials_el,
+            "material",
+            {
+                "id": material.id,
+                "E": _fmt(material.E),
+                "alpha": _fmt(material.alpha),
+                "density": _fmt(material.density),
+            },
+        )
+
+    sections_el = ET.SubElement(root, "sections")
+    for section in model.sections.values():
+        ET.SubElement(
+            sections_el,
+            "section",
+            {"id": section.id, "A": _fmt(section.A), "I": _fmt(section.I), "d": _fmt(section.d)},
+        )
+
+    nodes_el = ET.SubElement(root, "nodes")
+    for node in model.nodes.values():
+        ET.SubElement(nodes_el, "node", {"id": str(node.id), "x": _fmt(node.x), "y": _fmt(node.y)})
+
+    elements_el = ET.SubElement(root, "elements")
+    for element in model.elements.values():
+        element_el = ET.SubElement(
+            elements_el,
+            element.type,
+            {
+                "id": element.id,
+                "node_i": str(element.node_i.id),
+                "node_j": str(element.node_j.id),
+                "material": element.material.id,
+                "section": element.section.id,
+            },
+        )
+        if element.is_axially_rigid:
+            element_el.set("is_axially_rigid", "true")
+        if element.release_start or element.release_end:
+            releases_el = ET.SubElement(element_el, "releases")
+            if element.release_start:
+                ET.SubElement(releases_el, "release", {"end": "i", "dof": "Mz"})
+            if element.release_end:
+                ET.SubElement(releases_el, "release", {"end": "j", "dof": "Mz"})
+
+    if model.diaphragm_ux_groups:
+        diaphragms_el = ET.SubElement(root, "diaphragms")
+        for group_id, node_ids in model.diaphragm_ux_groups.items():
+            ET.SubElement(
+                diaphragms_el,
+                "diaphragm",
+                {"id": group_id, "nodes": ",".join(str(node_id) for node_id in node_ids)},
+            )
+
+    boundaries_el = ET.SubElement(root, "boundary_conditions")
+    for support in model.supports.values():
+        attrs = {
+            "node": str(support.node.id),
+            "ux": _bool_int(support.restrain_ux),
+            "uy": _bool_int(support.restrain_uy),
+            "rz": _bool_int(support.restrain_rz),
+        }
+        if support.settlement_ux:
+            attrs["settlement_ux"] = _fmt(support.settlement_ux)
+        if support.settlement_uy:
+            attrs["settlement_uy"] = _fmt(support.settlement_uy)
+        if support.settlement_rz:
+            attrs["settlement_rz"] = _fmt(support.settlement_rz)
+        ET.SubElement(boundaries_el, "support", attrs)
+
+    if model.load_cases:
+        load_cases_el = ET.SubElement(root, "load_cases")
+        for load_case in model.load_cases.values():
+            lc_attrs = {"id": load_case.id}
+            if load_case.name:
+                lc_attrs["name"] = load_case.name
+            lc_el = ET.SubElement(load_cases_el, "load_case", lc_attrs)
+            for load in load_case.loads:
+                if isinstance(load, NodalLoad):
+                    ET.SubElement(
+                        lc_el,
+                        "point_load",
+                        {
+                            "node": str(load.node.id),
+                            "fx": _fmt(load.fx),
+                            "fy": _fmt(load.fy),
+                            "mz": _fmt(load.mz),
+                        },
+                    )
+                elif isinstance(load, UniformlyDL):
+                    ET.SubElement(
+                        lc_el,
+                        "member_udl",
+                        {"element": load.element.id, "wx": _fmt(load.wx), "wy": _fmt(load.wy)},
+                    )
+                elif isinstance(load, PointLoad):
+                    ET.SubElement(
+                        lc_el,
+                        "member_point_load",
+                        {
+                            "element": load.element.id,
+                            "position": _fmt(load.position),
+                            "fx": _fmt(load.fx),
+                            "fy": _fmt(load.fy),
+                        },
+                    )
+                elif isinstance(load, TemperatureL):
+                    _append_temperature_load(lc_el, load)
+
+    ET.indent(root)
+    ET.ElementTree(root).write(filepath, encoding="utf-8", xml_declaration=True)
+
+
+def _append_temperature_load(parent: ET.Element, load: TemperatureL) -> None:
+    attrs = {"element": load.element.id}
+    if load.Tu == load.Tb:
+        attrs.update({"type": "uniform", "delta_T": _fmt(load.Tu)})
+    else:
+        attrs.update({"type": "combined", "T_top": _fmt(load.Tu), "T_bottom": _fmt(load.Tb)})
+    ET.SubElement(parent, "temperature_load", attrs)
+
+
+def _bool_int(value: bool) -> str:
+    return "1" if value else "0"
+
+
+def _fmt(value: float) -> str:
+    return format(value, ".12g")
 
