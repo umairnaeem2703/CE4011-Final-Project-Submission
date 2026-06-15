@@ -48,6 +48,7 @@ Rules:
 * 4C0 ModelBuilder temperature load helper
 * 4C temperature load UI
 * 4C1 Direct Stiffness thermal depth handling
+* 4R10 member property assignment/editing
 
 Do not break these.
 

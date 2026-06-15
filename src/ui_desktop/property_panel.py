@@ -27,6 +27,9 @@ class PropertyPanel(ttk.LabelFrame):
         self.element_type_var = tk.StringVar(value="frame")
         self.material_var = tk.StringVar(value="M1")
         self.section_var = tk.StringVar(value="S1")
+        self.member_material_var = tk.StringVar(value="")
+        self.member_section_var = tk.StringVar(value="")
+        self.member_type_var = tk.StringVar(value="frame")
         self.material_id_var = tk.StringVar(value="M1")
         self.material_type_var = tk.StringVar(value="Generic")
         self.material_e_var = tk.StringVar(value="1.0")
@@ -167,6 +170,9 @@ class PropertyPanel(ttk.LabelFrame):
         elif self.selected_kind == "element" and self.selected_object is not None:
             element = self.selected_object
             loads_text = _member_load_summary(self.model_canvas.builder.model, element.id)
+            self.member_material_var.set(element.material.id)
+            self.member_section_var.set(element.section.id)
+            self.member_type_var.set(element.type)
             rows = [
                 ("Element id", element.id),
                 ("Type", element.type),
@@ -185,6 +191,8 @@ class PropertyPanel(ttk.LabelFrame):
         for row, (label, value) in enumerate(rows):
             ttk.Label(info, text=label).grid(row=row, column=0, sticky="w", pady=2)
             ttk.Label(info, text=str(value)).grid(row=row, column=1, sticky="w", pady=2)
+        if self.selected_kind == "element" and self.selected_object is not None:
+            self._member_properties_editor(start_row=2)
 
     def _placeholder_panel(self, title: str, text: str) -> None:
         self._title(title)
@@ -384,6 +392,41 @@ class PropertyPanel(ttk.LabelFrame):
         ttk.Button(self, text="Reset to Default", command=self._reset_current_command).grid(row=4, column=0, sticky="ew", pady=(8, 0))
         self._apply_mass_settings()
 
+    def _member_properties_editor(self, start_row: int) -> None:
+        materials = self._material_ids()
+        sections = self._section_ids()
+        editor = ttk.LabelFrame(self, text="Member Properties", padding=6)
+        editor.grid(row=start_row, column=0, sticky="ew", pady=(8, 0))
+        editor.columnconfigure(1, weight=1)
+        if not self.model_canvas.builder.model.materials:
+            ttk.Label(editor, text="No materials exist. Add a material first.", wraplength=210).grid(
+                row=0,
+                column=0,
+                columnspan=2,
+                sticky="w",
+                pady=2,
+            )
+            return
+        if not self.model_canvas.builder.model.sections:
+            ttk.Label(editor, text="No sections exist. Add a section first.", wraplength=210).grid(
+                row=0,
+                column=0,
+                columnspan=2,
+                sticky="w",
+                pady=2,
+            )
+            return
+        self._combo(editor, 0, "Type", self.member_type_var, ("frame", "truss"), lambda: None)
+        self._combo(editor, 1, "Material", self.member_material_var, materials, lambda: None)
+        self._combo(editor, 2, "Section", self.member_section_var, sections, lambda: None)
+        ttk.Button(editor, text="Apply Member Properties", command=self._apply_member_properties).grid(
+            row=3,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(8, 0),
+        )
+
     def _title(self, text: str) -> None:
         ttk.Label(self, text=text, font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w")
 
@@ -556,6 +599,21 @@ class PropertyPanel(ttk.LabelFrame):
             return
         self.model_canvas.set_mass_settings(self.mass_action_var.get(), mass_ux, mass_uy, inertia_rz)
         self.status_callback("Assign Mass: click a node.")
+
+    def _apply_member_properties(self) -> None:
+        if self.selected_kind != "element" or self.selected_object is None:
+            self.status_callback("Member Properties: select a member first.")
+            return
+        material_id = self.member_material_var.get().strip()
+        section_id = self.member_section_var.get().strip()
+        element_type = self.member_type_var.get().strip()
+        if not material_id or not section_id:
+            self.status_callback("Member Properties: choose material and section.")
+            return
+        updated = self.model_canvas.update_selected_member_properties(element_type, material_id, section_id)
+        if updated is not None:
+            self.selected_object = updated
+            self.show_command("Select / Inspect")
 
     def _add_material(self) -> None:
         material_id = self.material_id_var.get().strip()

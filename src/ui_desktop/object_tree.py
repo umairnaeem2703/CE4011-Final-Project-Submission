@@ -55,7 +55,7 @@ class ObjectTreePanel(ttk.LabelFrame):
                 parents["Elements"],
                 "end",
                 iid=f"element:{element_id}",
-                text=f"{element_id} ({element.type})",
+                text=f"{element_id} ({element.type}, {element.material.id}, {element.section.id})",
             )
         for node_id in sorted(model.supports):
             support = model.supports[node_id]

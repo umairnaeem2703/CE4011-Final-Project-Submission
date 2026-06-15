@@ -492,6 +492,43 @@ class ModelCanvas(ttk.Frame):
         self.change_callback()
         self.status_callback(message)
 
+    def update_selected_member_properties(self, element_type: str, material_id: str, section_id: str):
+        if self.selected_kind != "element" or self.selected_id not in self.builder.model.elements:
+            self.status_callback("Member Properties: select a member first.")
+            return None
+        if element_type not in ("frame", "truss"):
+            self.status_callback("Member Properties: type must be frame or truss.")
+            return None
+        if material_id not in self.builder.model.materials:
+            self.status_callback(f"Member Properties: unknown material {material_id}.")
+            return None
+        if section_id not in self.builder.model.sections:
+            self.status_callback(f"Member Properties: unknown section {section_id}.")
+            return None
+
+        element_id = str(self.selected_id)
+        section = self.builder.model.sections[section_id]
+        if self._member_has_temperature_gradient_load(element_id):
+            if element_type == "truss":
+                self.status_callback("Member Properties blocked: temperature-gradient loads require a frame member.")
+                return None
+            if section.d <= 0:
+                self.status_callback(
+                    "Member Properties blocked: temperature-gradient loads require section depth d."
+                )
+                return None
+
+        element = self.builder.model.elements[element_id]
+        element.type = element_type
+        element.material = self.builder.model.materials[material_id]
+        element.section = section
+        self._mark_model_dirty()
+        self.redraw_model()
+        self.select_element(element_id)
+        self.change_callback()
+        self.status_callback(f"Updated member {element_id} properties.")
+        return element
+
     def _remove_loads(self, load_case_id: str, matches) -> int:
         load_case = self.builder.model.load_cases.get(load_case_id)
         if load_case is None:
@@ -515,6 +552,17 @@ class ModelCanvas(ttk.Frame):
         mark_dirty = getattr(self.builder.model, "mark_dirty", None)
         if mark_dirty is not None:
             mark_dirty()
+
+    def _member_has_temperature_gradient_load(self, element_id: str) -> bool:
+        for load_case in self.builder.model.load_cases.values():
+            for load in load_case.loads:
+                if load.__class__.__name__ != "TemperatureL":
+                    continue
+                if getattr(getattr(load, "element", None), "id", None) != element_id:
+                    continue
+                if load.Tu != load.Tb:
+                    return True
+        return False
 
     def _draw_node(self, node_id: int, x: float, y: float) -> None:
         cx, cy = self._model_to_canvas(x, y)
