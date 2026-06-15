@@ -55,6 +55,10 @@ class ModelCanvas(ttk.Frame):
         self.active_section_id = "S1"
         self.support_settings = SupportSettings()
         self.load_settings = LoadSettings()
+        self.support_action = "Replace"
+        self.load_action = "Add"
+        self.mass_action = "Replace"
+        self.mass_settings = (0.0, 0.0, 0.0)
         self.draw_mode = "click"
 
         self.scale = 40.0
@@ -167,8 +171,18 @@ class ModelCanvas(ttk.Frame):
     def set_support_settings(self, settings: SupportSettings) -> None:
         self.support_settings = settings
 
+    def set_support_action(self, action: str) -> None:
+        self.support_action = action
+
     def set_load_settings(self, settings: LoadSettings) -> None:
         self.load_settings = settings
+
+    def set_load_action(self, action: str) -> None:
+        self.load_action = action
+
+    def set_mass_settings(self, action: str, mass_ux: float, mass_uy: float, inertia_rz: float) -> None:
+        self.mass_action = action
+        self.mass_settings = (mass_ux, mass_uy, inertia_rz)
 
     def add_node_by_coordinates(self, x: float, y: float) -> int:
         existing_node_id = self._find_node_near_model_point(x, y)
@@ -250,6 +264,11 @@ class ModelCanvas(ttk.Frame):
                     self.status_callback("Member Load: click a member.")
                     return
                 self.assign_load_to_element(element_id)
+        elif self.active_command == "Assign Mass":
+            if node_id is None:
+                self.status_callback("Assign Mass: click a node.")
+                return
+            self.assign_mass_to_node(node_id)
         elif node_id is not None:
             self.select_node(node_id)
             self.status_callback(f"Selected node {node_id}.")
@@ -333,37 +352,71 @@ class ModelCanvas(ttk.Frame):
             self.status_callback("Assign Support: click a node.")
             return
         settings = self.support_settings
-        self.builder.add_support(
-            node_id,
-            restrain_ux=settings.restrain_ux,
-            restrain_uy=settings.restrain_uy,
-            restrain_rz=settings.restrain_rz,
-            settlement_ux=settings.settlement_ux,
-            settlement_uy=settings.settlement_uy,
-            settlement_rz=settings.settlement_rz,
-        )
+        if self.support_action == "Delete":
+            self.builder.model.supports.pop(node_id, None)
+            self._mark_model_dirty()
+            message = f"Deleted support/settlement assignment from node {node_id}."
+        else:
+            restrain_ux = settings.restrain_ux
+            restrain_uy = settings.restrain_uy
+            restrain_rz = settings.restrain_rz
+            settlement_ux = settings.settlement_ux
+            settlement_uy = settings.settlement_uy
+            settlement_rz = settings.settlement_rz
+            if self.support_action == "Add":
+                existing = self.builder.model.supports.get(node_id)
+                if existing is not None:
+                    restrain_ux = existing.restrain_ux or restrain_ux
+                    restrain_uy = existing.restrain_uy or restrain_uy
+                    restrain_rz = existing.restrain_rz or restrain_rz
+                    settlement_ux += existing.settlement_ux
+                    settlement_uy += existing.settlement_uy
+                    settlement_rz += existing.settlement_rz
+            self.builder.add_support(
+                node_id,
+                restrain_ux=restrain_ux,
+                restrain_uy=restrain_uy,
+                restrain_rz=restrain_rz,
+                settlement_ux=settlement_ux,
+                settlement_uy=settlement_uy,
+                settlement_rz=settlement_rz,
+            )
+            message = f"Assigned {settings.support_type} support to node {node_id}."
         self.redraw_model()
         self.select_node(node_id)
         self.change_callback()
-        self.status_callback(f"Assigned {settings.support_type} support to node {node_id}.")
+        self.status_callback(message)
 
     def assign_load_to_node(self, node_id: int) -> None:
         settings = self.load_settings
-        self.builder.add_nodal_load(
-            settings.load_case,
-            node_id,
-            fx=settings.fx,
-            fy=settings.fy,
-            mz=settings.mz,
-        )
+        action = self.load_action
+        if action in ("Replace", "Delete"):
+            self._remove_loads(settings.load_case, lambda load: getattr(getattr(load, "node", None), "id", None) == node_id)
+        if action != "Delete":
+            self.builder.add_nodal_load(
+                settings.load_case,
+                node_id,
+                fx=settings.fx,
+                fy=settings.fy,
+                mz=settings.mz,
+            )
         self.redraw_model()
         self.select_node(node_id)
         self.change_callback()
-        self.status_callback(f"Assigned nodal load to node {node_id}.")
+        verb = "Deleted" if action == "Delete" else "Assigned"
+        self.status_callback(f"{verb} nodal load assignment for node {node_id}.")
 
     def assign_load_to_element(self, element_id: str) -> None:
         settings = self.load_settings
-        if settings.load_type == "UDL":
+        action = self.load_action
+        if action in ("Replace", "Delete"):
+            self._remove_loads(
+                settings.load_case,
+                lambda load: getattr(getattr(load, "element", None), "id", None) == element_id,
+            )
+        if action == "Delete":
+            label = "load"
+        elif settings.load_type == "UDL":
             self.builder.add_member_udl(
                 settings.load_case,
                 element_id,
@@ -383,7 +436,57 @@ class ModelCanvas(ttk.Frame):
         self.redraw_model()
         self.select_element(element_id)
         self.change_callback()
-        self.status_callback(f"Assigned member {label} to {element_id}.")
+        verb = "Deleted" if action == "Delete" else "Assigned"
+        self.status_callback(f"{verb} member {label} assignment for {element_id}.")
+
+    def assign_mass_to_node(self, node_id: int) -> None:
+        if node_id not in self.builder.model.nodes:
+            self.status_callback("Assign Mass: click a node.")
+            return
+
+        action = self.mass_action
+        if action == "Delete":
+            self.builder.model.lumped_masses.pop(node_id, None)
+            self._mark_model_dirty()
+            message = f"Deleted nodal mass from node {node_id}."
+        else:
+            mass_ux, mass_uy, inertia_rz = self.mass_settings
+            if action == "Add":
+                existing_ux, existing_uy, existing_rz = self._existing_mass_components(node_id)
+                mass_ux += existing_ux
+                mass_uy += existing_uy
+                inertia_rz += existing_rz
+            self.builder.add_lumped_mass(node_id, mass_ux=mass_ux, mass_uy=mass_uy, inertia_rz=inertia_rz)
+            message = f"Assigned nodal mass to node {node_id}."
+
+        self.redraw_model()
+        self.select_node(node_id)
+        self.change_callback()
+        self.status_callback(message)
+
+    def _remove_loads(self, load_case_id: str, matches) -> int:
+        load_case = self.builder.model.load_cases.get(load_case_id)
+        if load_case is None:
+            return 0
+        kept_loads = [load for load in load_case.loads if not matches(load)]
+        removed_count = len(load_case.loads) - len(kept_loads)
+        if removed_count:
+            load_case.loads = kept_loads
+            self._mark_model_dirty()
+        return removed_count
+
+    def _existing_mass_components(self, node_id: int) -> tuple[float, float, float]:
+        existing = self.builder.model.lumped_masses.get(node_id)
+        if existing is None:
+            return (0.0, 0.0, 0.0)
+        if isinstance(existing, (int, float)):
+            return (float(existing), float(existing), 0.0)
+        return (existing.mass_ux, existing.mass_uy, existing.inertia_rz)
+
+    def _mark_model_dirty(self) -> None:
+        mark_dirty = getattr(self.builder.model, "mark_dirty", None)
+        if mark_dirty is not None:
+            mark_dirty()
 
     def _draw_node(self, node_id: int, x: float, y: float) -> None:
         cx, cy = self._model_to_canvas(x, y)

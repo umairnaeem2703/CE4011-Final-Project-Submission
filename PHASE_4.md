@@ -44,6 +44,7 @@ Rules:
 * 4R7 assign load right-pane redesign
 * 4R8 corrected load/support arrows and value labels
 * 4R8b added nodal mass value labels next to mass rings
+* 4R9 assignment action modes for loads/supports/masses
 
 Do not break these.
 
@@ -133,6 +134,7 @@ Requirements:
 * Store through `ModelBuilder.add_temperature_load`.
 * Show red `T` marker on member.
 * Tree/inspector display temperature load.
+* Use the same Add / Replace / Delete action pattern for member temperature loads.
 * No FEF math in UI.
 
 ---

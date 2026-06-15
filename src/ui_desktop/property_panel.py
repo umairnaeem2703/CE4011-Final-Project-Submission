@@ -44,9 +44,11 @@ class PropertyPanel(ttk.LabelFrame):
         self.restrain_ux_var = tk.BooleanVar(value=True)
         self.restrain_uy_var = tk.BooleanVar(value=True)
         self.restrain_rz_var = tk.BooleanVar(value=True)
+        self.support_action_var = tk.StringVar(value="Replace")
         self.settlement_ux_var = tk.StringVar(value="0.0")
         self.settlement_uy_var = tk.StringVar(value="0.0")
         self.settlement_rz_var = tk.StringVar(value="0.0")
+        self.load_action_var = tk.StringVar(value="Add")
         self.load_target_var = tk.StringVar(value="Node")
         self.load_type_var = tk.StringVar(value="Nodal Load")
         self.load_case_var = tk.StringVar(value="LC1")
@@ -59,6 +61,10 @@ class PropertyPanel(ttk.LabelFrame):
         self.point_direction_var = tk.StringVar(value="Y")
         self.point_magnitude_var = tk.StringVar(value="0.0")
         self.position_var = tk.StringVar(value="0.5")
+        self.mass_action_var = tk.StringVar(value="Replace")
+        self.mass_ux_var = tk.StringVar(value="0.0")
+        self.mass_uy_var = tk.StringVar(value="0.0")
+        self.mass_rz_var = tk.StringVar(value="0.0")
         self._section_geometric_widgets = []
         self._section_direct_widgets = []
 
@@ -81,7 +87,7 @@ class PropertyPanel(ttk.LabelFrame):
         elif command == "Assign Support":
             self._support_panel()
         elif command == "Assign Mass":
-            self._placeholder_panel("Assign Mass", "Mass assignment controls will be added in Task 4.")
+            self._mass_panel()
         elif command == "Assign Diaphragm":
             self._placeholder_panel("Assign Diaphragm", "Diaphragm assignment controls will be added in Task 4.")
         elif command == "Delete":
@@ -269,16 +275,17 @@ class PropertyPanel(ttk.LabelFrame):
         form = ttk.Frame(self)
         form.grid(row=1, column=0, sticky="ew", pady=(8, 0))
         form.columnconfigure(1, weight=1)
-        self._combo(form, 0, "Type", self.support_type_var, ("fixed", "pin", "roller_x", "roller_y", "custom"), self._sync_support_type)
-        ttk.Checkbutton(form, text="ux", variable=self.restrain_ux_var).grid(row=1, column=0, sticky="w")
-        ttk.Checkbutton(form, text="uy", variable=self.restrain_uy_var).grid(row=1, column=1, sticky="w")
-        ttk.Checkbutton(form, text="rz", variable=self.restrain_rz_var).grid(row=1, column=2, sticky="w")
-        ttk.Label(form, text="set ux").grid(row=2, column=0, sticky="w", pady=(8, 2))
-        ttk.Entry(form, textvariable=self.settlement_ux_var, width=10).grid(row=2, column=1, sticky="ew", pady=(8, 2))
-        ttk.Label(form, text="set uy").grid(row=3, column=0, sticky="w", pady=2)
-        ttk.Entry(form, textvariable=self.settlement_uy_var, width=10).grid(row=3, column=1, sticky="ew", pady=2)
-        ttk.Label(form, text="set rz").grid(row=4, column=0, sticky="w", pady=2)
-        ttk.Entry(form, textvariable=self.settlement_rz_var, width=10).grid(row=4, column=1, sticky="ew", pady=2)
+        self._combo(form, 0, "Action", self.support_action_var, ("Add", "Replace", "Delete"), self._apply_support_settings)
+        self._combo(form, 1, "Type", self.support_type_var, ("fixed", "pin", "roller_x", "roller_y", "custom"), self._sync_support_type)
+        ttk.Checkbutton(form, text="ux", variable=self.restrain_ux_var).grid(row=2, column=0, sticky="w")
+        ttk.Checkbutton(form, text="uy", variable=self.restrain_uy_var).grid(row=2, column=1, sticky="w")
+        ttk.Checkbutton(form, text="rz", variable=self.restrain_rz_var).grid(row=2, column=2, sticky="w")
+        ttk.Label(form, text="set ux").grid(row=3, column=0, sticky="w", pady=(8, 2))
+        ttk.Entry(form, textvariable=self.settlement_ux_var, width=10).grid(row=3, column=1, sticky="ew", pady=(8, 2))
+        ttk.Label(form, text="set uy").grid(row=4, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.settlement_uy_var, width=10).grid(row=4, column=1, sticky="ew", pady=2)
+        ttk.Label(form, text="set rz").grid(row=5, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.settlement_rz_var, width=10).grid(row=5, column=1, sticky="ew", pady=2)
         ttk.Button(self, text="Use These Settings", command=self._apply_support_settings).grid(row=2, column=0, sticky="ew", pady=(8, 0))
         ttk.Label(self, text="Click a node on the canvas to assign support.", wraplength=220).grid(row=3, column=0, sticky="nw", pady=(8, 0))
         ttk.Button(self, text="Reset to Default", command=self._reset_current_command).grid(row=4, column=0, sticky="ew", pady=(8, 0))
@@ -297,24 +304,25 @@ class PropertyPanel(ttk.LabelFrame):
         ):
             self.load_type_var.set("Uniformly Distributed Load")
         self._combo(form, 0, "Target", self.load_target_var, ("Node", "Member"), self._sync_load_target)
+        self._combo(form, 1, "Action", self.load_action_var, ("Add", "Replace", "Delete"), self._apply_load_settings)
         target = self.load_target_var.get()
         load_type = self.load_type_var.get()
         if target == "Node":
-            self._combo(form, 1, "Type", self.load_type_var, ("Nodal Load", "Nodal Moment"), self._reload_load_panel)
-            ttk.Label(form, text="Case").grid(row=2, column=0, sticky="w", pady=2)
-            ttk.Entry(form, textvariable=self.load_case_var, width=10).grid(row=2, column=1, sticky="ew", pady=2)
+            self._combo(form, 2, "Type", self.load_type_var, ("Nodal Load", "Nodal Moment"), self._reload_load_panel)
+            ttk.Label(form, text="Case").grid(row=3, column=0, sticky="w", pady=2)
+            ttk.Entry(form, textvariable=self.load_case_var, width=10).grid(row=3, column=1, sticky="ew", pady=2)
             if load_type == "Nodal Moment":
-                ttk.Label(form, text="Mz").grid(row=3, column=0, sticky="w", pady=2)
-                ttk.Entry(form, textvariable=self.mz_var, width=10).grid(row=3, column=1, sticky="ew", pady=2)
+                ttk.Label(form, text="Mz").grid(row=4, column=0, sticky="w", pady=2)
+                ttk.Entry(form, textvariable=self.mz_var, width=10).grid(row=4, column=1, sticky="ew", pady=2)
             else:
-                ttk.Label(form, text="Fx").grid(row=3, column=0, sticky="w", pady=2)
-                ttk.Entry(form, textvariable=self.fx_var, width=10).grid(row=3, column=1, sticky="ew", pady=2)
-                ttk.Label(form, text="Fy").grid(row=4, column=0, sticky="w", pady=2)
-                ttk.Entry(form, textvariable=self.fy_var, width=10).grid(row=4, column=1, sticky="ew", pady=2)
+                ttk.Label(form, text="Fx").grid(row=4, column=0, sticky="w", pady=2)
+                ttk.Entry(form, textvariable=self.fx_var, width=10).grid(row=4, column=1, sticky="ew", pady=2)
+                ttk.Label(form, text="Fy").grid(row=5, column=0, sticky="w", pady=2)
+                ttk.Entry(form, textvariable=self.fy_var, width=10).grid(row=5, column=1, sticky="ew", pady=2)
         else:
             self._combo(
                 form,
-                1,
+                2,
                 "Type",
                 self.load_type_var,
                 ("Uniformly Distributed Load", "Point Load"),
@@ -322,29 +330,46 @@ class PropertyPanel(ttk.LabelFrame):
             )
             self._combo(
                 form,
-                2,
+                3,
                 "Coordinate System",
                 self.load_coordinate_system_var,
                 ("Member Local Axis", "Global Axis"),
                 self._apply_load_settings,
             )
-            ttk.Label(form, text="Case").grid(row=3, column=0, sticky="w", pady=2)
-            ttk.Entry(form, textvariable=self.load_case_var, width=10).grid(row=3, column=1, sticky="ew", pady=2)
+            ttk.Label(form, text="Case").grid(row=4, column=0, sticky="w", pady=2)
+            ttk.Entry(form, textvariable=self.load_case_var, width=10).grid(row=4, column=1, sticky="ew", pady=2)
             if load_type == "Point Load":
-                self._combo(form, 4, "Direction", self.point_direction_var, ("X", "Y"), self._apply_load_settings)
-                ttk.Label(form, text="P").grid(row=5, column=0, sticky="w", pady=2)
-                ttk.Entry(form, textvariable=self.point_magnitude_var, width=10).grid(row=5, column=1, sticky="ew", pady=2)
-                ttk.Label(form, text="Position a/L").grid(row=6, column=0, sticky="w", pady=2)
-                ttk.Entry(form, textvariable=self.position_var, width=10).grid(row=6, column=1, sticky="ew", pady=2)
+                self._combo(form, 5, "Direction", self.point_direction_var, ("X", "Y"), self._apply_load_settings)
+                ttk.Label(form, text="P").grid(row=6, column=0, sticky="w", pady=2)
+                ttk.Entry(form, textvariable=self.point_magnitude_var, width=10).grid(row=6, column=1, sticky="ew", pady=2)
+                ttk.Label(form, text="Position a/L").grid(row=7, column=0, sticky="w", pady=2)
+                ttk.Entry(form, textvariable=self.position_var, width=10).grid(row=7, column=1, sticky="ew", pady=2)
             else:
-                ttk.Label(form, text="wx").grid(row=4, column=0, sticky="w", pady=2)
-                ttk.Entry(form, textvariable=self.wx_var, width=10).grid(row=4, column=1, sticky="ew", pady=2)
-                ttk.Label(form, text="wy").grid(row=5, column=0, sticky="w", pady=2)
-                ttk.Entry(form, textvariable=self.wy_var, width=10).grid(row=5, column=1, sticky="ew", pady=2)
+                ttk.Label(form, text="wx").grid(row=5, column=0, sticky="w", pady=2)
+                ttk.Entry(form, textvariable=self.wx_var, width=10).grid(row=5, column=1, sticky="ew", pady=2)
+                ttk.Label(form, text="wy").grid(row=6, column=0, sticky="w", pady=2)
+                ttk.Entry(form, textvariable=self.wy_var, width=10).grid(row=6, column=1, sticky="ew", pady=2)
         ttk.Button(self, text="Use These Settings", command=self._apply_load_settings).grid(row=2, column=0, sticky="ew", pady=(8, 0))
         ttk.Label(self, text="Click the selected target type on the canvas.", wraplength=220).grid(row=3, column=0, sticky="nw", pady=(8, 0))
         ttk.Button(self, text="Reset to Default", command=self._reset_current_command).grid(row=4, column=0, sticky="ew", pady=(8, 0))
         self._apply_load_settings()
+
+    def _mass_panel(self) -> None:
+        self._title("Assign Mass")
+        form = ttk.Frame(self)
+        form.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        form.columnconfigure(1, weight=1)
+        self._combo(form, 0, "Action", self.mass_action_var, ("Add", "Replace", "Delete"), self._apply_mass_settings)
+        ttk.Label(form, text="mass_ux").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.mass_ux_var, width=10).grid(row=1, column=1, sticky="ew", pady=2)
+        ttk.Label(form, text="mass_uy").grid(row=2, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.mass_uy_var, width=10).grid(row=2, column=1, sticky="ew", pady=2)
+        ttk.Label(form, text="mass_rz").grid(row=3, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.mass_rz_var, width=10).grid(row=3, column=1, sticky="ew", pady=2)
+        ttk.Button(self, text="Use These Settings", command=self._apply_mass_settings).grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        ttk.Label(self, text="Click a node on the canvas to assign mass.", wraplength=220).grid(row=3, column=0, sticky="nw", pady=(8, 0))
+        ttk.Button(self, text="Reset to Default", command=self._reset_current_command).grid(row=4, column=0, sticky="ew", pady=(8, 0))
+        self._apply_mass_settings()
 
     def _title(self, text: str) -> None:
         ttk.Label(self, text=text, font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w")
@@ -426,6 +451,7 @@ class PropertyPanel(ttk.LabelFrame):
         except ValueError:
             self.status_callback("Assign Support: settlement values must be numeric.")
             return
+        self.model_canvas.set_support_action(self.support_action_var.get())
         self.model_canvas.set_support_settings(
             SupportSettings(
                 support_type=self.support_type_var.get(),
@@ -483,6 +509,7 @@ class PropertyPanel(ttk.LabelFrame):
         if target == "Member" and load_type == "Point Load" and not 0.0 <= position <= 1.0:
             self.status_callback("Assign Load: a/L must be between 0 and 1.")
             return
+        self.model_canvas.set_load_action(self.load_action_var.get())
         self.model_canvas.set_load_settings(
             LoadSettings(
                 target=target,
@@ -497,6 +524,17 @@ class PropertyPanel(ttk.LabelFrame):
             )
         )
         self.status_callback("Assign Load: click a node." if target == "Node" else "Assign Load: click a member.")
+
+    def _apply_mass_settings(self) -> None:
+        try:
+            mass_ux = float(self.mass_ux_var.get())
+            mass_uy = float(self.mass_uy_var.get())
+            inertia_rz = float(self.mass_rz_var.get())
+        except ValueError:
+            self.status_callback("Assign Mass: mass values must be numeric.")
+            return
+        self.model_canvas.set_mass_settings(self.mass_action_var.get(), mass_ux, mass_uy, inertia_rz)
+        self.status_callback("Assign Mass: click a node.")
 
     def _add_material(self) -> None:
         material_id = self.material_id_var.get().strip()
@@ -573,6 +611,7 @@ class PropertyPanel(ttk.LabelFrame):
             self.section_ei_var.set("")
             self._sync_section_input_mode()
         elif command == "Assign Support":
+            self.support_action_var.set("Replace")
             self.support_type_var.set("fixed")
             self.restrain_ux_var.set(True)
             self.restrain_uy_var.set(True)
@@ -582,6 +621,7 @@ class PropertyPanel(ttk.LabelFrame):
             self.settlement_rz_var.set("0.0")
             self._apply_support_settings()
         elif command == "Assign Load":
+            self.load_action_var.set("Add")
             self.load_target_var.set("Node")
             self.load_type_var.set("Nodal Load")
             self.load_case_var.set("LC1")
@@ -595,6 +635,12 @@ class PropertyPanel(ttk.LabelFrame):
             self.point_magnitude_var.set("0.0")
             self.position_var.set("0.5")
             self._reload_load_panel()
+        elif command == "Assign Mass":
+            self.mass_action_var.set("Replace")
+            self.mass_ux_var.set("0.0")
+            self.mass_uy_var.set("0.0")
+            self.mass_rz_var.set("0.0")
+            self._apply_mass_settings()
         self.status_callback(f"{command}: settings reset to defaults.")
 
     def _material_ids(self) -> tuple[str, ...]:
