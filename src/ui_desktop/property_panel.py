@@ -6,6 +6,7 @@ import tkinter as tk
 from tkinter import ttk
 
 from .canvas import ModelCanvas
+from .dialogs import LoadSettings, SupportSettings
 
 
 class PropertyPanel(ttk.LabelFrame):
@@ -27,6 +28,22 @@ class PropertyPanel(ttk.LabelFrame):
         self.material_var = tk.StringVar(value="M1")
         self.section_var = tk.StringVar(value="S1")
         self.draw_mode_var = tk.StringVar(value="Click end node")
+        self.support_type_var = tk.StringVar(value="fixed")
+        self.restrain_ux_var = tk.BooleanVar(value=True)
+        self.restrain_uy_var = tk.BooleanVar(value=True)
+        self.restrain_rz_var = tk.BooleanVar(value=True)
+        self.settlement_ux_var = tk.StringVar(value="0.0")
+        self.settlement_uy_var = tk.StringVar(value="0.0")
+        self.settlement_rz_var = tk.StringVar(value="0.0")
+        self.load_target_var = tk.StringVar(value="Node")
+        self.load_type_var = tk.StringVar(value="Nodal Force/Moment")
+        self.load_case_var = tk.StringVar(value="LC1")
+        self.fx_var = tk.StringVar(value="0.0")
+        self.fy_var = tk.StringVar(value="0.0")
+        self.mz_var = tk.StringVar(value="0.0")
+        self.wx_var = tk.StringVar(value="0.0")
+        self.wy_var = tk.StringVar(value="0.0")
+        self.position_var = tk.StringVar(value="0.5")
 
         self.columnconfigure(0, weight=1)
         self.show_command("Select / Inspect")
@@ -41,9 +58,9 @@ class PropertyPanel(ttk.LabelFrame):
         elif command == "Select / Inspect":
             self._inspect_panel()
         elif command == "Assign Load":
-            self._placeholder_panel("Assign Load", "Load target/type controls will be added in Task 4.")
+            self._load_panel()
         elif command == "Assign Support":
-            self._placeholder_panel("Assign Support", "Support assignment controls will be added in Task 4.")
+            self._support_panel()
         elif command == "Assign Mass":
             self._placeholder_panel("Assign Mass", "Mass assignment controls will be added in Task 4.")
         elif command == "Assign Diaphragm":
@@ -96,16 +113,20 @@ class PropertyPanel(ttk.LabelFrame):
         self._title("Select / Inspect")
         if self.selected_kind == "node" and self.selected_object is not None:
             node = self.selected_object
+            support = self.model_canvas.builder.model.supports.get(node.id)
+            support_text = _support_summary(support)
+            loads_text = _node_load_summary(self.model_canvas.builder.model, node.id)
             rows = [
                 ("Node id", node.id),
                 ("x", f"{node.x:.6g}"),
                 ("y", f"{node.y:.6g}"),
-                ("Support", "placeholder"),
+                ("Support", support_text),
                 ("Mass", "placeholder"),
-                ("Loads", "placeholder"),
+                ("Loads", loads_text),
             ]
         elif self.selected_kind == "element" and self.selected_object is not None:
             element = self.selected_object
+            loads_text = _member_load_summary(self.model_canvas.builder.model, element.id)
             rows = [
                 ("Element id", element.id),
                 ("Type", element.type),
@@ -113,7 +134,7 @@ class PropertyPanel(ttk.LabelFrame):
                 ("Node j", element.node_j.id),
                 ("Material", element.material.id),
                 ("Section", element.section.id),
-                ("Loads", "placeholder"),
+                ("Loads", loads_text),
             ]
         else:
             rows = [("Selection", "Click a node or member.")]
@@ -128,6 +149,46 @@ class PropertyPanel(ttk.LabelFrame):
     def _placeholder_panel(self, title: str, text: str) -> None:
         self._title(title)
         ttk.Label(self, text=text, wraplength=220).grid(row=1, column=0, sticky="nw", pady=(8, 0))
+
+    def _support_panel(self) -> None:
+        self._title("Assign Support")
+        form = ttk.Frame(self)
+        form.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        form.columnconfigure(1, weight=1)
+        self._combo(form, 0, "Type", self.support_type_var, ("fixed", "pin", "roller_x", "roller_y", "custom"), self._sync_support_type)
+        ttk.Checkbutton(form, text="ux", variable=self.restrain_ux_var).grid(row=1, column=0, sticky="w")
+        ttk.Checkbutton(form, text="uy", variable=self.restrain_uy_var).grid(row=1, column=1, sticky="w")
+        ttk.Checkbutton(form, text="rz", variable=self.restrain_rz_var).grid(row=1, column=2, sticky="w")
+        ttk.Label(form, text="set ux").grid(row=2, column=0, sticky="w", pady=(8, 2))
+        ttk.Entry(form, textvariable=self.settlement_ux_var, width=10).grid(row=2, column=1, sticky="ew", pady=(8, 2))
+        ttk.Label(form, text="set uy").grid(row=3, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.settlement_uy_var, width=10).grid(row=3, column=1, sticky="ew", pady=2)
+        ttk.Label(form, text="set rz").grid(row=4, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.settlement_rz_var, width=10).grid(row=4, column=1, sticky="ew", pady=2)
+        ttk.Button(self, text="Use These Settings", command=self._apply_support_settings).grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        ttk.Label(self, text="Click a node on the canvas to assign support.", wraplength=220).grid(row=3, column=0, sticky="nw", pady=(8, 0))
+        self._sync_support_type()
+
+    def _load_panel(self) -> None:
+        self._title("Assign Load")
+        form = ttk.Frame(self)
+        form.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        form.columnconfigure(1, weight=1)
+        self._combo(form, 0, "Target", self.load_target_var, ("Node", "Member"), self._sync_load_target)
+        self._combo(form, 1, "Type", self.load_type_var, ("Nodal Force/Moment", "UDL", "Point Load"), self._apply_load_settings)
+        ttk.Label(form, text="Case").grid(row=2, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.load_case_var, width=10).grid(row=2, column=1, sticky="ew", pady=2)
+        ttk.Label(form, text="Fx / wx").grid(row=3, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.fx_var, width=10).grid(row=3, column=1, sticky="ew", pady=2)
+        ttk.Label(form, text="Fy / wy").grid(row=4, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.fy_var, width=10).grid(row=4, column=1, sticky="ew", pady=2)
+        ttk.Label(form, text="Mz").grid(row=5, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.mz_var, width=10).grid(row=5, column=1, sticky="ew", pady=2)
+        ttk.Label(form, text="a/L").grid(row=6, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.position_var, width=10).grid(row=6, column=1, sticky="ew", pady=2)
+        ttk.Button(self, text="Use These Settings", command=self._apply_load_settings).grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        ttk.Label(self, text="Click the selected target type on the canvas.", wraplength=220).grid(row=3, column=0, sticky="nw", pady=(8, 0))
+        self._sync_load_target()
 
     def _title(self, text: str) -> None:
         ttk.Label(self, text=text, font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w")
@@ -171,6 +232,80 @@ class PropertyPanel(ttk.LabelFrame):
         self.model_canvas.set_draw_mode(mode)
         self.status_callback(self.model_canvas.command_instruction())
 
+    def _sync_support_type(self) -> None:
+        support_type = self.support_type_var.get()
+        if support_type == "fixed":
+            values = (True, True, True)
+        elif support_type == "pin":
+            values = (True, True, False)
+        elif support_type == "roller_x":
+            values = (False, True, False)
+        elif support_type == "roller_y":
+            values = (True, False, False)
+        else:
+            values = (self.restrain_ux_var.get(), self.restrain_uy_var.get(), self.restrain_rz_var.get())
+        self.restrain_ux_var.set(values[0])
+        self.restrain_uy_var.set(values[1])
+        self.restrain_rz_var.set(values[2])
+        self._apply_support_settings()
+
+    def _apply_support_settings(self) -> None:
+        try:
+            settlement_ux = float(self.settlement_ux_var.get())
+            settlement_uy = float(self.settlement_uy_var.get())
+            settlement_rz = float(self.settlement_rz_var.get())
+        except ValueError:
+            self.status_callback("Assign Support: settlement values must be numeric.")
+            return
+        self.model_canvas.set_support_settings(
+            SupportSettings(
+                support_type=self.support_type_var.get(),
+                restrain_ux=self.restrain_ux_var.get(),
+                restrain_uy=self.restrain_uy_var.get(),
+                restrain_rz=self.restrain_rz_var.get(),
+                settlement_ux=settlement_ux,
+                settlement_uy=settlement_uy,
+                settlement_rz=settlement_rz,
+            )
+        )
+        self.status_callback("Assign Support: click a node.")
+
+    def _sync_load_target(self) -> None:
+        if self.load_target_var.get() == "Node":
+            self.load_type_var.set("Nodal Force/Moment")
+        elif self.load_type_var.get() == "Nodal Force/Moment":
+            self.load_type_var.set("UDL")
+        self._apply_load_settings()
+
+    def _apply_load_settings(self) -> None:
+        try:
+            fx = float(self.fx_var.get())
+            fy = float(self.fy_var.get())
+            mz = float(self.mz_var.get())
+            position = float(self.position_var.get())
+        except ValueError:
+            self.status_callback("Assign Load: numeric fields are required.")
+            return
+        if not 0.0 <= position <= 1.0:
+            self.status_callback("Assign Load: a/L must be between 0 and 1.")
+            return
+        target = self.load_target_var.get()
+        load_type = self.load_type_var.get()
+        self.model_canvas.set_load_settings(
+            LoadSettings(
+                target=target,
+                load_type=load_type,
+                load_case=self.load_case_var.get().strip() or "LC1",
+                fx=fx,
+                fy=fy,
+                mz=mz,
+                wx=fx,
+                wy=fy,
+                position=position,
+            )
+        )
+        self.status_callback("Assign Load: click a node." if target == "Node" else "Assign Load: click a member.")
+
     def _material_ids(self) -> tuple[str, ...]:
         return tuple(self.model_canvas.builder.model.materials.keys()) or ("M1",)
 
@@ -180,3 +315,43 @@ class PropertyPanel(ttk.LabelFrame):
     def _clear(self) -> None:
         for child in self.winfo_children():
             child.destroy()
+
+
+def _support_summary(support) -> str:
+    if support is None:
+        return "none"
+    restraints = "".join(
+        dof
+        for dof, active in (
+            ("ux ", support.restrain_ux),
+            ("uy ", support.restrain_uy),
+            ("rz ", support.restrain_rz),
+        )
+        if active
+    ).strip() or "free"
+    settlements = (support.settlement_ux, support.settlement_uy, support.settlement_rz)
+    if any(settlements):
+        return f"{restraints}; settlement=({settlements[0]:.3g}, {settlements[1]:.3g}, {settlements[2]:.3g})"
+    return restraints
+
+
+def _node_load_summary(model, node_id: int) -> str:
+    labels = []
+    for load_case in model.load_cases.values():
+        for load in load_case.loads:
+            if hasattr(load, "node") and load.node.id == node_id:
+                labels.append(f"{load_case.id}: Fx={load.fx:.3g}, Fy={load.fy:.3g}, Mz={load.mz:.3g}")
+    return "; ".join(labels) if labels else "none"
+
+
+def _member_load_summary(model, element_id: str) -> str:
+    labels = []
+    for load_case in model.load_cases.values():
+        for load in load_case.loads:
+            if not hasattr(load, "element") or load.element.id != element_id:
+                continue
+            if load.__class__.__name__ == "UniformlyDL":
+                labels.append(f"{load_case.id}: UDL wx={load.wx:.3g}, wy={load.wy:.3g}")
+            elif load.__class__.__name__ == "PointLoad":
+                labels.append(f"{load_case.id}: Point a/L={load.position:.3g}, Fx={load.fx:.3g}, Fy={load.fy:.3g}")
+    return "; ".join(labels) if labels else "none"

@@ -42,11 +42,28 @@ class ObjectTreePanel(ttk.LabelFrame):
                 text=f"{element_id} ({element.type})",
             )
         for node_id in sorted(model.supports):
-            self.tree.insert(parents["Supports"], "end", iid=f"support:{node_id}", text=f"Node {node_id}")
+            support = model.supports[node_id]
+            restraint = "".join(
+                dof
+                for dof, active in (
+                    ("ux ", support.restrain_ux),
+                    ("uy ", support.restrain_uy),
+                    ("rz ", support.restrain_rz),
+                )
+                if active
+            ).strip() or "free"
+            self.tree.insert(parents["Supports"], "end", iid=f"support:{node_id}", text=f"Node {node_id} ({restraint})")
         for load_case in model.load_cases.values():
             for index, load in enumerate(load_case.loads, start=1):
-                label = getattr(getattr(load, "node", None), "id", None) or getattr(getattr(load, "element", None), "id", "")
-                self.tree.insert(parents["Loads"], "end", text=f"{load_case.id}:{index} {label}")
+                if hasattr(load, "node"):
+                    text = f"{load_case.id} / Nodal / Node {load.node.id}"
+                elif load.__class__.__name__ == "UniformlyDL":
+                    text = f"{load_case.id} / UDL / {load.element.id}"
+                elif load.__class__.__name__ == "PointLoad":
+                    text = f"{load_case.id} / Point / {load.element.id}"
+                else:
+                    text = f"{load_case.id}:{index}"
+                self.tree.insert(parents["Loads"], "end", iid=f"load:{load_case.id}:{index}", text=text)
         for node_id in sorted(model.lumped_masses):
             self.tree.insert(parents["Masses"], "end", iid=f"mass:{node_id}", text=f"Node {node_id}")
         for diaphragm_id in sorted(model.diaphragm_ux_groups):

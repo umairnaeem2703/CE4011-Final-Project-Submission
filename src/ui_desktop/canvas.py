@@ -9,6 +9,8 @@ import tkinter as tk
 from tkinter import ttk
 from typing import Callable
 
+from .dialogs import LoadSettings, SupportSettings
+
 
 StatusCallback = Callable[[str], None]
 SelectionCallback = Callable[[str | None, object | None], None]
@@ -51,6 +53,8 @@ class ModelCanvas(ttk.Frame):
         self.active_element_type = "frame"
         self.active_material_id = "M1"
         self.active_section_id = "S1"
+        self.support_settings = SupportSettings()
+        self.load_settings = LoadSettings()
         self.draw_mode = "click"
 
         self.scale = 40.0
@@ -158,6 +162,12 @@ class ModelCanvas(ttk.Frame):
     def set_draw_mode(self, draw_mode: str) -> None:
         self.draw_mode = draw_mode
 
+    def set_support_settings(self, settings: SupportSettings) -> None:
+        self.support_settings = settings
+
+    def set_load_settings(self, settings: LoadSettings) -> None:
+        self.load_settings = settings
+
     def add_node_by_coordinates(self, x: float, y: float) -> int:
         existing_node_id = self._find_node_near_model_point(x, y)
         if existing_node_id is not None:
@@ -222,6 +232,22 @@ class ModelCanvas(ttk.Frame):
             self._set_pending_or_create_element(node_id)
         elif self.active_command == "Delete":
             self._delete_target(node_id, element_id)
+        elif self.active_command == "Assign Support":
+            if node_id is None:
+                self.status_callback("Assign Support: click a node.")
+                return
+            self.assign_support_to_node(node_id)
+        elif self.active_command == "Assign Load":
+            if self.load_settings.target == "Node":
+                if node_id is None:
+                    self.status_callback("Nodal Load: click a node.")
+                    return
+                self.assign_load_to_node(node_id)
+            else:
+                if element_id is None:
+                    self.status_callback("Member Load: click a member.")
+                    return
+                self.assign_load_to_element(element_id)
         elif node_id is not None:
             self.select_node(node_id)
             self.status_callback(f"Selected node {node_id}.")
@@ -300,6 +326,63 @@ class ModelCanvas(ttk.Frame):
             return
         self.status_callback("Delete: click a node or member to remove it.")
 
+    def assign_support_to_node(self, node_id: int) -> None:
+        if node_id not in self.builder.model.nodes:
+            self.status_callback("Assign Support: click a node.")
+            return
+        settings = self.support_settings
+        self.builder.add_support(
+            node_id,
+            restrain_ux=settings.restrain_ux,
+            restrain_uy=settings.restrain_uy,
+            restrain_rz=settings.restrain_rz,
+            settlement_ux=settings.settlement_ux,
+            settlement_uy=settings.settlement_uy,
+            settlement_rz=settings.settlement_rz,
+        )
+        self.redraw_model()
+        self.select_node(node_id)
+        self.change_callback()
+        self.status_callback(f"Assigned {settings.support_type} support to node {node_id}.")
+
+    def assign_load_to_node(self, node_id: int) -> None:
+        settings = self.load_settings
+        self.builder.add_nodal_load(
+            settings.load_case,
+            node_id,
+            fx=settings.fx,
+            fy=settings.fy,
+            mz=settings.mz,
+        )
+        self.redraw_model()
+        self.select_node(node_id)
+        self.change_callback()
+        self.status_callback(f"Assigned nodal load to node {node_id}.")
+
+    def assign_load_to_element(self, element_id: str) -> None:
+        settings = self.load_settings
+        if settings.load_type == "UDL":
+            self.builder.add_member_udl(
+                settings.load_case,
+                element_id,
+                wx=settings.wx,
+                wy=settings.wy,
+            )
+            label = "UDL"
+        else:
+            self.builder.add_member_point_load(
+                settings.load_case,
+                element_id,
+                position=settings.position,
+                fx=settings.fx,
+                fy=settings.fy,
+            )
+            label = "point load"
+        self.redraw_model()
+        self.select_element(element_id)
+        self.change_callback()
+        self.status_callback(f"Assigned member {label} to {element_id}.")
+
     def _draw_node(self, node_id: int, x: float, y: float) -> None:
         cx, cy = self._model_to_canvas(x, y)
         r = self.node_radius
@@ -332,7 +415,10 @@ class ModelCanvas(ttk.Frame):
                 if hasattr(load, "node"):
                     self._draw_nodal_load_symbol(load.node.id)
                 elif hasattr(load, "element"):
-                    self._draw_member_load_symbol(load.element.id)
+                    if load.__class__.__name__ == "PointLoad":
+                        self._draw_member_point_load_symbol(load.element.id, getattr(load, "position", 0.5))
+                    else:
+                        self._draw_member_udl_symbol(load.element.id)
         for node_ids in self.builder.model.diaphragm_ux_groups.values():
             self._draw_diaphragm_symbol(node_ids)
 
@@ -344,6 +430,8 @@ class ModelCanvas(ttk.Frame):
             self.canvas.create_polygon(x, y + 7, x - 10, y + 18, x + 10, y + 18, fill="#777777", tags="symbol")
         else:
             self.canvas.create_oval(x - 9, y + 8, x + 9, y + 18, outline="#777777", tags="symbol")
+        if support.settlement_ux or support.settlement_uy or support.settlement_rz:
+            self.canvas.create_text(x + 14, y + 16, text="d", fill="#c00000", anchor="w", tags="symbol")
 
     def _draw_nodal_load_symbol(self, node_id: int) -> None:
         node = self.builder.model.nodes.get(node_id)
@@ -352,7 +440,7 @@ class ModelCanvas(ttk.Frame):
         x, y = self._model_to_canvas(node.x, node.y)
         self.canvas.create_line(x, y - 28, x, y - 8, arrow=tk.LAST, fill="#d62728", width=2, tags="symbol")
 
-    def _draw_member_load_symbol(self, element_id: str) -> None:
+    def _draw_member_udl_symbol(self, element_id: str) -> None:
         element = self.builder.model.elements.get(element_id)
         if element is None:
             return
@@ -362,6 +450,17 @@ class ModelCanvas(ttk.Frame):
             x = x1 + (x2 - x1) * factor
             y = y1 + (y2 - y1) * factor
             self.canvas.create_line(x, y - 18, x, y - 4, arrow=tk.LAST, fill="#ff7f0e", tags="symbol")
+
+    def _draw_member_point_load_symbol(self, element_id: str, position: float) -> None:
+        element = self.builder.model.elements.get(element_id)
+        if element is None:
+            return
+        x1, y1 = self._model_to_canvas(element.node_i.x, element.node_i.y)
+        x2, y2 = self._model_to_canvas(element.node_j.x, element.node_j.y)
+        factor = max(0.0, min(1.0, position))
+        x = x1 + (x2 - x1) * factor
+        y = y1 + (y2 - y1) * factor
+        self.canvas.create_line(x, y - 22, x, y - 4, arrow=tk.LAST, fill="#d62728", width=2, tags="symbol")
 
     def _draw_mass_symbol(self, node_id: int) -> None:
         node = self.builder.model.nodes.get(node_id)
