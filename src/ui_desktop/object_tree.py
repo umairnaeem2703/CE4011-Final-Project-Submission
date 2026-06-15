@@ -77,6 +77,8 @@ class ObjectTreePanel(ttk.LabelFrame):
                     text = f"{load_case.id} / UDL / {load.element.id}"
                 elif load.__class__.__name__ == "PointLoad":
                     text = f"{load_case.id} / Point / {load.element.id}"
+                elif load.__class__.__name__ == "TemperatureL":
+                    text = f"{load_case.id} / Temperature / {load.element.id} (Tu={load.Tu:.3g}, Tb={load.Tb:.3g})"
                 else:
                     text = f"{load_case.id}:{index}"
                 self.tree.insert(parents["Loads"], "end", iid=f"load:{load_case.id}:{index}", text=text)
@@ -119,9 +121,11 @@ def _mass_summary(mass) -> str:
 def _section_summary(section) -> str:
     if getattr(section, "EA", None) is not None or getattr(section, "EI", None) is not None:
         parts = [
-            "EA/EI direct; ignores material E for stiffness",
+            "EA/EI direct",
             f"EA={_format_optional(section.EA)}",
             f"EI={_format_optional(section.EI)}",
+            f"thermal d={section.d:.3g}" if section.d else "thermal d=unset",
+            "ignores material E for stiffness",
         ]
     else:
         parts = ["Geometric", f"A={section.A:.3g}", f"I={section.I:.3g}", f"d={section.d:.3g}"]

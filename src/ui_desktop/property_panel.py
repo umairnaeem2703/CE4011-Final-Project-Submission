@@ -61,6 +61,8 @@ class PropertyPanel(ttk.LabelFrame):
         self.point_direction_var = tk.StringVar(value="Y")
         self.point_magnitude_var = tk.StringVar(value="0.0")
         self.position_var = tk.StringVar(value="0.5")
+        self.temperature_tu_var = tk.StringVar(value="0.0")
+        self.temperature_tb_var = tk.StringVar(value="0.0")
         self.mass_action_var = tk.StringVar(value="Replace")
         self.mass_ux_var = tk.StringVar(value="0.0")
         self.mass_uy_var = tk.StringVar(value="0.0")
@@ -240,6 +242,8 @@ class PropertyPanel(ttk.LabelFrame):
         ea_entry = ttk.Entry(section, textvariable=self.section_ea_var, width=12)
         ei_label = ttk.Label(section, text="EI direct stiffness")
         ei_entry = ttk.Entry(section, textvariable=self.section_ei_var, width=12)
+        thermal_d_label = ttk.Label(section, text="Thermal depth d")
+        thermal_d_entry = ttk.Entry(section, textvariable=self.section_d_var, width=12)
         direct_note = ttk.Label(
             section,
             text="Material E is ignored for stiffness; material may still provide alpha/density.",
@@ -251,18 +255,20 @@ class PropertyPanel(ttk.LabelFrame):
         ):
             label.grid(row=row, column=0, sticky="w", pady=2)
             entry.grid(row=row, column=1, sticky="ew", pady=2)
-        direct_note.grid(row=7, column=0, columnspan=2, sticky="w", pady=(4, 2))
+        thermal_d_label.grid(row=7, column=0, sticky="w", pady=2)
+        thermal_d_entry.grid(row=7, column=1, sticky="ew", pady=2)
+        direct_note.grid(row=8, column=0, columnspan=2, sticky="w", pady=(4, 2))
         self._section_geometric_widgets = [a_label, a_entry, i_label, i_entry, d_label, d_entry]
-        self._section_direct_widgets = [ea_label, ea_entry, ei_label, ei_entry, direct_note]
+        self._section_direct_widgets = [ea_label, ea_entry, ei_label, ei_entry, thermal_d_label, thermal_d_entry, direct_note]
         ttk.Button(section, text="Add / Update Section", command=self._add_section).grid(
-            row=8,
+            row=9,
             column=0,
             columnspan=2,
             sticky="ew",
             pady=(6, 0),
         )
         ttk.Button(section, text="Reset to Default", command=self._reset_current_command).grid(
-            row=9,
+            row=10,
             column=0,
             columnspan=2,
             sticky="ew",
@@ -301,6 +307,7 @@ class PropertyPanel(ttk.LabelFrame):
         elif self.load_target_var.get() == "Member" and self.load_type_var.get() not in (
             "Uniformly Distributed Load",
             "Point Load",
+            "Temperature",
         ):
             self.load_type_var.set("Uniformly Distributed Load")
         self._combo(form, 0, "Target", self.load_target_var, ("Node", "Member"), self._sync_load_target)
@@ -325,17 +332,18 @@ class PropertyPanel(ttk.LabelFrame):
                 2,
                 "Type",
                 self.load_type_var,
-                ("Uniformly Distributed Load", "Point Load"),
+                ("Uniformly Distributed Load", "Point Load", "Temperature"),
                 self._reload_load_panel,
             )
-            self._combo(
-                form,
-                3,
-                "Coordinate System",
-                self.load_coordinate_system_var,
-                ("Member Local Axis", "Global Axis"),
-                self._apply_load_settings,
-            )
+            if load_type != "Temperature":
+                self._combo(
+                    form,
+                    3,
+                    "Coordinate System",
+                    self.load_coordinate_system_var,
+                    ("Member Local Axis", "Global Axis"),
+                    self._apply_load_settings,
+                )
             ttk.Label(form, text="Case").grid(row=4, column=0, sticky="w", pady=2)
             ttk.Entry(form, textvariable=self.load_case_var, width=10).grid(row=4, column=1, sticky="ew", pady=2)
             if load_type == "Point Load":
@@ -344,6 +352,11 @@ class PropertyPanel(ttk.LabelFrame):
                 ttk.Entry(form, textvariable=self.point_magnitude_var, width=10).grid(row=6, column=1, sticky="ew", pady=2)
                 ttk.Label(form, text="Position a/L").grid(row=7, column=0, sticky="w", pady=2)
                 ttk.Entry(form, textvariable=self.position_var, width=10).grid(row=7, column=1, sticky="ew", pady=2)
+            elif load_type == "Temperature":
+                ttk.Label(form, text="Tu").grid(row=5, column=0, sticky="w", pady=2)
+                ttk.Entry(form, textvariable=self.temperature_tu_var, width=10).grid(row=5, column=1, sticky="ew", pady=2)
+                ttk.Label(form, text="Tb").grid(row=6, column=0, sticky="w", pady=2)
+                ttk.Entry(form, textvariable=self.temperature_tb_var, width=10).grid(row=6, column=1, sticky="ew", pady=2)
             else:
                 ttk.Label(form, text="wx").grid(row=5, column=0, sticky="w", pady=2)
                 ttk.Entry(form, textvariable=self.wx_var, width=10).grid(row=5, column=1, sticky="ew", pady=2)
@@ -469,7 +482,11 @@ class PropertyPanel(ttk.LabelFrame):
         target = self.load_target_var.get()
         if target == "Node" and self.load_type_var.get() not in ("Nodal Load", "Nodal Moment"):
             self.load_type_var.set("Nodal Load")
-        elif target == "Member" and self.load_type_var.get() not in ("Uniformly Distributed Load", "Point Load"):
+        elif target == "Member" and self.load_type_var.get() not in (
+            "Uniformly Distributed Load",
+            "Point Load",
+            "Temperature",
+        ):
             self.load_type_var.set("Uniformly Distributed Load")
         self._reload_load_panel()
 
@@ -499,6 +516,10 @@ class PropertyPanel(ttk.LabelFrame):
                 else:
                     fy = magnitude
                 backend_load_type = "Point Load"
+            elif load_type == "Temperature":
+                wx = float(self.temperature_tu_var.get())
+                wy = float(self.temperature_tb_var.get())
+                backend_load_type = "Temperature"
             else:
                 wx = float(self.wx_var.get())
                 wy = float(self.wy_var.get())
@@ -572,10 +593,11 @@ class PropertyPanel(ttk.LabelFrame):
             try:
                 EA = _required_float(self.section_ea_var.get(), "EA")
                 EI = _required_float(self.section_ei_var.get(), "EI")
+                d = _optional_float(self.section_d_var.get()) or 0.0
             except ValueError as exc:
                 self.status_callback(f"Section: {exc}")
                 return
-            A = I = d = 0.0
+            A = I = 0.0
         self.model_canvas.builder.add_section(section_id, A=A, I=I, d=d, EA=EA, EI=EI)
         self.section_var.set(section_id)
         self.model_canvas.set_active_section(section_id)
@@ -634,6 +656,8 @@ class PropertyPanel(ttk.LabelFrame):
             self.point_direction_var.set("Y")
             self.point_magnitude_var.set("0.0")
             self.position_var.set("0.5")
+            self.temperature_tu_var.set("0.0")
+            self.temperature_tb_var.set("0.0")
             self._reload_load_panel()
         elif command == "Assign Mass":
             self.mass_action_var.set("Replace")
@@ -697,9 +721,11 @@ def _mass_summary(model, node_id: int) -> str:
 def _section_summary(section) -> str:
     if _is_direct_stiffness_section(section):
         parts = [
-            "EA/EI direct; ignores material E for stiffness",
+            "EA/EI direct",
             f"EA={_format_optional(section.EA)}",
             f"EI={_format_optional(section.EI)}",
+            f"thermal d={section.d:.3g}" if section.d else "thermal d=unset",
+            "ignores material E for stiffness",
         ]
     else:
         parts = ["Geometric", f"A={section.A:.3g}", f"I={section.I:.3g}", f"d={section.d:.3g}"]
@@ -736,4 +762,6 @@ def _member_load_summary(model, element_id: str) -> str:
                 labels.append(f"{load_case.id}: UDL wx={load.wx:.3g}, wy={load.wy:.3g}")
             elif load.__class__.__name__ == "PointLoad":
                 labels.append(f"{load_case.id}: Point a/L={load.position:.3g}, Fx={load.fx:.3g}, Fy={load.fy:.3g}")
+            elif load.__class__.__name__ == "TemperatureL":
+                labels.append(f"{load_case.id}: Temperature Tu={load.Tu:.3g}, Tb={load.Tb:.3g}")
     return "; ".join(labels) if labels else "none"

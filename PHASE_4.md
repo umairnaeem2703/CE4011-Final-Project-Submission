@@ -46,13 +46,14 @@ Rules:
 * 4R8b added nodal mass value labels next to mass rings
 * 4R9 assignment action modes for loads/supports/masses
 * 4C0 ModelBuilder temperature load helper
+* 4C temperature load UI
+* 4C1 Direct Stiffness thermal depth handling
 
 Do not break these.
 
 ## Current Subtask Order
 
 ```text
-4C — Temperature load UI
 4D — General mass + diaphragm assignment UI
 ```
 
@@ -104,22 +105,6 @@ tests/...
 ```
 
 Do not modify controller/solver/math files unless the subtask explicitly requires it and reports why.
-
-## 4C — Temperature Load UI
-
-Purpose: expose existing temperature load through Assign Load.
-
-Requirements:
-
-* Assign Load -> Target Member -> Type Temperature.
-* Fields: Tu, Tb, load case LC1.
-* Store through `ModelBuilder.add_temperature_load`.
-* Show red `T` marker on member.
-* Tree/inspector display temperature load.
-* Use the same Add / Replace / Delete action pattern for member temperature loads.
-* No FEF math in UI.
-
----
 
 ## 4D — General Mass + Diaphragm Assignment UI
 

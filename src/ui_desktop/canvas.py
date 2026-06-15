@@ -409,13 +409,33 @@ class ModelCanvas(ttk.Frame):
     def assign_load_to_element(self, element_id: str) -> None:
         settings = self.load_settings
         action = self.load_action
+        if element_id not in self.builder.model.elements:
+            self.status_callback("Member Load: click a member.")
+            return
+        element = self.builder.model.elements[element_id]
+        if action != "Delete" and settings.load_type == "Temperature":
+            if settings.wx != settings.wy and element.section.d <= 0:
+                self.status_callback("Temperature gradient requires section depth d. Set Thermal depth d in the section.")
+                return
+            if settings.wx != settings.wy and element.type == "truss":
+                self.status_callback("Temperature load: truss members require Tu and Tb to match.")
+                return
         if action in ("Replace", "Delete"):
-            self._remove_loads(
-                settings.load_case,
-                lambda load: getattr(getattr(load, "element", None), "id", None) == element_id,
-            )
+            if settings.load_type == "Temperature":
+                self._remove_loads(
+                    settings.load_case,
+                    lambda load: (
+                        load.__class__.__name__ == "TemperatureL"
+                        and getattr(getattr(load, "element", None), "id", None) == element_id
+                    ),
+                )
+            else:
+                self._remove_loads(
+                    settings.load_case,
+                    lambda load: getattr(getattr(load, "element", None), "id", None) == element_id,
+                )
         if action == "Delete":
-            label = "load"
+            label = "temperature load" if settings.load_type == "Temperature" else "load"
         elif settings.load_type == "UDL":
             self.builder.add_member_udl(
                 settings.load_case,
@@ -424,6 +444,14 @@ class ModelCanvas(ttk.Frame):
                 wy=settings.wy,
             )
             label = "UDL"
+        elif settings.load_type == "Temperature":
+            self.builder.add_temperature_load(
+                settings.load_case,
+                element_id,
+                Tu=settings.wx,
+                Tb=settings.wy,
+            )
+            label = "temperature load"
         else:
             self.builder.add_member_point_load(
                 settings.load_case,
@@ -523,6 +551,8 @@ class ModelCanvas(ttk.Frame):
                         self._draw_member_point_load_symbol(load)
                     elif load.__class__.__name__ == "UniformlyDL":
                         self._draw_member_udl_symbol(load)
+                    elif load.__class__.__name__ == "TemperatureL":
+                        self._draw_member_temperature_symbol(load)
         for node_ids in self.builder.model.diaphragm_ux_groups.values():
             self._draw_diaphragm_symbol(node_ids)
 
@@ -602,6 +632,16 @@ class ModelCanvas(ttk.Frame):
         dx, dy = direction
         head_x, head_y = self._draw_vector_arrow(x - dx * 26, y - dy * 26, dx, dy, length=26, color="#d62728")
         self._draw_symbol_label(head_x + 8, head_y - 8, f"P=({_fmt_value(load.fx)}, {_fmt_value(load.fy)})", "#d62728")
+
+    def _draw_member_temperature_symbol(self, load) -> None:
+        element = self.builder.model.elements.get(load.element.id)
+        if element is None:
+            return
+        x1, y1 = self._model_to_canvas(element.node_i.x, element.node_i.y)
+        x2, y2 = self._model_to_canvas(element.node_j.x, element.node_j.y)
+        mid_x = (x1 + x2) / 2
+        mid_y = (y1 + y2) / 2
+        self._draw_symbol_label(mid_x + 8, mid_y - 18, f"T Tu={_fmt_value(load.Tu)}, Tb={_fmt_value(load.Tb)}", "#c00000")
 
     def _draw_vector_arrow(
         self,
