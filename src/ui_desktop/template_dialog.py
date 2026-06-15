@@ -30,10 +30,11 @@ class ShearFrameSettings:
     material_id: str
     column_section_id: str
     beam_section_id: str
-    base_support_type: str
     lumped_mass_per_floor: float
+    mass_placement: str
     diaphragm_per_floor: bool
     unit_system: str
+    project_name: str
 
 
 class NewModelDialog(tk.Toplevel):
@@ -48,7 +49,7 @@ class NewModelDialog(tk.Toplevel):
         self.result = None
         self.error_message = tk.StringVar(value="")
 
-        self.project_name_var = tk.StringVar(value="Desktop Model")
+        self.project_name_var = tk.StringVar(value="New Model")
         self.unit_system_var = tk.StringVar(value="kN_m_tonne")
         self.template_var = tk.StringVar(value="2D General Structure")
         self.stories_var = tk.StringVar(value="1")
@@ -58,9 +59,12 @@ class NewModelDialog(tk.Toplevel):
         self.material_var = tk.StringVar(value="M1")
         self.column_section_var = tk.StringVar(value="COL")
         self.beam_section_var = tk.StringVar(value="BEAM")
-        self.support_var = tk.StringVar(value="fixed")
         self.mass_var = tk.StringVar(value="")
+        self.mass_placement_var = tk.StringVar(value="center floor node")
         self.diaphragm_var = tk.BooleanVar(value=True)
+        self._template_sensitive_widgets = []
+        self._general_section_widgets = []
+        self._shear_section_widgets = []
 
         self._build()
         self._sync_template_fields()
@@ -77,7 +81,14 @@ class NewModelDialog(tk.Toplevel):
         setup.grid(row=0, column=0, columnspan=2, sticky="ew", pady=(0, 8))
         setup.columnconfigure(1, weight=1)
         self._add_entry(setup, 0, "Project name", self.project_name_var)
-        self._add_entry(setup, 1, "Units", self.unit_system_var)
+        ttk.Label(setup, text="Units").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Combobox(
+            setup,
+            textvariable=self.unit_system_var,
+            values=("N_m_kg", "kN_m_tonne", "kN_m_kNsec2_per_m"),
+            state="readonly",
+            width=20,
+        ).grid(row=1, column=1, sticky="ew", pady=2)
 
         model_type = ttk.LabelFrame(frame, text="Step 2: Model Type", padding=8)
         model_type.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(0, 8))
@@ -97,33 +108,45 @@ class NewModelDialog(tk.Toplevel):
         defaults.grid(row=2, column=0, columnspan=2, sticky="ew", pady=(0, 8))
         defaults.columnconfigure(1, weight=1)
         self._add_entry(defaults, 0, "Default material", self.material_var)
-        self._add_entry(defaults, 1, "Column section", self.column_section_var)
-        self._add_entry(defaults, 2, "Beam/member section", self.beam_section_var)
+        column_label, column_entry = self._add_entry(defaults, 1, "Column section", self.column_section_var)
+        beam_label, beam_entry = self._add_entry(defaults, 2, "Beam/member section", self.beam_section_var)
+        self._shear_section_widgets.extend([column_label, column_entry])
+        self._general_section_widgets.extend([beam_label, beam_entry])
 
         self.geometry_frame = ttk.LabelFrame(frame, text="Step 4: Geometry / Template Settings", padding=8)
         self.geometry_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=(0, 8))
         self.geometry_frame.columnconfigure(1, weight=1)
-        self._add_entry(self.geometry_frame, 0, "Stories", self.stories_var)
-        self._add_entry(self.geometry_frame, 1, "Bays", self.bays_var)
-        self._add_entry(self.geometry_frame, 2, "Story height", self.story_height_var)
-        self._add_entry(self.geometry_frame, 3, "Bay width", self.bay_width_var)
-        ttk.Label(self.geometry_frame, text="Base support").grid(row=4, column=0, sticky="w", pady=2)
-        support_box = ttk.Combobox(
+        for widgets in (
+            self._add_entry(self.geometry_frame, 0, "Stories", self.stories_var),
+            self._add_entry(self.geometry_frame, 1, "Bays", self.bays_var),
+            self._add_entry(self.geometry_frame, 2, "Story height", self.story_height_var),
+            self._add_entry(self.geometry_frame, 3, "Bay width", self.bay_width_var),
+            self._add_entry(self.geometry_frame, 4, "Mass per floor", self.mass_var),
+        ):
+            self._template_sensitive_widgets.extend(widgets)
+        placement_label = ttk.Label(self.geometry_frame, text="Mass placement")
+        placement_label.grid(row=5, column=0, sticky="w", pady=2)
+        placement_box = ttk.Combobox(
             self.geometry_frame,
-            textvariable=self.support_var,
-            values=("fixed", "pin", "roller_x", "roller_y"),
+            textvariable=self.mass_placement_var,
+            values=("center floor node", "distribute to floor nodes"),
             state="readonly",
-            width=14,
+            width=22,
         )
-        support_box.grid(row=4, column=1, sticky="ew", pady=2)
-        self._add_entry(self.geometry_frame, 5, "Mass/floor", self.mass_var)
-        ttk.Checkbutton(self.geometry_frame, text="Diaphragm per floor", variable=self.diaphragm_var).grid(
+        placement_box.grid(row=5, column=1, sticky="ew", pady=2)
+        diaphragm_check = ttk.Checkbutton(
+            self.geometry_frame,
+            text="Rigid floor diaphragm system",
+            variable=self.diaphragm_var,
+        )
+        diaphragm_check.grid(
             row=6,
             column=0,
             columnspan=2,
             sticky="w",
             pady=(6, 0),
         )
+        self._template_sensitive_widgets.extend([placement_label, placement_box, diaphragm_check])
 
         ttk.Label(frame, textvariable=self.error_message, foreground="#a00000").grid(
             row=4,
@@ -138,17 +161,30 @@ class NewModelDialog(tk.Toplevel):
         ttk.Button(actions, text="Cancel", command=self._cancel).grid(row=0, column=0, padx=(0, 6))
         ttk.Button(actions, text="Create", command=self._create).grid(row=0, column=1)
 
-    def _add_entry(self, parent, row: int, label: str, variable: tk.StringVar) -> None:
-        ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=2)
-        ttk.Entry(parent, textvariable=variable, width=16).grid(row=row, column=1, sticky="ew", pady=2)
+    def _add_entry(self, parent, row: int, label: str, variable: tk.StringVar) -> tuple[ttk.Label, ttk.Entry]:
+        label_widget = ttk.Label(parent, text=label)
+        label_widget.grid(row=row, column=0, sticky="w", pady=2)
+        entry_widget = ttk.Entry(parent, textvariable=variable, width=16)
+        entry_widget.grid(row=row, column=1, sticky="ew", pady=2)
+        return label_widget, entry_widget
 
     def _sync_template_fields(self) -> None:
-        state = "normal" if self.template_var.get() == "2D Shear Frame" else "disabled"
-        for child in self.geometry_frame.winfo_children():
+        is_shear_frame = self.template_var.get() == "2D Shear Frame"
+        state = "normal" if is_shear_frame else "disabled"
+        for child in self._template_sensitive_widgets:
             try:
                 child.configure(state=state)
             except tk.TclError:
                 pass
+        for child in self._shear_section_widgets:
+            if is_shear_frame:
+                child.grid()
+            else:
+                child.grid_remove()
+        if self._general_section_widgets:
+            self._general_section_widgets[0].configure(
+                text="Beam/member section" if is_shear_frame else "Default section"
+            )
 
     def _create(self) -> None:
         try:
@@ -181,10 +217,11 @@ class NewModelDialog(tk.Toplevel):
             material_id=self.material_var.get().strip() or "M1",
             column_section_id=self.column_section_var.get().strip() or "COL",
             beam_section_id=self.beam_section_var.get().strip() or "BEAM",
-            base_support_type=self.support_var.get(),
             lumped_mass_per_floor=mass,
+            mass_placement=self.mass_placement_var.get(),
             diaphragm_per_floor=self.diaphragm_var.get(),
             unit_system=self.unit_system_var.get().strip() or "kN_m_tonne",
+            project_name=self.project_name_var.get().strip() or "New Model",
         )
 
     def _cancel(self) -> None:
@@ -208,7 +245,8 @@ def create_general_structure_builder(name: str, unit_system: str, material_id: s
 
 def create_shear_frame_builder(settings: ShearFrameSettings):
     ModelBuilder = _load_model_builder()
-    builder = ModelBuilder(name="2D Shear Frame", unit_system=settings.unit_system)
+    builder = ModelBuilder(name=settings.project_name, unit_system=settings.unit_system)
+    builder.creation_messages = []
     builder.add_material(settings.material_id, E=1.0)
     builder.add_section(settings.column_section_id, A=1.0, I=1.0)
     builder.add_section(settings.beam_section_id, A=1.0, I=1.0)
@@ -249,13 +287,22 @@ def create_shear_frame_builder(settings: ShearFrameSettings):
             element_number += 1
 
     for bay in range(settings.bays + 1):
-        builder.add_support(node_ids[(0, bay)], **_support_kwargs(settings.base_support_type))
+        builder.add_support(node_ids[(0, bay)], restrain_ux=True, restrain_uy=True, restrain_rz=True)
 
     if settings.lumped_mass_per_floor > 0.0:
-        mass_per_node = settings.lumped_mass_per_floor / (settings.bays + 1)
         for story in range(1, settings.stories + 1):
-            for bay in range(settings.bays + 1):
-                builder.add_lumped_mass(node_ids[(story, bay)], mass_ux=mass_per_node, mass_uy=mass_per_node)
+            floor_nodes = [node_ids[(story, bay)] for bay in range(settings.bays + 1)]
+            center_bay = settings.bays / 2.0
+            if settings.mass_placement == "center floor node" and center_bay.is_integer():
+                builder.add_lumped_mass(node_ids[(story, int(center_bay))], mass_ux=settings.lumped_mass_per_floor)
+            else:
+                mass_per_node = settings.lumped_mass_per_floor / len(floor_nodes)
+                for node_id in floor_nodes:
+                    builder.add_lumped_mass(node_id, mass_ux=mass_per_node)
+                if settings.mass_placement == "center floor node":
+                    builder.creation_messages.append(
+                        f"Floor {story}: no center node exists; distributed mass to floor nodes."
+                    )
 
     if settings.diaphragm_per_floor:
         for story in range(1, settings.stories + 1):
@@ -263,16 +310,6 @@ def create_shear_frame_builder(settings: ShearFrameSettings):
             builder.add_diaphragm_group(f"D{story}", floor_nodes)
 
     return builder
-
-
-def _support_kwargs(support_type: str) -> dict[str, bool]:
-    if support_type == "pin":
-        return {"restrain_ux": True, "restrain_uy": True, "restrain_rz": False}
-    if support_type == "roller_x":
-        return {"restrain_ux": False, "restrain_uy": True, "restrain_rz": False}
-    if support_type == "roller_y":
-        return {"restrain_ux": True, "restrain_uy": False, "restrain_rz": False}
-    return {"restrain_ux": True, "restrain_uy": True, "restrain_rz": True}
 
 
 def _positive_int(value: str, label: str) -> int:

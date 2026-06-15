@@ -134,6 +134,8 @@ class MainWindow:
         self.property_panel.show_command(self.selected_command.get())
         self._refresh_object_tree()
         self._write_status(f"New model created: {builder.model.name}.")
+        for message in getattr(builder, "creation_messages", []):
+            self._write_status(message)
 
     def _show_selection(self, kind: str | None, obj: object | None) -> None:
         self.property_panel.show_selection(kind, obj)
