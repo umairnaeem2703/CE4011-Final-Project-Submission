@@ -39,6 +39,7 @@ Rules:
 * 4R4 mass placement UX clarification
 * 4R5 effective EA/EI backend support
 * 4R6 effective EA/EI UI exposure
+* 4R6b section input mode fix + reset-to-default buttons
 
 Do not break these.
 

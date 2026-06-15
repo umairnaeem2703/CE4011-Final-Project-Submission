@@ -32,6 +32,7 @@ class PropertyPanel(ttk.LabelFrame):
         self.material_e_var = tk.StringVar(value="1.0")
         self.material_alpha_var = tk.StringVar(value="0.0")
         self.material_density_var = tk.StringVar(value="0.0")
+        self.section_input_mode_var = tk.StringVar(value="Geometric")
         self.section_id_var = tk.StringVar(value="S1")
         self.section_a_var = tk.StringVar(value="1.0")
         self.section_i_var = tk.StringVar(value="1.0")
@@ -55,6 +56,8 @@ class PropertyPanel(ttk.LabelFrame):
         self.wx_var = tk.StringVar(value="0.0")
         self.wy_var = tk.StringVar(value="0.0")
         self.position_var = tk.StringVar(value="0.5")
+        self._section_geometric_widgets = []
+        self._section_direct_widgets = []
 
         self.columnconfigure(0, weight=1)
         self.show_command("Select / Inspect")
@@ -104,6 +107,12 @@ class PropertyPanel(ttk.LabelFrame):
         ttk.Label(form, text="y").grid(row=1, column=0, sticky="w", pady=2)
         ttk.Entry(form, textvariable=self.y_var, width=12).grid(row=1, column=1, sticky="ew", pady=2)
         ttk.Button(self, text="Add Node", command=self._add_node).grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        ttk.Button(self, text="Reset to Default", command=self._reset_current_command).grid(
+            row=3,
+            column=0,
+            sticky="ew",
+            pady=(6, 0),
+        )
 
     def _draw_member_panel(self) -> None:
         self._title("Draw Member")
@@ -121,6 +130,12 @@ class PropertyPanel(ttk.LabelFrame):
         ttk.Label(form, text="Angle").grid(row=5, column=0, sticky="w", pady=2)
         ttk.Entry(form, textvariable=self.angle_var, width=12).grid(row=5, column=1, sticky="ew", pady=2)
         ttk.Button(self, text="Draw From Start", command=self._draw_member).grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        ttk.Button(self, text="Reset to Default", command=self._reset_current_command).grid(
+            row=3,
+            column=0,
+            sticky="ew",
+            pady=(6, 0),
+        )
 
     def _inspect_panel(self) -> None:
         self._title("Select / Inspect")
@@ -163,6 +178,12 @@ class PropertyPanel(ttk.LabelFrame):
     def _placeholder_panel(self, title: str, text: str) -> None:
         self._title(title)
         ttk.Label(self, text=text, wraplength=220).grid(row=1, column=0, sticky="nw", pady=(8, 0))
+        ttk.Button(self, text="Reset to Default", command=self._reset_current_command).grid(
+            row=2,
+            column=0,
+            sticky="ew",
+            pady=(8, 0),
+        )
 
     def _materials_sections_panel(self) -> None:
         self._title("Materials / Sections")
@@ -192,23 +213,47 @@ class PropertyPanel(ttk.LabelFrame):
         section.columnconfigure(1, weight=1)
         ttk.Label(section, text="id/name").grid(row=0, column=0, sticky="w", pady=2)
         ttk.Entry(section, textvariable=self.section_id_var, width=12).grid(row=0, column=1, sticky="ew", pady=2)
-        ttk.Label(section, text="A").grid(row=1, column=0, sticky="w", pady=2)
-        ttk.Entry(section, textvariable=self.section_a_var, width=12).grid(row=1, column=1, sticky="ew", pady=2)
-        ttk.Label(section, text="I").grid(row=2, column=0, sticky="w", pady=2)
-        ttk.Entry(section, textvariable=self.section_i_var, width=12).grid(row=2, column=1, sticky="ew", pady=2)
-        ttk.Label(section, text="d/depth").grid(row=3, column=0, sticky="w", pady=2)
-        ttk.Entry(section, textvariable=self.section_d_var, width=12).grid(row=3, column=1, sticky="ew", pady=2)
-        ttk.Label(section, text="EA override (optional)").grid(row=4, column=0, sticky="w", pady=2)
-        ttk.Entry(section, textvariable=self.section_ea_var, width=12).grid(row=4, column=1, sticky="ew", pady=2)
-        ttk.Label(section, text="EI override (optional)").grid(row=5, column=0, sticky="w", pady=2)
-        ttk.Entry(section, textvariable=self.section_ei_var, width=12).grid(row=5, column=1, sticky="ew", pady=2)
+        self._combo(
+            section,
+            1,
+            "Input mode",
+            self.section_input_mode_var,
+            ("Geometric", "Direct Stiffness"),
+            self._sync_section_input_mode,
+        )
+        a_label = ttk.Label(section, text="A")
+        a_entry = ttk.Entry(section, textvariable=self.section_a_var, width=12)
+        i_label = ttk.Label(section, text="I")
+        i_entry = ttk.Entry(section, textvariable=self.section_i_var, width=12)
+        d_label = ttk.Label(section, text="d/depth")
+        d_entry = ttk.Entry(section, textvariable=self.section_d_var, width=12)
+        ea_label = ttk.Label(section, text="EA direct stiffness")
+        ea_entry = ttk.Entry(section, textvariable=self.section_ea_var, width=12)
+        ei_label = ttk.Label(section, text="EI direct stiffness")
+        ei_entry = ttk.Entry(section, textvariable=self.section_ei_var, width=12)
+        for row, (label, entry) in enumerate(
+            ((a_label, a_entry), (i_label, i_entry), (d_label, d_entry), (ea_label, ea_entry), (ei_label, ei_entry)),
+            start=2,
+        ):
+            label.grid(row=row, column=0, sticky="w", pady=2)
+            entry.grid(row=row, column=1, sticky="ew", pady=2)
+        self._section_geometric_widgets = [a_label, a_entry, i_label, i_entry, d_label, d_entry]
+        self._section_direct_widgets = [ea_label, ea_entry, ei_label, ei_entry]
         ttk.Button(section, text="Add / Update Section", command=self._add_section).grid(
-            row=6,
+            row=7,
             column=0,
             columnspan=2,
             sticky="ew",
             pady=(6, 0),
         )
+        ttk.Button(section, text="Reset to Default", command=self._reset_current_command).grid(
+            row=8,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(6, 0),
+        )
+        self._sync_section_input_mode()
 
     def _support_panel(self) -> None:
         self._title("Assign Support")
@@ -227,6 +272,7 @@ class PropertyPanel(ttk.LabelFrame):
         ttk.Entry(form, textvariable=self.settlement_rz_var, width=10).grid(row=4, column=1, sticky="ew", pady=2)
         ttk.Button(self, text="Use These Settings", command=self._apply_support_settings).grid(row=2, column=0, sticky="ew", pady=(8, 0))
         ttk.Label(self, text="Click a node on the canvas to assign support.", wraplength=220).grid(row=3, column=0, sticky="nw", pady=(8, 0))
+        ttk.Button(self, text="Reset to Default", command=self._reset_current_command).grid(row=4, column=0, sticky="ew", pady=(8, 0))
         self._sync_support_type()
 
     def _load_panel(self) -> None:
@@ -248,6 +294,7 @@ class PropertyPanel(ttk.LabelFrame):
         ttk.Entry(form, textvariable=self.position_var, width=10).grid(row=6, column=1, sticky="ew", pady=2)
         ttk.Button(self, text="Use These Settings", command=self._apply_load_settings).grid(row=2, column=0, sticky="ew", pady=(8, 0))
         ttk.Label(self, text="Click the selected target type on the canvas.", wraplength=220).grid(row=3, column=0, sticky="nw", pady=(8, 0))
+        ttk.Button(self, text="Reset to Default", command=self._reset_current_command).grid(row=4, column=0, sticky="ew", pady=(8, 0))
         self._sync_load_target()
 
     def _title(self, text: str) -> None:
@@ -291,6 +338,19 @@ class PropertyPanel(ttk.LabelFrame):
         mode = "length_angle" if self.draw_mode_var.get() == "Length + angle" else "click"
         self.model_canvas.set_draw_mode(mode)
         self.status_callback(self.model_canvas.command_instruction())
+
+    def _sync_section_input_mode(self) -> None:
+        geometric = self.section_input_mode_var.get() == "Geometric"
+        for widget in self._section_geometric_widgets:
+            if geometric:
+                widget.grid()
+            else:
+                widget.grid_remove()
+        for widget in self._section_direct_widgets:
+            if geometric:
+                widget.grid_remove()
+            else:
+                widget.grid()
 
     def _sync_support_type(self) -> None:
         support_type = self.support_type_var.get()
@@ -389,20 +449,76 @@ class PropertyPanel(ttk.LabelFrame):
         if not section_id:
             self.status_callback("Section: id/name is required.")
             return
-        try:
-            A = float(self.section_a_var.get())
-            I = float(self.section_i_var.get())
-            d = float(self.section_d_var.get())
-            EA = _optional_float(self.section_ea_var.get())
-            EI = _optional_float(self.section_ei_var.get())
-        except ValueError:
-            self.status_callback("Section: A, I, d/depth, EA, and EI must be numeric when provided.")
-            return
+        if self.section_input_mode_var.get() == "Geometric":
+            try:
+                A = _required_float(self.section_a_var.get(), "A")
+                I = _required_float(self.section_i_var.get(), "I")
+                d = _optional_float(self.section_d_var.get()) or 0.0
+            except ValueError as exc:
+                self.status_callback(f"Section: {exc}")
+                return
+            EA = EI = None
+        else:
+            try:
+                EA = _required_float(self.section_ea_var.get(), "EA")
+                EI = _required_float(self.section_ei_var.get(), "EI")
+            except ValueError as exc:
+                self.status_callback(f"Section: {exc}")
+                return
+            A = I = d = 0.0
         self.model_canvas.builder.add_section(section_id, A=A, I=I, d=d, EA=EA, EI=EI)
         self.section_var.set(section_id)
         self.model_canvas.set_active_section(section_id)
         self.model_canvas.change_callback()
         self.status_callback(f"Section {section_id} saved.")
+
+    def _reset_current_command(self) -> None:
+        command = self.current_command
+        if command == "Draw Node":
+            self.x_var.set("0.0")
+            self.y_var.set("0.0")
+        elif command == "Draw Member":
+            self.element_type_var.set("frame")
+            self.material_var.set(next(iter(self.model_canvas.builder.model.materials), "M1"))
+            self.section_var.set(next(iter(self.model_canvas.builder.model.sections), "S1"))
+            self.draw_mode_var.set("Click end node")
+            self.length_var.set("1.0")
+            self.angle_var.set("0.0")
+            self._set_member_settings()
+            self._set_draw_mode()
+        elif command == "Materials / Sections":
+            self.material_id_var.set("M1")
+            self.material_type_var.set("Generic")
+            self.material_e_var.set("1.0")
+            self.material_alpha_var.set("0.0")
+            self.material_density_var.set("0.0")
+            self.section_input_mode_var.set("Geometric")
+            self.section_id_var.set("S1")
+            self.section_a_var.set("1.0")
+            self.section_i_var.set("1.0")
+            self.section_d_var.set("0.0")
+            self.section_ea_var.set("")
+            self.section_ei_var.set("")
+            self._sync_section_input_mode()
+        elif command == "Assign Support":
+            self.support_type_var.set("fixed")
+            self.restrain_ux_var.set(True)
+            self.restrain_uy_var.set(True)
+            self.restrain_rz_var.set(True)
+            self.settlement_ux_var.set("0.0")
+            self.settlement_uy_var.set("0.0")
+            self.settlement_rz_var.set("0.0")
+            self._apply_support_settings()
+        elif command == "Assign Load":
+            self.load_target_var.set("Node")
+            self.load_type_var.set("Nodal Force/Moment")
+            self.load_case_var.set("LC1")
+            self.fx_var.set("0.0")
+            self.fy_var.set("0.0")
+            self.mz_var.set("0.0")
+            self.position_var.set("0.5")
+            self._apply_load_settings()
+        self.status_callback(f"{command}: settings reset to defaults.")
 
     def _material_ids(self) -> tuple[str, ...]:
         return tuple(self.model_canvas.builder.model.materials.keys()) or ("M1",)
@@ -456,17 +572,31 @@ def _mass_summary(model, node_id: int) -> str:
 
 
 def _section_summary(section) -> str:
-    parts = [f"A={section.A:.3g}", f"I={section.I:.3g}", f"d={section.d:.3g}"]
-    if getattr(section, "EA", None) is not None:
-        parts.append(f"EA={section.EA:.3g}")
-    if getattr(section, "EI", None) is not None:
-        parts.append(f"EI={section.EI:.3g}")
+    if _is_direct_stiffness_section(section):
+        parts = ["Direct stiffness", f"EA={_format_optional(section.EA)}", f"EI={_format_optional(section.EI)}"]
+    else:
+        parts = ["Geometric", f"A={section.A:.3g}", f"I={section.I:.3g}", f"d={section.d:.3g}"]
     return f"{section.id} ({', '.join(parts)})"
 
 
 def _optional_float(value: str) -> float | None:
     text = value.strip()
     return None if not text else float(text)
+
+
+def _required_float(value: str, label: str) -> float:
+    text = value.strip()
+    if not text:
+        raise ValueError(f"{label} is required.")
+    return float(text)
+
+
+def _is_direct_stiffness_section(section) -> bool:
+    return getattr(section, "EA", None) is not None or getattr(section, "EI", None) is not None
+
+
+def _format_optional(value) -> str:
+    return "unset" if value is None else f"{value:.3g}"
 
 
 def _member_load_summary(model, element_id: str) -> str:
