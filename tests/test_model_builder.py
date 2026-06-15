@@ -116,6 +116,27 @@ def test_model_builder_xml_export_round_trips_counts(tmp_path):
     assert parsed.supports[1].settlement_rz == pytest.approx(model.supports[1].settlement_rz)
 
 
+def test_model_builder_xml_export_round_trips_direct_ea_ei(tmp_path):
+    builder = ModelBuilder(name="Effective Stiffness Round Trip")
+    builder.add_material("m1", E=200000.0)
+    builder.add_section("s1", A=0.02, I=0.0001, d=0.3, EA=1234.0, EI=56.7)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+    builder.add_support(1, restrain_ux=True, restrain_uy=True, restrain_rz=True)
+
+    xml_path = tmp_path / "effective_stiffness_round_trip.xml"
+    builder.export_xml(xml_path)
+    section_el = ET.parse(xml_path).getroot().find("./sections/section")
+    parsed = XMLParser(xml_path).parse()
+    parsed_section = parsed.sections["s1"]
+
+    assert section_el.attrib["EA"] == "1234"
+    assert section_el.attrib["EI"] == "56.7"
+    assert parsed_section.EA == pytest.approx(1234.0)
+    assert parsed_section.EI == pytest.approx(56.7)
+
+
 def test_model_builder_xml_export_round_trips_lumped_mass(tmp_path):
     builder = ModelBuilder(name="Mass Round Trip")
     builder.add_material("m1", E=200000.0)

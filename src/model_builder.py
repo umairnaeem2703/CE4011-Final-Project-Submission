@@ -40,8 +40,16 @@ class ModelBuilder:
         self._mark_dirty()
         return material
 
-    def add_section(self, id: str, A: float, I: float = 0.0, d: float = 0.0) -> Section:
-        section = Section(id=id, A=A, I=I, d=d)
+    def add_section(
+        self,
+        id: str,
+        A: float,
+        I: float = 0.0,
+        d: float = 0.0,
+        EA: float | None = None,
+        EI: float | None = None,
+    ) -> Section:
+        section = Section(id=id, A=A, I=I, d=d, EA=EA, EI=EI)
         self.model.sections[id] = section
         self._mark_dirty()
         return section
@@ -237,10 +245,15 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
 
     sections_el = ET.SubElement(root, "sections")
     for section in model.sections.values():
+        attrs = {"id": section.id, "A": _fmt(section.A), "I": _fmt(section.I), "d": _fmt(section.d)}
+        if section.EA is not None:
+            attrs["EA"] = _fmt(section.EA)
+        if section.EI is not None:
+            attrs["EI"] = _fmt(section.EI)
         ET.SubElement(
             sections_el,
             "section",
-            {"id": section.id, "A": _fmt(section.A), "I": _fmt(section.I), "d": _fmt(section.d)},
+            attrs,
         )
 
     nodes_el = ET.SubElement(root, "nodes")

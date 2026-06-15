@@ -36,14 +36,14 @@ Rules:
 * 4R1 new model wizard + shear-frame mass UX
 * 4R2 mass symbol refinement
 * 4R3 material/section manager UI
+* 4R4 mass placement UX clarification
+* 4R5 effective EA/EI backend support
 
 Do not break these.
 
 ## Current Subtask Order
 
 ```text
-4R4 — Mass placement UX clarification
-4R5 — Effective EA/EI backend support
 4R6 — Effective EA/EI UI exposure
 4R7 — Assign Load right-pane redesign
 4R8 — Load/support visualization correction
@@ -100,62 +100,6 @@ tests/...
 ```
 
 Do not modify controller/solver/math files unless the subtask explicitly requires it and reports why.
-
----
-
-## 4R4 — Mass Placement UX Clarification
-
-Purpose: make shear-frame template mass placement understandable.
-
-Requirements:
-
-* Masses remain real nodal lumped masses.
-* Center placement: show one mass symbol at center floor node.
-* Distributed placement: show mass symbols at all floor nodes that receive mass.
-* Inspector/object tree should show actual nodal `mass_ux`, `mass_uy`, `mass_rz`.
-* Status message should explain placement, e.g. “Story mass distributed to 2 floor nodes.”
-* No backend change unless current data cannot be displayed.
-
-Validate:
-
-* 2-bay shear frame center mass shows one ring per floor.
-* 1-bay/no-center fallback distributes and reports clearly.
-* Existing mass ring style from 4R2 remains.
-
----
-
-## 4R5 — Effective EA/EI Backend Support
-
-Purpose: allow direct effective axial/flexural stiffness without fake huge E/A/I tricks.
-
-Backend design:
-
-```text
-effective_EA = section.EA if provided else material.E * section.A
-effective_EI = section.EI if provided else material.E * section.I
-```
-
-Requirements:
-
-* Add optional `EA` and `EI` support to Section/backend.
-* Preserve existing `E`, `A`, `I`, `d`.
-* Use effective EA/EI in element stiffness.
-* Use effective EA/EI where thermal load physics needs axial/flexural stiffness.
-* Preserve XML import/export if XML already handles sections.
-* Add focused tests.
-
-Rules:
-
-* No UI changes in 4R5.
-* No stiffness modifiers.
-* No arbitrary huge EA.
-* Stop if this requires broad refactor.
-
-Validate:
-
-* Existing static tests still pass.
-* New test proves direct EA/EI overrides E*A/E*I.
-* XML round-trip works if XML support is touched.
 
 ---
 

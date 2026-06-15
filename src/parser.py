@@ -20,6 +20,14 @@ class Section:
     A: float
     I: float = 0.0
     d: float = 0.0      # Section depth
+    EA: float | None = None
+    EI: float | None = None
+
+    def effective_EA(self, material: Material) -> float:
+        return self.EA if self.EA is not None else material.E * self.A
+
+    def effective_EI(self, material: Material) -> float:
+        return self.EI if self.EI is not None else material.E * self.I
 
 @dataclass
 class Node:
@@ -164,20 +172,19 @@ class TemperatureL(MemberLoad):
     Tb: float = 0.0  # Temperature at bottom surface
 
     def FEF(self, fef_condition: str, L: float) -> list:
-        """Computes thermal FEF: F_T = alpha * T_uniform * E * A, M_T = (alpha * delta_T / d) * E * I"""
+        """Computes thermal FEF using effective section axial/flexural stiffness."""
         fef = [[0.0] for _ in range(6)]
         
-        E = self.element.material.E
         alpha = self.element.material.alpha
-        A = self.element.section.A
-        I = self.element.section.I
+        EA = self.element.section.effective_EA(self.element.material)
+        EI = self.element.section.effective_EI(self.element.material)
         d = self.element.section.d
         
         delta_T = self.Tb - self.Tu
         T_uniform = self.Tu + (delta_T / 2.0)
         
         # Axial thermal force
-        F_T = alpha * T_uniform * E * A
+        F_T = alpha * T_uniform * EA
         fef[0][0] = -F_T
         fef[3][0] =  F_T
         
@@ -186,7 +193,7 @@ class TemperatureL(MemberLoad):
             return fef
         
         # Moment magnitude for frame elements
-        M_T = (alpha * delta_T / d) * E * I if d != 0 else 0.0
+        M_T = (alpha * delta_T / d) * EI if d != 0 else 0.0
         
         # Adjust FEF based on end releases
         if fef_condition == "fixed-fixed":
@@ -303,7 +310,9 @@ class XMLParser:
             A = float(sec.attrib.get('A', 0.0))
             I = float(sec.attrib.get('I', 0.0))
             d = float(sec.attrib.get('d', 0.0))
-            self.model.sections[s_id] = Section(id=s_id, A=A, I=I, d=d)
+            EA = float(sec.attrib['EA']) if 'EA' in sec.attrib else None
+            EI = float(sec.attrib['EI']) if 'EI' in sec.attrib else None
+            self.model.sections[s_id] = Section(id=s_id, A=A, I=I, d=d, EA=EA, EI=EI)
 
     def _parse_nodes(self):
         for n in self.root.find('nodes').findall('node'):

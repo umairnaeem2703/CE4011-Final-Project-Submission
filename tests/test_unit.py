@@ -35,6 +35,29 @@ class TestElementPhysics(unittest.TestCase):
         self.assertAlmostEqual(k_local[1][1], expected_k_v, places=3)
         self.assertAlmostEqual(k_local[2][2], expected_k_r, places=3)
 
+    def test_local_stiffness_uses_default_effective_ea_ei(self):
+        """Verify omitted EA/EI keeps the original E*A and E*I behavior."""
+        frame = Element(id="F1", type="frame", node_i=self.node_i, node_j=self.node_j,
+                       material=self.mat, section=self.sec)
+        k_local = ElementPhysics(frame).get_local_k()
+
+        self.assertAlmostEqual(k_local[0][0], self.mat.E * self.sec.A / 5.0, places=6)
+        self.assertAlmostEqual(k_local[1][1], 12 * self.mat.E * self.sec.I / (5.0**3), places=6)
+
+    def test_local_stiffness_uses_direct_effective_ea_ei_when_provided(self):
+        """Verify direct EA/EI overrides material E times section A/I."""
+        section = Section(id="override", A=999.0, I=999.0, d=0.3, EA=1000.0, EI=500.0)
+        frame = Element(id="F1", type="frame", node_i=self.node_i, node_j=self.node_j,
+                       material=self.mat, section=section)
+        truss = Element(id="T1", type="truss", node_i=self.node_i, node_j=self.node_j,
+                       material=self.mat, section=section)
+        k_local = ElementPhysics(frame).get_local_k()
+        k_truss = ElementPhysics(truss).get_local_k()
+
+        self.assertAlmostEqual(k_local[0][0], 1000.0 / 5.0, places=6)
+        self.assertAlmostEqual(k_local[1][1], 12 * 500.0 / (5.0**3), places=6)
+        self.assertAlmostEqual(k_truss[0][0], 1000.0 / 5.0, places=6)
+
     def test_element_transformation_inclined(self):
         """Verify coordinate transformation for inclined element (3-4-5 triangle)."""
         node_i = Node(id=1, x=0.0, y=0.0)

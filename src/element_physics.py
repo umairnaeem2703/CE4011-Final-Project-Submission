@@ -20,12 +20,11 @@ class ElementPhysics:
 
     def get_local_k(self) -> list:
         """Returns the fully-fixed local stiffness matrix [k]."""
-        E = self.element.material.E
-        A = self.element.section.A
+        EA = self.element.section.effective_EA(self.element.material)
         L = self.L
 
         if self.element.type == 'truss':
-            k = E * A / L
+            k = EA / L
             return [
                 [ k,  0, -k,  0],
                 [ 0,  0,  0,  0],
@@ -33,12 +32,12 @@ class ElementPhysics:
                 [ 0,  0,  0,  0]
             ]
         else:
-            I = self.element.section.I
-            k_axial = E * A / L
-            k_v1 = 12 * E * I / (L**3)
-            k_v2 = 6 * E * I / (L**2)
-            k_r1 = 4 * E * I / L
-            k_r2 = 2 * E * I / L
+            EI = self.element.section.effective_EI(self.element.material)
+            k_axial = EA / L
+            k_v1 = 12 * EI / (L**3)
+            k_v2 = 6 * EI / (L**2)
+            k_r1 = 4 * EI / L
+            k_r2 = 2 * EI / L
 
             return [
                 [ k_axial,       0,       0,-k_axial,       0,       0],
@@ -165,21 +164,20 @@ class ElementPhysics:
         return "fixed-fixed"
 
     def calculate_thermal_fef(self, Tu: float, Tb: float) -> list:
-        E = self.element.material.E
         alpha = self.element.material.alpha
-        A = self.element.section.A
+        EA = self.element.section.effective_EA(self.element.material)
         
         delta_T = Tb - Tu
         T_uniform = Tu + (delta_T / 2.0)
-        F_T = alpha * T_uniform * E * A
+        F_T = alpha * T_uniform * EA
         
         if self.element.type == 'truss':
             return [[F_T], [0.0], [-F_T], [0.0]]
             
         else:
-            I = self.element.section.I
+            EI = self.element.section.effective_EI(self.element.material)
             d = self.element.section.d
-            M_T = (alpha * delta_T / d) * E * I if d != 0 else 0.0
+            M_T = (alpha * delta_T / d) * EI if d != 0 else 0.0
             return [[F_T], [0.0], [M_T], [-F_T], [0.0], [-M_T]]
 
     def get_local_fef(self, load_case: LoadCase, model: StructuralModel = None) -> list:
