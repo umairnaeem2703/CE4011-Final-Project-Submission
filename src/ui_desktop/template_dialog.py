@@ -294,14 +294,22 @@ def create_shear_frame_builder(settings: ShearFrameSettings):
             floor_nodes = [node_ids[(story, bay)] for bay in range(settings.bays + 1)]
             center_bay = settings.bays / 2.0
             if settings.mass_placement == "center floor node" and center_bay.is_integer():
-                builder.add_lumped_mass(node_ids[(story, int(center_bay))], mass_ux=settings.lumped_mass_per_floor)
+                center_node_id = node_ids[(story, int(center_bay))]
+                builder.add_lumped_mass(center_node_id, mass_ux=settings.lumped_mass_per_floor)
+                builder.creation_messages.append(
+                    f"Floor {story}: story mass assigned to center node {center_node_id}."
+                )
             else:
                 mass_per_node = settings.lumped_mass_per_floor / len(floor_nodes)
                 for node_id in floor_nodes:
                     builder.add_lumped_mass(node_id, mass_ux=mass_per_node)
                 if settings.mass_placement == "center floor node":
                     builder.creation_messages.append(
-                        f"Floor {story}: no center node exists; distributed mass to floor nodes."
+                        f"Floor {story}: no center node exists; distributed story mass to {len(floor_nodes)} floor nodes."
+                    )
+                else:
+                    builder.creation_messages.append(
+                        f"Floor {story}: story mass distributed to {len(floor_nodes)} floor nodes."
                     )
 
     if settings.diaphragm_per_floor:

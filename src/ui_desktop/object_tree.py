@@ -81,7 +81,12 @@ class ObjectTreePanel(ttk.LabelFrame):
                     text = f"{load_case.id}:{index}"
                 self.tree.insert(parents["Loads"], "end", iid=f"load:{load_case.id}:{index}", text=text)
         for node_id in sorted(model.lumped_masses):
-            self.tree.insert(parents["Masses"], "end", iid=f"mass:{node_id}", text=f"Node {node_id}")
+            self.tree.insert(
+                parents["Masses"],
+                "end",
+                iid=f"mass:{node_id}",
+                text=f"Node {node_id} ({_mass_summary(model.lumped_masses[node_id])})",
+            )
         for diaphragm_id in sorted(model.diaphragm_ux_groups):
             self.tree.insert(
                 parents["Diaphragms"],
@@ -99,3 +104,13 @@ class ObjectTreePanel(ttk.LabelFrame):
             return
         kind, object_id = item_id.split(":", 1)
         self.selection_callback(kind, object_id)
+
+
+def _mass_summary(mass) -> str:
+    if isinstance(mass, (int, float)):
+        return f"mass_ux={mass:.3g}, mass_uy={mass:.3g}, mass_rz=0"
+    return (
+        f"mass_ux={mass.mass_ux:.3g}, "
+        f"mass_uy={mass.mass_uy:.3g}, "
+        f"mass_rz={mass.inertia_rz:.3g}"
+    )

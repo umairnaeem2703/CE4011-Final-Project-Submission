@@ -126,13 +126,14 @@ class PropertyPanel(ttk.LabelFrame):
             node = self.selected_object
             support = self.model_canvas.builder.model.supports.get(node.id)
             support_text = _support_summary(support)
+            mass_text = _mass_summary(self.model_canvas.builder.model, node.id)
             loads_text = _node_load_summary(self.model_canvas.builder.model, node.id)
             rows = [
                 ("Node id", node.id),
                 ("x", f"{node.x:.6g}"),
                 ("y", f"{node.y:.6g}"),
                 ("Support", support_text),
-                ("Mass", "placeholder"),
+                ("Mass", mass_text),
                 ("Loads", loads_text),
             ]
         elif self.selected_kind == "element" and self.selected_object is not None:
@@ -431,6 +432,19 @@ def _node_load_summary(model, node_id: int) -> str:
             if hasattr(load, "node") and load.node.id == node_id:
                 labels.append(f"{load_case.id}: Fx={load.fx:.3g}, Fy={load.fy:.3g}, Mz={load.mz:.3g}")
     return "; ".join(labels) if labels else "none"
+
+
+def _mass_summary(model, node_id: int) -> str:
+    mass = model.lumped_masses.get(node_id)
+    if mass is None:
+        return "none"
+    if isinstance(mass, (int, float)):
+        return f"mass_ux={mass:.3g}, mass_uy={mass:.3g}, mass_rz=0"
+    return (
+        f"mass_ux={mass.mass_ux:.3g}, "
+        f"mass_uy={mass.mass_uy:.3g}, "
+        f"mass_rz={mass.inertia_rz:.3g}"
+    )
 
 
 def _member_load_summary(model, element_id: str) -> str:

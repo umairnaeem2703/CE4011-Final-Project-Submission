@@ -151,6 +151,9 @@ class MainWindow:
         elif kind == "support":
             self.model_canvas.select_node(int(object_id))
             self._write_status(f"Selected support at node {object_id} from object tree.")
+        elif kind == "mass":
+            self.model_canvas.select_node(int(object_id))
+            self._write_status(f"Selected mass at node {object_id} from object tree.")
         else:
             self._write_status(f"Selected {kind} {object_id}. Canvas highlighting is pending for this object type.")
 
