@@ -467,7 +467,8 @@ class ModelCanvas(ttk.Frame):
         if node is None:
             return
         x, y = self._model_to_canvas(node.x, node.y)
-        self.canvas.create_rectangle(x - 6, y - 22, x + 6, y - 10, fill="#c00000", outline="", tags="symbol")
+        r = self.node_radius + 5
+        self.canvas.create_oval(x - r, y - r, x + r, y + r, fill="", outline="#c00000", width=2, tags="symbol")
 
     def _draw_diaphragm_symbol(self, node_ids: list[int]) -> None:
         points = [self.builder.model.nodes[node_id] for node_id in node_ids if node_id in self.builder.model.nodes]
