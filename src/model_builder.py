@@ -155,6 +155,20 @@ class ModelBuilder:
         self._mark_dirty()
         return point_load
 
+    def add_temperature_load(
+        self,
+        load_case: str,
+        element: str | Element,
+        Tu: float,
+        Tb: float,
+        *,
+        load_case_name: str = "",
+    ) -> TemperatureL:
+        temperature_load = TemperatureL(element=self._element(element), Tu=Tu, Tb=Tb)
+        self._load_case(load_case, load_case_name).loads.append(temperature_load)
+        self._mark_dirty()
+        return temperature_load
+
     def add_lumped_mass(
         self,
         node: int | Node,

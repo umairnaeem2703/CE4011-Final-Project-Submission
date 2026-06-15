@@ -45,13 +45,13 @@ Rules:
 * 4R8 corrected load/support arrows and value labels
 * 4R8b added nodal mass value labels next to mass rings
 * 4R9 assignment action modes for loads/supports/masses
+* 4C0 ModelBuilder temperature load helper
 
 Do not break these.
 
 ## Current Subtask Order
 
 ```text
-4C0 — ModelBuilder.add_temperature_load helper
 4C — Temperature load UI
 4D — General mass + diaphragm assignment UI
 ```
@@ -104,24 +104,6 @@ tests/...
 ```
 
 Do not modify controller/solver/math files unless the subtask explicitly requires it and reports why.
-
-## 4C0 — ModelBuilder Temperature Load Helper
-
-Purpose: add small builder bridge before UI temperature load.
-
-Requirements:
-
-* Add `ModelBuilder.add_temperature_load(...)`.
-* Inputs: load case id, element id, Tu, Tb.
-* Use existing `TemperatureL` backend class.
-* Add one focused test.
-
-Rules:
-
-* No UI changes.
-* No thermal FEF/math changes.
-
----
 
 ## 4C — Temperature Load UI
 

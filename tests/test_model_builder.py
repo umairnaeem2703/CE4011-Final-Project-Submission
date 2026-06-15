@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from model_builder import ModelBuilder
 from banded_solver import UnstableStructureError
-from parser import StructuralModel, XMLParser
+from parser import StructuralModel, TemperatureL, XMLParser
 import pytest
 
 
@@ -81,6 +81,22 @@ def test_model_builder_validate_false_returns_incomplete_model():
 
     assert model is builder.model
     assert model.supports == {}
+
+
+def test_model_builder_add_temperature_load_stores_existing_backend_load():
+    builder = ModelBuilder()
+    builder.add_material("m1", E=200000.0, alpha=1.2e-5)
+    builder.add_section("s1", A=0.02, I=0.0001, d=0.3)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    member = builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+
+    load = builder.add_temperature_load("LC_TEMP", "e1", Tu=25.0, Tb=10.0)
+
+    assert isinstance(load, TemperatureL)
+    assert builder.model.load_cases["LC_TEMP"].loads == [load]
+    assert load.element is member
+    assert (load.Tu, load.Tb) == pytest.approx((25.0, 10.0))
 
 
 def test_model_builder_xml_export_round_trips_counts(tmp_path):
