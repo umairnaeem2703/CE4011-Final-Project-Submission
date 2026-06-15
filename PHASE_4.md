@@ -42,13 +42,14 @@ Rules:
 * 4R6b section input mode fix + reset-to-default buttons
 * 4R6c direct stiffness section material dependency clarified
 * 4R7 assign load right-pane redesign
+* 4R8 corrected load/support arrows and value labels
+* 4R8b added nodal mass value labels next to mass rings
 
 Do not break these.
 
 ## Current Subtask Order
 
 ```text
-4R8 — Load/support visualization correction
 4C0 — ModelBuilder.add_temperature_load helper
 4C — Temperature load UI
 4D — General mass + diaphragm assignment UI
@@ -102,62 +103,6 @@ tests/...
 ```
 
 Do not modify controller/solver/math files unless the subtask explicitly requires it and reports why.
-
-## 4R8 — Load/Support Visualization Correction
-
-Purpose: make symbols match direction/sign convention.
-
-Nodal load rules:
-
-```text
-+Fx = arrow right
--Fx = arrow left
-+Fy = arrow up
--Fy = arrow down
-```
-
-Nodal moment rules:
-
-```text
-+Mz = counterclockwise curved arrow
--Mz = clockwise curved arrow
-```
-
-Member point load rules:
-
-* Draw one arrow at assigned member position.
-* Direction follows sign and selected coordinate system.
-* Global X/Y: arrow aligned with global axes.
-* Local x/y: arrow aligned with member local axes.
-
-Member UDL rules:
-
-* Draw multiple repeated arrows along the member.
-* Add a thin line connecting the distributed arrows.
-* Direction follows sign and selected coordinate system.
-* Global X/Y: arrows aligned with global axes.
-* Local x/y: arrows aligned with member local axes.
-
-Support/settlement rules:
-
-* Fixed/pin/roller symbols remain clear.
-* Settlement arrows show actual prescribed displacement direction.
-* Symbols must not obscure selected node/member labels.
-
-Rules:
-
-* UI/canvas drawing only.
-* No load backend changes.
-* No solver math.
-
-Validate:
-
-* Positive and negative Fx/Fy arrows are visually correct.
-* Positive and negative Mz are visually correct.
-* UDL appears as multiple arrows plus a connecting line.
-* Existing support, mass, diaphragm, and selection symbols remain visible.
-
----
 
 ## 4C0 — ModelBuilder Temperature Load Helper
 

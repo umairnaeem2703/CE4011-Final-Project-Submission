@@ -409,18 +409,17 @@ class ModelCanvas(ttk.Frame):
     def _draw_model_symbols(self) -> None:
         for support in self.builder.model.supports.values():
             self._draw_support_symbol(support)
-        for mass in self.builder.model.lumped_masses.values():
-            if not isinstance(mass, (int, float)):
-                self._draw_mass_symbol(mass.node.id)
+        for node_id, mass in self.builder.model.lumped_masses.items():
+            self._draw_mass_symbol(node_id, mass)
         for load_case in self.builder.model.load_cases.values():
             for load in load_case.loads:
                 if hasattr(load, "node"):
-                    self._draw_nodal_load_symbol(load.node.id)
+                    self._draw_nodal_load_symbol(load)
                 elif hasattr(load, "element"):
                     if load.__class__.__name__ == "PointLoad":
-                        self._draw_member_point_load_symbol(load.element.id, getattr(load, "position", 0.5))
-                    else:
-                        self._draw_member_udl_symbol(load.element.id)
+                        self._draw_member_point_load_symbol(load)
+                    elif load.__class__.__name__ == "UniformlyDL":
+                        self._draw_member_udl_symbol(load)
         for node_ids in self.builder.model.diaphragm_ux_groups.values():
             self._draw_diaphragm_symbol(node_ids)
 
@@ -432,45 +431,123 @@ class ModelCanvas(ttk.Frame):
             self.canvas.create_polygon(x, y + 7, x - 10, y + 18, x + 10, y + 18, fill="#777777", tags="symbol")
         else:
             self.canvas.create_oval(x - 9, y + 8, x + 9, y + 18, outline="#777777", tags="symbol")
-        if support.settlement_ux or support.settlement_uy or support.settlement_rz:
-            self.canvas.create_text(x + 14, y + 16, text="d", fill="#c00000", anchor="w", tags="symbol")
+        self._draw_settlement_symbol(x, y, support)
 
-    def _draw_nodal_load_symbol(self, node_id: int) -> None:
-        node = self.builder.model.nodes.get(node_id)
+    def _draw_settlement_symbol(self, x: float, y: float, support) -> None:
+        if support.settlement_ux:
+            dx = 1 if support.settlement_ux > 0 else -1
+            head_x, head_y = self._draw_vector_arrow(x + 12 * dx, y + 24, dx, 0, length=18, color="#c00000")
+            self._draw_symbol_label(head_x + 4 * dx, head_y + 8, f"ux={_fmt_value(support.settlement_ux)}", "#c00000")
+        if support.settlement_uy:
+            dy = -1 if support.settlement_uy > 0 else 1
+            head_x, head_y = self._draw_vector_arrow(x - 22, y + 12 * dy, 0, dy, length=18, color="#c00000")
+            self._draw_symbol_label(head_x - 4, head_y + 6 * dy, f"uy={_fmt_value(support.settlement_uy)}", "#c00000")
+        if support.settlement_rz:
+            self._draw_curved_arrow(x, y, clockwise=support.settlement_rz < 0, color="#c00000", radius=15)
+            self._draw_symbol_label(x + 18, y + 24, f"rz={_fmt_value(support.settlement_rz)}", "#c00000")
+
+    def _draw_nodal_load_symbol(self, load) -> None:
+        node = self.builder.model.nodes.get(load.node.id)
         if node is None:
             return
         x, y = self._model_to_canvas(node.x, node.y)
-        self.canvas.create_line(x, y - 28, x, y - 8, arrow=tk.LAST, fill="#d62728", width=2, tags="symbol")
+        if load.fx:
+            dx = 1 if load.fx > 0 else -1
+            head_x, head_y = self._draw_vector_arrow(x + 8 * dx, y + 12, dx, 0, length=22, color="#d62728")
+            self._draw_symbol_label(head_x + 4 * dx, head_y + 9, f"Fx={_fmt_value(load.fx)}", "#d62728")
+        if load.fy:
+            dy = -1 if load.fy > 0 else 1
+            head_x, head_y = self._draw_vector_arrow(x - 12, y + 8 * dy, 0, dy, length=22, color="#d62728")
+            self._draw_symbol_label(head_x - 4, head_y + 6 * dy, f"Fy={_fmt_value(load.fy)}", "#d62728")
+        if load.mz:
+            self._draw_curved_arrow(x, y, clockwise=load.mz < 0, color="#d62728", radius=17)
+            self._draw_symbol_label(x + 20, y + 18, f"Mz={_fmt_value(load.mz)}", "#d62728")
 
-    def _draw_member_udl_symbol(self, element_id: str) -> None:
-        element = self.builder.model.elements.get(element_id)
+    def _draw_member_udl_symbol(self, load) -> None:
+        element = self.builder.model.elements.get(load.element.id)
         if element is None:
             return
         x1, y1 = self._model_to_canvas(element.node_i.x, element.node_i.y)
         x2, y2 = self._model_to_canvas(element.node_j.x, element.node_j.y)
+        direction = _unit_vector(load.wx, -load.wy)
+        if direction is None:
+            return
+        dx, dy = direction
+        start = _offset_point(x1, y1, dx, dy, -18)
+        end = _offset_point(x2, y2, dx, dy, -18)
+        self.canvas.create_line(start[0], start[1], end[0], end[1], fill="#ff7f0e", width=1, tags="symbol")
         for factor in (0.25, 0.5, 0.75):
             x = x1 + (x2 - x1) * factor
             y = y1 + (y2 - y1) * factor
-            self.canvas.create_line(x, y - 18, x, y - 4, arrow=tk.LAST, fill="#ff7f0e", tags="symbol")
+            self._draw_vector_arrow(x - dx * 18, y - dy * 18, dx, dy, length=18, color="#ff7f0e")
+        mid_x = (start[0] + end[0]) / 2
+        mid_y = (start[1] + end[1]) / 2
+        self._draw_symbol_label(mid_x + 8, mid_y - 8, f"w=({_fmt_value(load.wx)}, {_fmt_value(load.wy)})", "#ff7f0e")
 
-    def _draw_member_point_load_symbol(self, element_id: str, position: float) -> None:
-        element = self.builder.model.elements.get(element_id)
+    def _draw_member_point_load_symbol(self, load) -> None:
+        element = self.builder.model.elements.get(load.element.id)
         if element is None:
             return
         x1, y1 = self._model_to_canvas(element.node_i.x, element.node_i.y)
         x2, y2 = self._model_to_canvas(element.node_j.x, element.node_j.y)
-        factor = max(0.0, min(1.0, position))
+        factor = max(0.0, min(1.0, load.position))
         x = x1 + (x2 - x1) * factor
         y = y1 + (y2 - y1) * factor
-        self.canvas.create_line(x, y - 22, x, y - 4, arrow=tk.LAST, fill="#d62728", width=2, tags="symbol")
+        direction = _unit_vector(load.fx, -load.fy)
+        if direction is None:
+            return
+        dx, dy = direction
+        head_x, head_y = self._draw_vector_arrow(x - dx * 26, y - dy * 26, dx, dy, length=26, color="#d62728")
+        self._draw_symbol_label(head_x + 8, head_y - 8, f"P=({_fmt_value(load.fx)}, {_fmt_value(load.fy)})", "#d62728")
 
-    def _draw_mass_symbol(self, node_id: int) -> None:
+    def _draw_vector_arrow(
+        self,
+        tail_x: float,
+        tail_y: float,
+        dx: float,
+        dy: float,
+        *,
+        length: float,
+        color: str,
+        width: int = 2,
+    ) -> tuple[float, float]:
+        head_x = tail_x + dx * length
+        head_y = tail_y + dy * length
+        self.canvas.create_line(tail_x, tail_y, head_x, head_y, arrow=tk.LAST, fill=color, width=width, tags="symbol")
+        return head_x, head_y
+
+    def _draw_curved_arrow(
+        self,
+        x: float,
+        y: float,
+        *,
+        clockwise: bool,
+        color: str,
+        radius: float = 12.0,
+    ) -> None:
+        if clockwise:
+            angles = range(-40, 250, 20)
+        else:
+            angles = range(220, -70, -20)
+        points = []
+        for angle in angles:
+            radians = math.radians(angle)
+            points.extend((x + radius * math.cos(radians), y + radius * math.sin(radians)))
+        self.canvas.create_line(*points, smooth=True, arrow=tk.LAST, fill=color, width=2, tags="symbol")
+
+    def _draw_symbol_label(self, x: float, y: float, text: str, color: str) -> None:
+        self.canvas.create_text(x, y, text=text, fill=color, anchor="w", font=("Segoe UI", 8), tags="symbol")
+
+    def _draw_mass_symbol(self, node_id: int, mass) -> None:
         node = self.builder.model.nodes.get(node_id)
         if node is None:
             return
         x, y = self._model_to_canvas(node.x, node.y)
         r = self.node_radius + 5
         self.canvas.create_oval(x - r, y - r, x + r, y + r, fill="", outline="#c00000", width=2, tags="symbol")
+        label = _mass_label(mass)
+        if label:
+            self._draw_symbol_label(x + r + 6, y + 4, label, "#c00000")
 
     def _draw_diaphragm_symbol(self, node_ids: list[int]) -> None:
         points = [self.builder.model.nodes[node_id] for node_id in node_ids if node_id in self.builder.model.nodes]
@@ -592,3 +669,35 @@ def _point_segment_distance(px: float, py: float, x1: float, y1: float, x2: floa
     closest_x = x1 + t * dx
     closest_y = y1 + t * dy
     return math.hypot(px - closest_x, py - closest_y)
+
+
+def _unit_vector(dx: float, dy: float) -> tuple[float, float] | None:
+    length = math.hypot(dx, dy)
+    if length == 0:
+        return None
+    return dx / length, dy / length
+
+
+def _offset_point(x: float, y: float, dx: float, dy: float, distance: float) -> tuple[float, float]:
+    return x + dx * distance, y + dy * distance
+
+
+def _fmt_value(value: float) -> str:
+    return f"{value:.3g}"
+
+
+def _mass_label(mass) -> str:
+    if isinstance(mass, (int, float)):
+        value = float(mass)
+        parts = []
+        if value:
+            parts.extend((f"mass_ux={_fmt_value(value)}", f"mass_uy={_fmt_value(value)}"))
+        return ", ".join(parts)
+    parts = []
+    if mass.mass_ux:
+        parts.append(f"mass_ux={_fmt_value(mass.mass_ux)}")
+    if mass.mass_uy:
+        parts.append(f"mass_uy={_fmt_value(mass.mass_uy)}")
+    if mass.inertia_rz:
+        parts.append(f"mass_rz={_fmt_value(mass.inertia_rz)}")
+    return ", ".join(parts)
