@@ -40,6 +40,7 @@ Rules:
 * 4R5 effective EA/EI backend support
 * 4R6 effective EA/EI UI exposure
 * 4R6b section input mode fix + reset-to-default buttons
+* 4R6c direct stiffness section material dependency clarified
 
 Do not break these.
 

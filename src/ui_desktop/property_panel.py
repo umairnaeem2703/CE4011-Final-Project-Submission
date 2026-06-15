@@ -231,23 +231,29 @@ class PropertyPanel(ttk.LabelFrame):
         ea_entry = ttk.Entry(section, textvariable=self.section_ea_var, width=12)
         ei_label = ttk.Label(section, text="EI direct stiffness")
         ei_entry = ttk.Entry(section, textvariable=self.section_ei_var, width=12)
+        direct_note = ttk.Label(
+            section,
+            text="Material E is ignored for stiffness; material may still provide alpha/density.",
+            wraplength=210,
+        )
         for row, (label, entry) in enumerate(
             ((a_label, a_entry), (i_label, i_entry), (d_label, d_entry), (ea_label, ea_entry), (ei_label, ei_entry)),
             start=2,
         ):
             label.grid(row=row, column=0, sticky="w", pady=2)
             entry.grid(row=row, column=1, sticky="ew", pady=2)
+        direct_note.grid(row=7, column=0, columnspan=2, sticky="w", pady=(4, 2))
         self._section_geometric_widgets = [a_label, a_entry, i_label, i_entry, d_label, d_entry]
-        self._section_direct_widgets = [ea_label, ea_entry, ei_label, ei_entry]
+        self._section_direct_widgets = [ea_label, ea_entry, ei_label, ei_entry, direct_note]
         ttk.Button(section, text="Add / Update Section", command=self._add_section).grid(
-            row=7,
+            row=8,
             column=0,
             columnspan=2,
             sticky="ew",
             pady=(6, 0),
         )
         ttk.Button(section, text="Reset to Default", command=self._reset_current_command).grid(
-            row=8,
+            row=9,
             column=0,
             columnspan=2,
             sticky="ew",
@@ -573,7 +579,11 @@ def _mass_summary(model, node_id: int) -> str:
 
 def _section_summary(section) -> str:
     if _is_direct_stiffness_section(section):
-        parts = ["Direct stiffness", f"EA={_format_optional(section.EA)}", f"EI={_format_optional(section.EI)}"]
+        parts = [
+            "EA/EI direct; ignores material E for stiffness",
+            f"EA={_format_optional(section.EA)}",
+            f"EI={_format_optional(section.EI)}",
+        ]
     else:
         parts = ["Geometric", f"A={section.A:.3g}", f"I={section.I:.3g}", f"d={section.d:.3g}"]
     return f"{section.id} ({', '.join(parts)})"

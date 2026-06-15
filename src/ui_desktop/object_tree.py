@@ -118,7 +118,11 @@ def _mass_summary(mass) -> str:
 
 def _section_summary(section) -> str:
     if getattr(section, "EA", None) is not None or getattr(section, "EI", None) is not None:
-        parts = ["Direct stiffness", f"EA={_format_optional(section.EA)}", f"EI={_format_optional(section.EI)}"]
+        parts = [
+            "EA/EI direct; ignores material E for stiffness",
+            f"EA={_format_optional(section.EA)}",
+            f"EI={_format_optional(section.EI)}",
+        ]
     else:
         parts = ["Geometric", f"A={section.A:.3g}", f"I={section.I:.3g}", f"d={section.d:.3g}"]
     return ", ".join(parts)
