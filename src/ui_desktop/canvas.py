@@ -68,9 +68,13 @@ class ModelCanvas(ttk.Frame):
         self.view_scale = self.scale
         self.view_origin_x = 0.0
         self.view_origin_y = 0.0
-        self.grid_spacing = 40
+        self.grid_visible = True
+        self.snap_to_grid = False
+        self.grid_spacing = 1.0
         self.snap_tolerance = 12.0
         self.node_radius = 5
+        self._view_initialized = False
+        self._pan_last: tuple[int, int] | None = None
         self.next_node_id = 1
         self.next_element_number = 1
         self.pending_start_node_id: int | None = None
@@ -86,8 +90,11 @@ class ModelCanvas(ttk.Frame):
         self.rowconfigure(0, weight=1)
         self.canvas = tk.Canvas(self, background="white", highlightthickness=1, highlightbackground="#b8b8b8")
         self.canvas.grid(row=0, column=0, sticky="nsew")
-        self.canvas.bind("<Configure>", lambda event: self.redraw_model())
+        self.canvas.bind("<Configure>", self._handle_configure)
         self.canvas.bind("<Button-1>", self._handle_click)
+        self.canvas.bind("<ButtonPress-1>", self._handle_button_press, add="+")
+        self.canvas.bind("<B1-Motion>", self._handle_drag)
+        self.canvas.bind("<ButtonRelease-1>", self._handle_button_release)
 
     def load_builder(self, builder) -> None:
         self.builder = builder
@@ -106,20 +113,22 @@ class ModelCanvas(ttk.Frame):
         if first_section is not None:
             self.active_section_id = first_section
 
-        self.redraw_model()
+        self.restore_full_view(notify=False)
         self.change_callback()
         self.status_callback(
             f"Loaded model with {len(self.builder.model.nodes)} nodes and {len(self.builder.model.elements)} elements."
         )
 
-    def redraw_model(self) -> None:
+    def redraw_model(self, *, fit_view: bool = False) -> None:
         """Reload canvas items from the current builder model."""
         self.canvas.delete("all")
         self.item_to_node_id.clear()
         self.node_id_to_item.clear()
         self.item_to_element_id.clear()
         self.element_id_to_item.clear()
-        self._fit_view_to_model()
+        if fit_view or not self._view_initialized:
+            self._fit_view_to_model()
+            self._view_initialized = True
         self._draw_grid()
 
         for element_id, element in self.builder.model.elements.items():
@@ -134,11 +143,15 @@ class ModelCanvas(ttk.Frame):
 
     def set_active_command(self, command: str) -> None:
         self.active_command = command
+        if command != "Pan":
+            self._pan_last = None
         if command != "Draw Member":
             self.pending_start_node_id = None
         self.status_callback(self.command_instruction())
 
     def command_instruction(self) -> str:
+        if self.active_command == "Pan":
+            return "Pan: drag the canvas to move the viewport."
         if self.active_command == "Draw Node":
             return "Draw Node: click canvas or enter x/y, then Add Node."
         if self.active_command == "Draw Member":
@@ -192,6 +205,37 @@ class ModelCanvas(ttk.Frame):
         self.diaphragm_group_id = group_id
         self.diaphragm_node_ids = list(dict.fromkeys(node_ids))
 
+    def set_grid_visible(self, visible: bool) -> None:
+        self.grid_visible = visible
+        self.redraw_model()
+        self.status_callback("Grid On." if visible else "Grid Off.")
+
+    def set_snap_to_grid(self, enabled: bool) -> None:
+        self.snap_to_grid = enabled
+        self.status_callback("Snap On." if enabled else "Snap Off.")
+
+    def set_grid_spacing(self, spacing: float) -> bool:
+        if spacing <= 0:
+            self.status_callback("Grid spacing must be positive.")
+            return False
+        self.grid_spacing = spacing
+        self.redraw_model()
+        self.status_callback(f"Grid spacing set to {spacing:.6g}.")
+        return True
+
+    def zoom_in(self) -> None:
+        self._zoom(1.25)
+        self.status_callback("Zoom In.")
+
+    def zoom_out(self) -> None:
+        self._zoom(0.8)
+        self.status_callback("Zoom Out.")
+
+    def restore_full_view(self, *, notify: bool = True) -> None:
+        self.redraw_model(fit_view=True)
+        if notify:
+            self.status_callback("Full View.")
+
     def add_node_by_coordinates(self, x: float, y: float) -> int:
         existing_node_id = self._find_node_near_model_point(x, y)
         if existing_node_id is not None:
@@ -242,16 +286,40 @@ class ModelCanvas(ttk.Frame):
         self.builder.add_material("M1", E=1.0)
         self.builder.add_section("S1", A=1.0, I=1.0)
 
+    def _handle_configure(self, _event) -> None:
+        if not self._view_initialized:
+            self.redraw_model(fit_view=True)
+        else:
+            self.redraw_model()
+
+    def _handle_button_press(self, event) -> None:
+        if self.active_command == "Pan":
+            self._pan_last = (event.x, event.y)
+
+    def _handle_drag(self, event) -> None:
+        if self.active_command != "Pan" or self._pan_last is None:
+            return
+        last_x, last_y = self._pan_last
+        self.view_origin_x += event.x - last_x
+        self.view_origin_y += event.y - last_y
+        self._pan_last = (event.x, event.y)
+        self.redraw_model()
+
+    def _handle_button_release(self, _event) -> None:
+        self._pan_last = None
+
     def _handle_click(self, event) -> None:
+        if self.active_command == "Pan":
+            return
         node_id = self._find_node_near_canvas_point(event.x, event.y)
         element_id = self._find_element_near_canvas_point(event.x, event.y) if node_id is None else None
 
         if self.active_command == "Draw Node":
-            x, y = self._canvas_to_model(event.x, event.y)
+            x, y = self._canvas_to_model_point(event.x, event.y)
             self.add_node_by_coordinates(x, y)
         elif self.active_command == "Draw Member":
             if node_id is None:
-                x, y = self._canvas_to_model(event.x, event.y)
+                x, y = self._canvas_to_model_point(event.x, event.y)
                 node_id = self.add_node_by_coordinates(x, y)
             self._set_pending_or_create_element(node_id)
         elif self.active_command == "Delete":
@@ -845,24 +913,26 @@ class ModelCanvas(ttk.Frame):
         self.view_origin_y = height / 2 + center_y * self.view_scale
 
     def _draw_grid(self) -> None:
+        if not self.grid_visible:
+            return
         width = max(self.canvas.winfo_width(), 1)
         height = max(self.canvas.winfo_height(), 1)
-        origin_x = self.view_origin_x
-        origin_y = self.view_origin_y
-        spacing = self.grid_spacing
+        spacing = self.grid_spacing * self.view_scale
+        if spacing < 4:
+            return
 
-        x = origin_x % spacing
+        x = self.view_origin_x % spacing
         while x < width:
             self.canvas.create_line(x, 0, x, height, fill="#eeeeee", tags="grid")
             x += spacing
 
-        y = origin_y % spacing
+        y = self.view_origin_y % spacing
         while y < height:
             self.canvas.create_line(0, y, width, y, fill="#eeeeee", tags="grid")
             y += spacing
 
-        self.canvas.create_line(0, origin_y, width, origin_y, fill="#d0d0d0", tags="grid")
-        self.canvas.create_line(origin_x, 0, origin_x, height, fill="#d0d0d0", tags="grid")
+        self.canvas.create_line(0, self.view_origin_y, width, self.view_origin_y, fill="#d0d0d0", tags="grid")
+        self.canvas.create_line(self.view_origin_x, 0, self.view_origin_x, height, fill="#d0d0d0", tags="grid")
 
     def _apply_selection_highlight(self) -> None:
         for item_id in self.node_id_to_item.values():
@@ -896,11 +966,32 @@ class ModelCanvas(ttk.Frame):
         return best_id
 
     def _find_node_near_model_point(self, x: float, y: float) -> int | None:
-        tolerance = self.snap_tolerance / self.scale
+        tolerance = self.snap_tolerance / self.view_scale
         for node_id, node in self.builder.model.nodes.items():
             if math.hypot(x - node.x, y - node.y) <= tolerance:
                 return node_id
         return None
+
+    def _zoom(self, factor: float) -> None:
+        width = max(self.canvas.winfo_width(), 1)
+        height = max(self.canvas.winfo_height(), 1)
+        center_x = width / 2
+        center_y = height / 2
+        model_x, model_y = self._canvas_to_model(center_x, center_y)
+        self.view_scale = max(5.0, min(self.view_scale * factor, 400.0))
+        self.view_origin_x = center_x - model_x * self.view_scale
+        self.view_origin_y = center_y + model_y * self.view_scale
+        self.redraw_model()
+
+    def _canvas_to_model_point(self, canvas_x: float, canvas_y: float) -> tuple[float, float]:
+        x, y = self._canvas_to_model(canvas_x, canvas_y)
+        if self.snap_to_grid:
+            return self._snap_model_point_to_grid(x, y)
+        return x, y
+
+    def _snap_model_point_to_grid(self, x: float, y: float) -> tuple[float, float]:
+        spacing = self.grid_spacing
+        return round(x / spacing) * spacing, round(y / spacing) * spacing
 
     def _model_to_canvas(self, x: float, y: float) -> tuple[float, float]:
         return self.view_origin_x + x * self.view_scale, self.view_origin_y - y * self.view_scale

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import ttk
+from tkinter import filedialog, ttk
 
 from .canvas import ModelCanvas
 from .object_tree import ObjectTreePanel
@@ -11,8 +11,7 @@ from .property_panel import PropertyPanel
 from .template_dialog import ask_new_model
 
 
-TOOLBAR_ACTIONS = ("New", "Open XML", "Save XML", "Validate", "Run Analysis", "Results")
-COMMANDS = (
+ACTIVE_COMMANDS = (
     "Select / Inspect",
     "Draw Node",
     "Draw Member",
@@ -22,6 +21,44 @@ COMMANDS = (
     "Assign Mass",
     "Assign Diaphragm",
     "Delete",
+)
+PLACEHOLDER_COMMANDS = (
+    "Replicate",
+    "Window Select",
+    "Local Axes",
+)
+COMMAND_TABS = (
+    ("Model", (("action", "New"), ("action", "Open XML"), ("action", "Save XML"), ("action", "Validate"))),
+    (
+        "Assign",
+        (
+            ("command", "Select / Inspect"),
+            ("command", "Draw Node"),
+            ("command", "Draw Member"),
+            ("command", "Materials / Sections"),
+            ("command", "Assign Support"),
+            ("command", "Assign Load"),
+            ("command", "Assign Mass"),
+            ("command", "Assign Diaphragm"),
+            ("command", "Delete"),
+            ("placeholder", "Replicate"),
+        ),
+    ),
+    (
+        "View",
+        (
+            ("grid_controls", "Grid"),
+            ("snap_toggle", "Snap"),
+            ("view_action", "Zoom In"),
+            ("view_action", "Zoom Out"),
+            ("command", "Pan"),
+            ("placeholder", "Window Select"),
+            ("placeholder", "Local Axes"),
+            ("view_action", "Full View"),
+        ),
+    ),
+    ("Analyze", (("action", "Run Analysis"),)),
+    ("Results", (("action", "Results"),)),
 )
 
 
@@ -35,10 +72,13 @@ class MainWindow:
         self.root.minsize(980, 620)
 
         self.selected_command = tk.StringVar(value="Select / Inspect")
+        self.grid_visible = tk.BooleanVar(value=True)
+        self.snap_to_grid = tk.BooleanVar(value=False)
+        self.grid_spacing = tk.StringVar(value="1.0")
         self.status_message = tk.StringVar(value="Select / Inspect: click a node or member to inspect it.")
 
         self._configure_grid()
-        self._build_toolbar()
+        self._build_command_area()
         self._build_left_panel()
         self._build_model_canvas()
         self._build_right_panel()
@@ -56,38 +96,66 @@ class MainWindow:
         self.root.rowconfigure(1, weight=1)
         self.root.rowconfigure(2, weight=0)
 
-    def _build_toolbar(self) -> None:
-        toolbar = ttk.Frame(self.root, padding=(8, 6))
-        toolbar.grid(row=0, column=0, columnspan=3, sticky="ew")
-        for column, label in enumerate(TOOLBAR_ACTIONS):
-            ttk.Button(toolbar, text=label, command=lambda name=label: self._toolbar_action(name)).grid(
-                row=0,
-                column=column,
-                padx=(0, 6),
-                sticky="w",
-            )
-        toolbar.columnconfigure(len(TOOLBAR_ACTIONS), weight=1)
+    def _build_command_area(self) -> None:
+        command_area = ttk.Notebook(self.root)
+        command_area.grid(row=0, column=0, columnspan=3, sticky="ew", padx=8, pady=(6, 2))
+
+        for tab_name, items in COMMAND_TABS:
+            tab = ttk.Frame(command_area, padding=(8, 6))
+            command_area.add(tab, text=tab_name)
+            self._build_command_group(tab, items)
+
+    def _build_command_group(self, parent: ttk.Frame, items: tuple[tuple[str, str], ...]) -> None:
+        parent.columnconfigure(len(items), weight=1)
+        for column, (kind, label) in enumerate(items):
+            if kind == "command":
+                widget = ttk.Radiobutton(
+                    parent,
+                    text=label,
+                    value=label,
+                    variable=self.selected_command,
+                    command=lambda name=label: self._select_command(name),
+                )
+            elif kind == "action":
+                widget = ttk.Button(parent, text=label, command=lambda name=label: self._toolbar_action(name))
+            elif kind == "view_action":
+                widget = ttk.Button(parent, text=label, command=lambda name=label: self._view_action(name))
+            elif kind == "grid_controls":
+                widget = self._build_grid_controls(parent)
+            elif kind == "snap_toggle":
+                widget = ttk.Checkbutton(
+                    parent,
+                    text="Snap to Grid",
+                    variable=self.snap_to_grid,
+                    command=self._toggle_snap_to_grid,
+                )
+            else:
+                widget = ttk.Button(parent, text=label, state=tk.DISABLED)
+            widget.grid(row=0, column=column, padx=(0, 6), sticky="w")
+
+    def _build_grid_controls(self, parent: ttk.Frame) -> ttk.Frame:
+        group = ttk.Frame(parent)
+        ttk.Checkbutton(
+            group,
+            text="Grid",
+            variable=self.grid_visible,
+            command=self._toggle_grid_visible,
+        ).grid(row=0, column=0, sticky="w")
+        ttk.Label(group, text="Spacing").grid(row=0, column=1, padx=(8, 2), sticky="w")
+        entry = ttk.Entry(group, textvariable=self.grid_spacing, width=7)
+        entry.grid(row=0, column=2, sticky="w")
+        entry.bind("<Return>", lambda _event: self._apply_grid_spacing())
+        ttk.Button(group, text="Apply", command=self._apply_grid_spacing).grid(row=0, column=3, padx=(4, 0), sticky="w")
+        return group
 
     def _build_left_panel(self) -> None:
         panel = ttk.Frame(self.root, padding=(8, 4))
         panel.grid(row=1, column=0, sticky="nsw")
         panel.columnconfigure(0, weight=1)
 
-        tools = ttk.LabelFrame(panel, text="Commands", padding=8)
-        tools.grid(row=0, column=0, sticky="new", pady=(0, 8))
-        for row, label in enumerate(COMMANDS):
-            ttk.Radiobutton(
-                tools,
-                text=label,
-                value=label,
-                variable=self.selected_command,
-                command=lambda name=label: self._select_command(name),
-            ).grid(row=row, column=0, sticky="ew", pady=2)
-        tools.columnconfigure(0, minsize=150)
-
         self.object_tree = ObjectTreePanel(panel, selection_callback=self._select_from_tree)
-        self.object_tree.grid(row=1, column=0, sticky="nsew")
-        panel.rowconfigure(1, weight=1)
+        self.object_tree.grid(row=0, column=0, sticky="nsew")
+        panel.rowconfigure(0, weight=1)
 
     def _build_model_canvas(self) -> None:
         self.model_canvas = ModelCanvas(
@@ -119,9 +187,36 @@ class MainWindow:
         self.property_panel.show_command(name)
         self._write_status(self.model_canvas.command_instruction())
 
+    def _toggle_grid_visible(self) -> None:
+        self.model_canvas.set_grid_visible(self.grid_visible.get())
+
+    def _toggle_snap_to_grid(self) -> None:
+        self.model_canvas.set_snap_to_grid(self.snap_to_grid.get())
+
+    def _apply_grid_spacing(self) -> None:
+        try:
+            spacing = float(self.grid_spacing.get())
+        except ValueError:
+            self._write_status("Grid spacing must be numeric.")
+            return
+        if not self.model_canvas.set_grid_spacing(spacing):
+            return
+        self.grid_spacing.set(f"{self.model_canvas.grid_spacing:.6g}")
+
+    def _view_action(self, name: str) -> None:
+        if name == "Zoom In":
+            self.model_canvas.zoom_in()
+        elif name == "Zoom Out":
+            self.model_canvas.zoom_out()
+        elif name == "Full View":
+            self.model_canvas.restore_full_view()
+
     def _toolbar_action(self, name: str) -> None:
         if name == "New":
             self._new_model()
+            return
+        if name == "Save XML":
+            self._save_xml()
             return
         self._write_status(f"{name}: not wired yet.")
 
@@ -137,6 +232,23 @@ class MainWindow:
         self._write_status(f"New model created: {builder.model.name}.")
         for message in getattr(builder, "creation_messages", []):
             self._write_status(message)
+
+    def _save_xml(self) -> None:
+        path = filedialog.asksaveasfilename(
+            parent=self.root,
+            title="Save Model XML",
+            defaultextension=".xml",
+            filetypes=(("XML files", "*.xml"), ("All files", "*.*")),
+        )
+        if not path:
+            self._write_status("Save XML canceled.")
+            return
+        try:
+            self.model_canvas.builder.export_xml(path)
+        except Exception as exc:
+            self._write_status(f"Save XML failed: {exc}")
+            return
+        self._write_status(f"Saved XML: {path}")
 
     def _show_selection(self, kind: str | None, obj: object | None) -> None:
         self.property_panel.show_selection(kind, obj)
