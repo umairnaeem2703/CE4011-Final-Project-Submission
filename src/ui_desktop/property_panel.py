@@ -112,11 +112,22 @@ class PropertyPanel(ttk.LabelFrame):
         self.selected_object = obj
         if self.current_command == "Select / Inspect":
             self.show_command("Select / Inspect")
+        elif self.current_command == "Assign Diaphragm":
+            self.show_command("Assign Diaphragm")
 
     def sync_from_canvas(self) -> None:
         self.material_var.set(self.model_canvas.active_material_id)
         self.section_var.set(self.model_canvas.active_section_id)
         self.element_type_var.set(self.model_canvas.active_element_type)
+
+    def show_diaphragm_group(self, group_id: str) -> None:
+        self.diaphragm_id_var.set(group_id)
+        self.selected_kind = "diaphragm"
+        self.selected_object = {
+            "id": group_id,
+            "nodes": self.model_canvas.builder.model.diaphragm_ux_groups.get(group_id, []),
+        }
+        self.show_command("Assign Diaphragm")
 
     def _draw_node_panel(self) -> None:
         self._title("Draw Node")
@@ -428,24 +439,39 @@ class PropertyPanel(ttk.LabelFrame):
 
     def _diaphragm_panel(self) -> None:
         self._title("Assign Diaphragm")
+        if (
+            self.selected_kind != "diaphragm"
+            and (not self.diaphragm_id_var.get().strip() or self.diaphragm_id_var.get().strip() == "D1")
+        ):
+            self.diaphragm_id_var.set(self._next_diaphragm_id())
         form = ttk.Frame(self)
         form.grid(row=1, column=0, sticky="ew", pady=(8, 0))
         form.columnconfigure(1, weight=1)
-        self._combo(form, 0, "Action", self.diaphragm_action_var, ("Add", "Replace", "Delete"), self._apply_diaphragm_settings)
+        self._combo(form, 0, "Action", self.diaphragm_action_var, ("Add", "Replace", "Delete"), self._sync_diaphragm_settings)
         ttk.Label(form, text="Group id").grid(row=1, column=0, sticky="w", pady=2)
         ttk.Entry(form, textvariable=self.diaphragm_id_var, width=10).grid(row=1, column=1, sticky="ew", pady=2)
-        ttk.Label(form, text="Nodes").grid(row=2, column=0, sticky="w", pady=2)
-        ttk.Entry(form, textvariable=self.diaphragm_nodes_var, width=18).grid(row=2, column=1, sticky="ew", pady=2)
-        ttk.Button(self, text="Use These Settings", command=self._apply_diaphragm_settings).grid(row=2, column=0, sticky="ew", pady=(8, 0))
-        ttk.Button(self, text="Apply Diaphragm", command=self._apply_diaphragm_assignment).grid(row=3, column=0, sticky="ew", pady=(6, 0))
-        ttk.Label(self, text="Click nodes to collect them, or type node ids separated by commas.", wraplength=220).grid(
+        ttk.Label(form, text="Selected nodes").grid(row=2, column=0, sticky="w", pady=2)
+        ttk.Label(form, text=self._selected_diaphragm_nodes_summary(), wraplength=150).grid(
+            row=2,
+            column=1,
+            sticky="w",
+            pady=2,
+        )
+        ttk.Button(self, text="Apply", command=self._apply_diaphragm_assignment).grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        ttk.Button(self, text="Clear Selection", command=self._clear_diaphragm_selection).grid(
+            row=3,
+            column=0,
+            sticky="ew",
+            pady=(6, 0),
+        )
+        ttk.Label(self, text="Select nodes on the canvas first, then apply the diaphragm group.", wraplength=220).grid(
             row=4,
             column=0,
             sticky="nw",
             pady=(8, 0),
         )
         ttk.Button(self, text="Reset to Default", command=self._reset_current_command).grid(row=5, column=0, sticky="ew", pady=(8, 0))
-        self._apply_diaphragm_settings()
+        self._sync_diaphragm_settings()
 
     def _member_properties_editor(self, start_row: int) -> None:
         materials = self._material_ids()
@@ -707,23 +733,35 @@ class PropertyPanel(ttk.LabelFrame):
         self.model_canvas.set_mass_settings(self.mass_action_var.get(), mass_ux, mass_uy, inertia_rz)
         self.status_callback("Assign Mass: click a node.")
 
-    def _apply_diaphragm_settings(self) -> None:
+    def _sync_diaphragm_settings(self) -> None:
         group_id = self.diaphragm_id_var.get().strip() or "D1"
-        try:
-            node_ids = _parse_node_ids(self.diaphragm_nodes_var.get())
-        except ValueError as exc:
-            self.status_callback(f"Assign Diaphragm: {exc}")
-            return
-        if not self.diaphragm_nodes_var.get().strip():
-            node_ids = self.model_canvas.diaphragm_node_ids
-        self.model_canvas.set_diaphragm_settings(self.diaphragm_action_var.get(), group_id, node_ids)
-        self.status_callback("Assign Diaphragm: click nodes or apply typed node ids.")
+        self.model_canvas.set_diaphragm_settings(self.diaphragm_action_var.get(), group_id)
+        self.status_callback("Assign Diaphragm: select nodes, confirm group id/action, then click Apply.")
 
     def _apply_diaphragm_assignment(self) -> None:
-        self._apply_diaphragm_settings()
+        self._sync_diaphragm_settings()
         group = self.model_canvas.apply_diaphragm_assignment()
         if group is not None:
-            self.diaphragm_nodes_var.set(", ".join(str(node_id) for node_id in group))
+            self.show_command("Assign Diaphragm")
+
+    def _clear_diaphragm_selection(self) -> None:
+        self.model_canvas.clear_node_selection()
+        self.show_command("Assign Diaphragm")
+
+    def _selected_diaphragm_nodes_summary(self) -> str:
+        node_ids = self.model_canvas.selected_diaphragm_node_ids()
+        if not node_ids and self.selected_kind == "diaphragm" and self.selected_object is not None:
+            node_ids = list(self.selected_object.get("nodes", []))
+        if not node_ids:
+            return "0 selected nodes"
+        return f"{len(node_ids)} selected nodes: {', '.join(str(node_id) for node_id in node_ids)}"
+
+    def _next_diaphragm_id(self) -> str:
+        existing = set(self.model_canvas.builder.model.diaphragm_ux_groups)
+        index = 1
+        while f"D{index}" in existing:
+            index += 1
+        return f"D{index}"
 
     def _apply_member_properties(self) -> None:
         if self.selected_kind != "element" or self.selected_object is None:
@@ -867,9 +905,9 @@ class PropertyPanel(ttk.LabelFrame):
             self._apply_mass_settings()
         elif command == "Assign Diaphragm":
             self.diaphragm_action_var.set("Replace")
-            self.diaphragm_id_var.set("D1")
+            self.diaphragm_id_var.set(self._next_diaphragm_id())
             self.diaphragm_nodes_var.set("")
-            self._apply_diaphragm_settings()
+            self._sync_diaphragm_settings()
         self.status_callback(f"{command}: settings reset to defaults.")
 
     def _material_ids(self) -> tuple[str, ...]:

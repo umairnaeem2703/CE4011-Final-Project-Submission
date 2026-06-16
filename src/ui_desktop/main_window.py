@@ -312,6 +312,10 @@ class MainWindow:
         elif kind == "mass":
             self.model_canvas.select_node(int(object_id))
             self._write_status(f"Selected mass at node {object_id} from object tree.")
+        elif kind == "diaphragm":
+            self.property_panel.show_diaphragm_group(object_id)
+            self.object_tree.select_objects(("diaphragm", object_id))
+            self._write_status(f"Selected diaphragm group {object_id} from object tree.")
         else:
             self._write_status(f"Selected {kind} {object_id}. Canvas highlighting is pending for this object type.")
 
