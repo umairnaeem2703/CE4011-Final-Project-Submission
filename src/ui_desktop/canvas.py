@@ -243,6 +243,9 @@ class ModelCanvas(ttk.Frame):
         if notify:
             self.status_callback("Full View.")
 
+    def selection_count(self) -> int:
+        return self._selection_count()
+
     def add_node_by_coordinates(self, x: float, y: float) -> int:
         existing_node_id = self._find_node_near_model_point(x, y)
         if existing_node_id is not None:
@@ -512,6 +515,71 @@ class ModelCanvas(ttk.Frame):
         if blocked_nodes:
             parts.append(f"blocked node(s): {', '.join(str(node_id) for node_id in blocked_nodes)}")
         self.status_callback("Delete selection: " + "; ".join(parts) if parts else "Delete selection: nothing deleted.")
+
+    def replicate_selection(self, copies: int, dx: float, dy: float) -> tuple[int, int] | None:
+        if copies < 1:
+            self.status_callback("Replicate: number of copies must be at least 1.")
+            return None
+        if self._selection_count() == 0:
+            self.status_callback("Replicate: select nodes or members first.")
+            return None
+
+        selected_elements = [
+            self.builder.model.elements[element_id]
+            for element_id in sorted(self.selected_element_ids)
+            if element_id in self.builder.model.elements
+        ]
+        node_ids_to_copy = {
+            node_id for node_id in self.selected_node_ids if node_id in self.builder.model.nodes
+        }
+        for element in selected_elements:
+            node_ids_to_copy.add(element.node_i.id)
+            node_ids_to_copy.add(element.node_j.id)
+
+        new_node_ids: set[int] = set()
+        new_element_ids: set[str] = set()
+        for copy_index in range(1, copies + 1):
+            node_map: dict[int, int] = {}
+            offset_x = copy_index * dx
+            offset_y = copy_index * dy
+            for old_node_id in sorted(node_ids_to_copy):
+                old_node = self.builder.model.nodes.get(old_node_id)
+                if old_node is None:
+                    continue
+                new_node_id = self.next_node_id
+                self.next_node_id += 1
+                self.builder.add_node(new_node_id, old_node.x + offset_x, old_node.y + offset_y)
+                node_map[old_node_id] = new_node_id
+                new_node_ids.add(new_node_id)
+
+            for old_element in selected_elements:
+                start_node_id = node_map.get(old_element.node_i.id)
+                end_node_id = node_map.get(old_element.node_j.id)
+                if start_node_id is None or end_node_id is None:
+                    continue
+                new_element_id = f"E{self.next_element_number}"
+                self.next_element_number += 1
+                self.builder.add_element(
+                    new_element_id,
+                    old_element.type,
+                    start_node_id,
+                    end_node_id,
+                    old_element.material.id,
+                    old_element.section.id,
+                    release_start=old_element.release_start,
+                    release_end=old_element.release_end,
+                    is_axially_rigid=old_element.is_axially_rigid,
+                )
+                new_element_ids.add(new_element_id)
+
+        self._mark_model_dirty()
+        self.redraw_model()
+        self.change_callback()
+        self._set_multi_selection(new_node_ids, new_element_ids)
+        self.status_callback(
+            f"Replicated {len(new_node_ids)} node(s) and {len(new_element_ids)} member(s)."
+        )
+        return len(new_node_ids), len(new_element_ids)
 
     def _toggle_node_selection(self, node_id: int) -> None:
         if node_id in self.selected_node_ids:

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import tkinter as tk
-from tkinter import filedialog, ttk
+from tkinter import filedialog, simpledialog, ttk
 
 from .canvas import ModelCanvas
 from .object_tree import ObjectTreePanel
@@ -41,7 +41,7 @@ COMMAND_TABS = (
             ("command", "Assign Mass"),
             ("command", "Assign Diaphragm"),
             ("command", "Delete"),
-            ("placeholder", "Replicate"),
+            ("action", "Replicate"),
         ),
     ),
     (
@@ -218,6 +218,9 @@ class MainWindow:
         if name == "Save XML":
             self._save_xml()
             return
+        if name == "Replicate":
+            self._replicate_selection()
+            return
         self._write_status(f"{name}: not wired yet.")
 
     def _new_model(self) -> None:
@@ -249,6 +252,29 @@ class MainWindow:
             self._write_status(f"Save XML failed: {exc}")
             return
         self._write_status(f"Saved XML: {path}")
+
+    def _replicate_selection(self) -> None:
+        if self.model_canvas.selection_count() == 0:
+            self._write_status("Replicate: select nodes or members first.")
+            return
+        copies = simpledialog.askinteger(
+            "Replicate",
+            "Number of copies:",
+            parent=self.root,
+            minvalue=1,
+        )
+        if copies is None:
+            self._write_status("Replicate canceled.")
+            return
+        dx = simpledialog.askfloat("Replicate", "dx per copy:", parent=self.root, initialvalue=0.0)
+        if dx is None:
+            self._write_status("Replicate canceled.")
+            return
+        dy = simpledialog.askfloat("Replicate", "dy per copy:", parent=self.root, initialvalue=0.0)
+        if dy is None:
+            self._write_status("Replicate canceled.")
+            return
+        self.model_canvas.replicate_selection(copies, dx, dy)
 
     def _show_selection(self, kind: str | None, obj: object | None) -> None:
         self.property_panel.show_selection(kind, obj)
