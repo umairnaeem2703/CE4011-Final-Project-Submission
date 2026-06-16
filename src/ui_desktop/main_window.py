@@ -25,7 +25,6 @@ ACTIVE_COMMANDS = (
 PLACEHOLDER_COMMANDS = (
     "Replicate",
     "Window Select",
-    "Local Axes",
 )
 COMMAND_TABS = (
     ("Model", (("action", "New"), ("action", "Open XML"), ("action", "Save XML"), ("action", "Validate"))),
@@ -53,7 +52,7 @@ COMMAND_TABS = (
             ("view_action", "Zoom Out"),
             ("command", "Pan"),
             ("placeholder", "Window Select"),
-            ("placeholder", "Local Axes"),
+            ("local_axes_toggle", "Local Axes"),
             ("view_action", "Full View"),
         ),
     ),
@@ -74,6 +73,7 @@ class MainWindow:
         self.selected_command = tk.StringVar(value="Select / Inspect")
         self.grid_visible = tk.BooleanVar(value=True)
         self.snap_to_grid = tk.BooleanVar(value=False)
+        self.local_axes_visible = tk.BooleanVar(value=False)
         self.grid_spacing = tk.StringVar(value="1.0")
         self.status_message = tk.StringVar(value="Select / Inspect: click a node or member to inspect it.")
 
@@ -128,6 +128,13 @@ class MainWindow:
                     text="Snap to Grid",
                     variable=self.snap_to_grid,
                     command=self._toggle_snap_to_grid,
+                )
+            elif kind == "local_axes_toggle":
+                widget = ttk.Checkbutton(
+                    parent,
+                    text="Local Axes",
+                    variable=self.local_axes_visible,
+                    command=self._toggle_local_axes_visible,
                 )
             else:
                 widget = ttk.Button(parent, text=label, state=tk.DISABLED)
@@ -192,6 +199,9 @@ class MainWindow:
 
     def _toggle_snap_to_grid(self) -> None:
         self.model_canvas.set_snap_to_grid(self.snap_to_grid.get())
+
+    def _toggle_local_axes_visible(self) -> None:
+        self.model_canvas.set_local_axes_visible(self.local_axes_visible.get())
 
     def _apply_grid_spacing(self) -> None:
         try:

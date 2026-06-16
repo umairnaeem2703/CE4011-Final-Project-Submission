@@ -69,6 +69,7 @@ class ModelCanvas(ttk.Frame):
         self.view_origin_x = 0.0
         self.view_origin_y = 0.0
         self.grid_visible = True
+        self.local_axes_visible = False
         self.snap_to_grid = False
         self.grid_spacing = 1.0
         self.snap_tolerance = 12.0
@@ -220,6 +221,11 @@ class ModelCanvas(ttk.Frame):
     def set_snap_to_grid(self, enabled: bool) -> None:
         self.snap_to_grid = enabled
         self.status_callback("Snap On." if enabled else "Snap Off.")
+
+    def set_local_axes_visible(self, visible: bool) -> None:
+        self.local_axes_visible = visible
+        self.redraw_model()
+        self.status_callback("Local Axes On." if visible else "Local Axes Off.")
 
     def set_grid_spacing(self, spacing: float) -> bool:
         if spacing <= 0:
@@ -1042,6 +1048,64 @@ class ModelCanvas(ttk.Frame):
                         self._draw_member_temperature_symbol(load)
         for node_ids in self.builder.model.diaphragm_ux_groups.values():
             self._draw_diaphragm_symbol(node_ids)
+        if self.local_axes_visible:
+            self._draw_member_local_axes()
+
+    def _draw_member_local_axes(self) -> None:
+        for element in self.builder.model.elements.values():
+            x1, y1 = self._model_to_canvas(element.node_i.x, element.node_i.y)
+            x2, y2 = self._model_to_canvas(element.node_j.x, element.node_j.y)
+            axis = _unit_vector(x2 - x1, y2 - y1)
+            if axis is None:
+                continue
+            tx, ty = axis
+            nx, ny = ty, -tx
+            mid_x = x1 + (x2 - x1) * 0.42
+            mid_y = y1 + (y2 - y1) * 0.42
+            length = 24.0
+            head_1 = self._draw_local_axis_arrow(mid_x, mid_y, tx, ty, length, "#1f77b4")
+            head_2 = self._draw_local_axis_arrow(mid_x, mid_y, nx, ny, length * 0.78, "#2ca02c")
+            self.canvas.create_text(
+                head_1[0] + 3,
+                head_1[1] - 3,
+                text="1",
+                fill="#1f77b4",
+                anchor="w",
+                font=("Segoe UI", 8),
+                tags=("symbol", "local-axis"),
+            )
+            self.canvas.create_text(
+                head_2[0] + 3,
+                head_2[1] - 3,
+                text="2",
+                fill="#2ca02c",
+                anchor="w",
+                font=("Segoe UI", 8),
+                tags=("symbol", "local-axis"),
+            )
+
+    def _draw_local_axis_arrow(
+        self,
+        tail_x: float,
+        tail_y: float,
+        dx: float,
+        dy: float,
+        length: float,
+        color: str,
+    ) -> tuple[float, float]:
+        head_x = tail_x + dx * length
+        head_y = tail_y + dy * length
+        self.canvas.create_line(
+            tail_x,
+            tail_y,
+            head_x,
+            head_y,
+            arrow=tk.LAST,
+            fill=color,
+            width=2,
+            tags=("symbol", "local-axis"),
+        )
+        return head_x, head_y
 
     def _draw_support_symbol(self, support) -> None:
         x, y = self._model_to_canvas(support.node.x, support.node.y)
