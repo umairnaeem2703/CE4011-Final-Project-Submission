@@ -30,6 +30,8 @@ class PropertyPanel(ttk.LabelFrame):
         self.member_material_var = tk.StringVar(value="")
         self.member_section_var = tk.StringVar(value="")
         self.member_type_var = tk.StringVar(value="frame")
+        self.selected_node_x_var = tk.StringVar(value="")
+        self.selected_node_y_var = tk.StringVar(value="")
         self.material_id_var = tk.StringVar(value="M1")
         self.material_type_var = tk.StringVar(value="Generic")
         self.material_e_var = tk.StringVar(value="1.0")
@@ -158,14 +160,14 @@ class PropertyPanel(ttk.LabelFrame):
         self._title("Select / Inspect")
         if self.selected_kind == "node" and self.selected_object is not None:
             node = self.selected_object
+            self.selected_node_x_var.set(f"{node.x:.6g}")
+            self.selected_node_y_var.set(f"{node.y:.6g}")
             support = self.model_canvas.builder.model.supports.get(node.id)
             support_text = _support_summary(support)
             mass_text = _mass_summary(self.model_canvas.builder.model, node.id)
             loads_text = _node_load_summary(self.model_canvas.builder.model, node.id)
             rows = [
                 ("Node id", node.id),
-                ("x", f"{node.x:.6g}"),
-                ("y", f"{node.y:.6g}"),
                 ("Support", support_text),
                 ("Mass", mass_text),
                 ("Diaphragm", _node_diaphragm_summary(self.model_canvas.builder.model, node.id)),
@@ -204,6 +206,8 @@ class PropertyPanel(ttk.LabelFrame):
         for row, (label, value) in enumerate(rows):
             ttk.Label(info, text=label).grid(row=row, column=0, sticky="w", pady=2)
             ttk.Label(info, text=str(value)).grid(row=row, column=1, sticky="w", pady=2)
+        if self.selected_kind == "node" and self.selected_object is not None:
+            self._node_coordinate_editor(start_row=2)
         if self.selected_kind == "element" and self.selected_object is not None:
             self._member_properties_editor(start_row=2)
 
@@ -461,6 +465,32 @@ class PropertyPanel(ttk.LabelFrame):
             pady=(8, 0),
         )
 
+    def _node_coordinate_editor(self, start_row: int) -> None:
+        editor = ttk.LabelFrame(self, text="Node Coordinates", padding=6)
+        editor.grid(row=start_row, column=0, sticky="ew", pady=(8, 0))
+        editor.columnconfigure(1, weight=1)
+        ttk.Label(editor, text="x").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Entry(editor, textvariable=self.selected_node_x_var, width=12).grid(
+            row=0,
+            column=1,
+            sticky="ew",
+            pady=2,
+        )
+        ttk.Label(editor, text="y").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Entry(editor, textvariable=self.selected_node_y_var, width=12).grid(
+            row=1,
+            column=1,
+            sticky="ew",
+            pady=2,
+        )
+        ttk.Button(editor, text="Apply Coordinates", command=self._apply_node_coordinates).grid(
+            row=2,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(8, 0),
+        )
+
     def _title(self, text: str) -> None:
         ttk.Label(self, text=text, font=("Segoe UI", 10, "bold")).grid(row=0, column=0, sticky="w")
 
@@ -663,6 +693,21 @@ class PropertyPanel(ttk.LabelFrame):
             self.status_callback("Member Properties: choose material and section.")
             return
         updated = self.model_canvas.update_selected_member_properties(element_type, material_id, section_id)
+        if updated is not None:
+            self.selected_object = updated
+            self.show_command("Select / Inspect")
+
+    def _apply_node_coordinates(self) -> None:
+        if self.selected_kind != "node" or self.selected_object is None:
+            self.status_callback("Node Coordinates: select one node first.")
+            return
+        try:
+            x = float(self.selected_node_x_var.get())
+            y = float(self.selected_node_y_var.get())
+        except ValueError:
+            self.status_callback("Node Coordinates: x and y must be numeric.")
+            return
+        updated = self.model_canvas.update_selected_node_coordinates(x, y)
         if updated is not None:
             self.selected_object = updated
             self.show_command("Select / Inspect")

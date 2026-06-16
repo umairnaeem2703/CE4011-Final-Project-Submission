@@ -943,6 +943,22 @@ class ModelCanvas(ttk.Frame):
         self.status_callback(f"Updated member {element_id} properties.")
         return element
 
+    def update_selected_node_coordinates(self, x: float, y: float):
+        if self.selected_kind != "node" or self.selected_id not in self.builder.model.nodes:
+            self.status_callback("Node Coordinates: select one node first.")
+            return None
+
+        node_id = int(self.selected_id)
+        node = self.builder.model.nodes[node_id]
+        node.x = x
+        node.y = y
+        self._mark_model_dirty()
+        self.redraw_model()
+        self.select_node(node_id)
+        self.change_callback()
+        self.status_callback(f"Updated node {node_id} coordinates to ({x:.6g}, {y:.6g}).")
+        return node
+
     def _remove_loads(self, load_case_id: str, matches) -> int:
         load_case = self.builder.model.load_cases.get(load_case_id)
         if load_case is None:
