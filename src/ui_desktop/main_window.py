@@ -5,6 +5,11 @@ from __future__ import annotations
 import tkinter as tk
 from tkinter import filedialog, ttk
 
+try:
+    from ui.static_analysis import run_static_analysis
+except ImportError:  # pragma: no cover - used when launched as python -m src.ui_desktop.app
+    from ..ui.static_analysis import run_static_analysis
+
 from .canvas import ModelCanvas
 from .object_tree import ObjectTreePanel
 from .property_panel import PropertyPanel
@@ -61,13 +66,13 @@ COMMAND_TABS = (
             ("view_action", "Full View"),
         ),
     ),
-    ("Analyze", (("action", "Run Analysis"),)),
+    ("Analyze", (("action", "Run Static Analysis"),)),
     ("Results", (("action", "Results"),)),
 )
 
 
 class MainWindow:
-    """Tkinter shell for model-building workflows; no analysis execution."""
+    """Tkinter shell for model-building workflows and analysis actions."""
 
     def __init__(self) -> None:
         self.root = tk.Tk()
@@ -81,6 +86,8 @@ class MainWindow:
         self.local_axes_visible = tk.BooleanVar(value=False)
         self.grid_spacing = tk.StringVar(value="1.0")
         self.status_message = tk.StringVar(value="Select / Inspect: click a node or member to inspect it.")
+        self.latest_static_results = None
+        self.static_analysis_error = None
 
         self._configure_grid()
         self._build_command_area()
@@ -239,7 +246,28 @@ class MainWindow:
         if name == "Save XML":
             self._save_xml()
             return
+        if name == "Run Static Analysis":
+            self._run_static_analysis()
+            return
         self._write_status(f"{name}: not wired yet.")
+
+    def _run_static_analysis(self) -> None:
+        result = run_static_analysis(self.model_canvas.builder.model)
+        if not result.ok:
+            self.latest_static_results = None
+            self.static_analysis_error = result.error
+            self._write_status(result.error or "Static analysis failed.")
+            return
+
+        self.latest_static_results = result.results
+        self.static_analysis_error = None
+        load_case = getattr(result.results, "load_case_id", "selected load case")
+        displacement_count = len(getattr(result.results, "displacements", {}))
+        reaction_count = len(getattr(result.results, "reactions", {}))
+        self._write_status(
+            f"Static analysis complete for {load_case}: "
+            f"{displacement_count} displacement rows, {reaction_count} reaction rows."
+        )
 
     def _new_model(self) -> None:
         builder = ask_new_model(self.root)
@@ -249,6 +277,8 @@ class MainWindow:
         self.model_canvas.load_builder(builder)
         self.property_panel.sync_from_canvas()
         self.property_panel.show_command(self.selected_command.get())
+        self.latest_static_results = None
+        self.static_analysis_error = None
         self._refresh_object_tree()
         self._write_status(f"New model created: {builder.model.name}.")
         for message in getattr(builder, "creation_messages", []):

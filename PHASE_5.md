@@ -81,12 +81,11 @@ Do not skip this update.
 
 ## Current Phase State
 
-- 5D0 audit complete; desktop shell entry is `src/ui_desktop/app.py` -> `DesktopMainWindow` in `src/ui_desktop/main_window.py`.
-- Desktop model state currently lives on `MainWindow.model_canvas.builder.model`; Analyze/Results toolbar buttons are placeholders.
-- Reusable analysis helpers already exist in `src/ui/static_analysis.py` and `src/ui/dynamic_analysis.py`; controller is XML/backend facade only.
-- Result objects are centralized in `src/results.py`; desktop result state is not wired yet.
-- Existing `src/visualizer.py` functions cover model preview, static deformed/NVM, mode shape, RSA spectrum, and THA histories.
-- Next implementation target is 5D1: wire desktop Run Static to `run_static_analysis(model_canvas.builder.model)` and cache `StaticResults`.
+- Desktop Analyze tab now has `Run Static Analysis`, calling existing `run_static_analysis(model_canvas.builder.model)`.
+- Latest static result/error state is cached on `DesktopMainWindow` as `latest_static_results` / `static_analysis_error`.
+- UI reports static success/failure through the existing status log without adding solver math or result tables.
+- Desktop entry point supports `python -m src.ui_desktop.app` with the repo's flat `src` imports.
+- Next implementation target is 5D2: add a static result selector and read-only basic tables from cached `StaticResults`.
 
 ## Codex Reading Budget
 
@@ -103,7 +102,7 @@ To avoid token exhaustion, Codex should read this file selectively:
 | ID | Task | Status | Scope |
 |---|---|---:|---|
 | 5D0 | Audit desktop analysis integration entry points | DONE | docs only |
-| 5D1 | Add desktop analysis bridge + Run Static | TODO | UI/controller bridge only |
+| 5D1 | Add desktop analysis bridge + Run Static | DONE | UI/controller bridge only |
 | 5D2 | Add static result selector + basic tables | TODO | UI result browsing |
 | 5D3 | Embed static plots: deformed shape + N/V/M | TODO | visualization integration |
 | 5D4 | Add Run Modal + modal tables + mode plot | TODO | modal result integration |
@@ -116,28 +115,12 @@ To avoid token exhaustion, Codex should read this file selectively:
 
 ### 5D1 — Analysis bridge + Run Static
 
-Goal:
-- Add the smallest possible desktop UI path for running static analysis on the current UI model.
-
-Expected behavior:
-- A user can click a Static analysis command from the desktop UI.
-- The app validates/builds/uses the current `StructuralModel` through existing controller/model-builder pathways.
-- Static analysis runs using existing backend functions.
-- The UI stores the latest `StaticResults` object in an app-level result state.
-- A concise success/error message appears in the UI.
-- No plots or large result tables are required yet.
-
-Avoid:
-- Do not redesign the whole UI.
-- Do not implement Modal/RSA/THA yet.
-- Do not change solver math.
-
-Minimum checks:
-- Launch desktop app.
-- Create or generate a simple frame/shear-frame model.
-- Run Static.
-- Confirm no traceback and a result summary/status appears.
-- Run relevant UI/static tests or at least compile changed files.
+DONE SUMMARY:
+- Added `Run Static Analysis` action in the desktop Analyze tab.
+- Calls existing `ui.static_analysis.run_static_analysis` on the current `model_canvas.builder.model`.
+- Caches success/failure state on `DesktopMainWindow`.
+- Reports concise status messages through the existing desktop log.
+- No result tables, plotting, Modal, RSA, or THA integration included.
 
 ### 5D2 — Static result selector + basic tables
 
@@ -580,6 +563,12 @@ Codex appends one compressed entry per completed task. Keep entries short. Do no
 - Result: Audited desktop entry points, existing Static/Modal/RSA/THA helper APIs, result dataclasses, and visualizer functions usable by desktop UI.
 - Checks: `pytest tests/` passed; targeted reads of `src/ui_desktop/app.py`, `src/ui_desktop/main_window.py`, `src/controller.py`, `src/ui/static_analysis.py`, `src/ui/dynamic_analysis.py`, `src/results.py`, `src/main.py`, solver entry symbols, and `src/visualizer.py`.
 - Next/limits: Start 5D1 by wiring the existing static helper into the desktop Analyze tab; no source code was changed.
+
+### 5D1 — DONE — 2026-06-16
+- Files: `src/ui_desktop/app.py`, `src/ui_desktop/main_window.py`, `tests/test_ui_desktop_static.py`, `PHASE_5.md`
+- Result: Desktop users can run Static analysis from the Analyze tab, with latest `StaticResults` cached and success/failure shown in the status log.
+- Checks: `python -m py_compile src\ui_desktop\main_window.py src\ui_desktop\app.py`; `pytest tests\test_ui_desktop_static.py tests\test_ui_static.py`; `python -m src.ui_desktop.app` reached Tk main loop and timed out as expected.
+- Next/limits: 5D2 should add result selection and tables; no plots or dynamic analyses are wired yet.
 
 ### Template
 
