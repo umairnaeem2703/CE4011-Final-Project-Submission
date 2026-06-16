@@ -60,11 +60,12 @@ class NewModelDialog(tk.Toplevel):
         self.column_section_var = tk.StringVar(value="COL")
         self.beam_section_var = tk.StringVar(value="BEAM")
         self.mass_var = tk.StringVar(value="")
-        self.mass_placement_var = tk.StringVar(value="center floor node")
+        self.mass_placement_var = tk.StringVar(value="none")
         self.diaphragm_var = tk.BooleanVar(value=True)
         self._template_sensitive_widgets = []
         self._general_section_widgets = []
         self._shear_section_widgets = []
+        self._mass_widgets = []
 
         self._build()
         self._sync_template_fields()
@@ -121,19 +122,21 @@ class NewModelDialog(tk.Toplevel):
             self._add_entry(self.geometry_frame, 1, "Bays", self.bays_var),
             self._add_entry(self.geometry_frame, 2, "Story height", self.story_height_var),
             self._add_entry(self.geometry_frame, 3, "Bay width", self.bay_width_var),
-            self._add_entry(self.geometry_frame, 4, "Mass per floor", self.mass_var),
         ):
             self._template_sensitive_widgets.extend(widgets)
         placement_label = ttk.Label(self.geometry_frame, text="Mass placement")
-        placement_label.grid(row=5, column=0, sticky="w", pady=2)
+        placement_label.grid(row=4, column=0, sticky="w", pady=2)
         placement_box = ttk.Combobox(
             self.geometry_frame,
             textvariable=self.mass_placement_var,
-            values=("center floor node", "distribute to floor nodes"),
+            values=("none", "center floor node", "distribute to floor nodes"),
             state="readonly",
             width=22,
         )
-        placement_box.grid(row=5, column=1, sticky="ew", pady=2)
+        placement_box.grid(row=4, column=1, sticky="ew", pady=2)
+        placement_box.bind("<<ComboboxSelected>>", lambda event: self._sync_template_fields())
+        mass_label, mass_entry = self._add_entry(self.geometry_frame, 5, "Mass per floor", self.mass_var)
+        self._mass_widgets = [mass_label, mass_entry]
         diaphragm_check = ttk.Checkbutton(
             self.geometry_frame,
             text="Rigid floor diaphragm system",
@@ -174,6 +177,12 @@ class NewModelDialog(tk.Toplevel):
         for child in self._template_sensitive_widgets:
             try:
                 child.configure(state=state)
+            except tk.TclError:
+                pass
+        mass_state = "normal" if is_shear_frame and self.mass_placement_var.get() != "none" else "disabled"
+        for child in self._mass_widgets:
+            try:
+                child.configure(state=mass_state)
             except tk.TclError:
                 pass
         for child in self._shear_section_widgets:
@@ -289,7 +298,7 @@ def create_shear_frame_builder(settings: ShearFrameSettings):
     for bay in range(settings.bays + 1):
         builder.add_support(node_ids[(0, bay)], restrain_ux=True, restrain_uy=True, restrain_rz=True)
 
-    if settings.lumped_mass_per_floor > 0.0:
+    if settings.mass_placement != "none" and settings.lumped_mass_per_floor > 0.0:
         for story in range(1, settings.stories + 1):
             floor_nodes = [node_ids[(story, bay)] for bay in range(settings.bays + 1)]
             center_bay = settings.bays / 2.0

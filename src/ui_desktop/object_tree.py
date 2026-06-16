@@ -90,11 +90,12 @@ class ObjectTreePanel(ttk.LabelFrame):
                 text=f"Node {node_id} ({_mass_summary(model.lumped_masses[node_id])})",
             )
         for diaphragm_id in sorted(model.diaphragm_ux_groups):
+            node_ids = model.diaphragm_ux_groups[diaphragm_id]
             self.tree.insert(
                 parents["Diaphragms"],
                 "end",
                 iid=f"diaphragm:{diaphragm_id}",
-                text=str(diaphragm_id),
+                text=f"{diaphragm_id} (nodes: {', '.join(str(node_id) for node_id in node_ids)})",
             )
 
     def _handle_select(self, _event) -> None:

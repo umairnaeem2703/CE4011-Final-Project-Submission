@@ -59,6 +59,9 @@ class ModelCanvas(ttk.Frame):
         self.load_action = "Add"
         self.mass_action = "Replace"
         self.mass_settings = (0.0, 0.0, 0.0)
+        self.diaphragm_action = "Replace"
+        self.diaphragm_group_id = "D1"
+        self.diaphragm_node_ids: list[int] = []
         self.draw_mode = "click"
 
         self.scale = 40.0
@@ -151,7 +154,7 @@ class ModelCanvas(ttk.Frame):
         if self.active_command == "Assign Mass":
             return "Assign Mass: choose mass settings, then click node."
         if self.active_command == "Assign Diaphragm":
-            return "Assign Diaphragm: select floor nodes for a future diaphragm assignment."
+            return "Assign Diaphragm: click nodes to collect them, then apply the diaphragm."
         if self.active_command == "Delete":
             return "Delete: click a node or member to remove it."
         return "Select / Inspect: click a node or member to inspect it."
@@ -183,6 +186,11 @@ class ModelCanvas(ttk.Frame):
     def set_mass_settings(self, action: str, mass_ux: float, mass_uy: float, inertia_rz: float) -> None:
         self.mass_action = action
         self.mass_settings = (mass_ux, mass_uy, inertia_rz)
+
+    def set_diaphragm_settings(self, action: str, group_id: str, node_ids: list[int]) -> None:
+        self.diaphragm_action = action
+        self.diaphragm_group_id = group_id
+        self.diaphragm_node_ids = list(dict.fromkeys(node_ids))
 
     def add_node_by_coordinates(self, x: float, y: float) -> int:
         existing_node_id = self._find_node_near_model_point(x, y)
@@ -269,6 +277,11 @@ class ModelCanvas(ttk.Frame):
                 self.status_callback("Assign Mass: click a node.")
                 return
             self.assign_mass_to_node(node_id)
+        elif self.active_command == "Assign Diaphragm":
+            if node_id is None:
+                self.status_callback("Assign Diaphragm: click a node.")
+                return
+            self.collect_diaphragm_node(node_id)
         elif node_id is not None:
             self.select_node(node_id)
             self.status_callback(f"Selected node {node_id}.")
@@ -492,6 +505,50 @@ class ModelCanvas(ttk.Frame):
         self.change_callback()
         self.status_callback(message)
 
+    def collect_diaphragm_node(self, node_id: int) -> None:
+        if node_id not in self.builder.model.nodes:
+            self.status_callback("Assign Diaphragm: click a node.")
+            return
+        if node_id not in self.diaphragm_node_ids:
+            self.diaphragm_node_ids.append(node_id)
+        self.select_node(node_id)
+        self.status_callback(
+            f"Assign Diaphragm {self.diaphragm_group_id}: selected nodes {self._diaphragm_nodes_label()}."
+        )
+
+    def apply_diaphragm_assignment(self) -> list[int] | None:
+        group_id = self.diaphragm_group_id.strip() or "D1"
+        action = self.diaphragm_action
+        if action == "Delete":
+            removed = self.builder.model.diaphragm_ux_groups.pop(group_id, None)
+            self._mark_model_dirty()
+            self.redraw_model()
+            self.clear_selection()
+            self.change_callback()
+            self.status_callback(f"Deleted diaphragm group {group_id}." if removed is not None else f"Diaphragm group {group_id} not found.")
+            return []
+
+        missing = [node_id for node_id in self.diaphragm_node_ids if node_id not in self.builder.model.nodes]
+        if missing:
+            self.status_callback(f"Assign Diaphragm: unknown node id {missing[0]}.")
+            return None
+        if len(self.diaphragm_node_ids) < 2:
+            self.status_callback("Assign Diaphragm: select at least two nodes.")
+            return None
+
+        if action == "Add":
+            existing = self.builder.model.diaphragm_ux_groups.get(group_id, [])
+            node_ids = list(dict.fromkeys([*existing, *self.diaphragm_node_ids]))
+        else:
+            node_ids = list(dict.fromkeys(self.diaphragm_node_ids))
+        self.builder.add_diaphragm_group(group_id, node_ids)
+        self.diaphragm_node_ids = node_ids
+        self.redraw_model()
+        self.clear_selection()
+        self.change_callback()
+        self.status_callback(f"Assigned diaphragm group {group_id} to nodes {self._diaphragm_nodes_label()}.")
+        return node_ids
+
     def update_selected_member_properties(self, element_type: str, material_id: str, section_id: str):
         if self.selected_kind != "element" or self.selected_id not in self.builder.model.elements:
             self.status_callback("Member Properties: select a member first.")
@@ -563,6 +620,9 @@ class ModelCanvas(ttk.Frame):
                 if load.Tu != load.Tb:
                     return True
         return False
+
+    def _diaphragm_nodes_label(self) -> str:
+        return ", ".join(str(node_id) for node_id in self.diaphragm_node_ids) or "none"
 
     def _draw_node(self, node_id: int, x: float, y: float) -> None:
         cx, cy = self._model_to_canvas(x, y)
@@ -747,7 +807,11 @@ class ModelCanvas(ttk.Frame):
         points.sort(key=lambda node: node.x)
         x1, y1 = self._model_to_canvas(points[0].x, points[0].y)
         x2, y2 = self._model_to_canvas(points[-1].x, points[-1].y)
-        self.canvas.create_line(x1, y1 - 18, x2, y2 - 18, fill="#9467bd", dash=(5, 3), tags="symbol")
+        self.canvas.create_line(x1, y1 - 18, x2, y2 - 18, fill="#9467bd", dash=(5, 3), width=2, tags="symbol")
+        for node in points:
+            x, y = self._model_to_canvas(node.x, node.y)
+            self.canvas.create_rectangle(x - 7, y - 7, x + 7, y + 7, outline="#9467bd", width=2, tags="symbol")
+        self._draw_symbol_label(x1 + 8, y1 - 30, "D", "#9467bd")
 
     def _fit_view_to_model(self) -> None:
         nodes = list(self.builder.model.nodes.values())

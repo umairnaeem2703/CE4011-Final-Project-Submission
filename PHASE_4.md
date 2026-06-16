@@ -49,13 +49,15 @@ Rules:
 * 4C temperature load UI
 * 4C1 Direct Stiffness thermal depth handling
 * 4R10 member property assignment/editing
+* 4D general mass and diaphragm assignment UI
+* 4R11 shear-frame mass placement cleanup
 
 Do not break these.
 
 ## Current Subtask Order
 
 ```text
-4D — General mass + diaphragm assignment UI
+Phase 4 subtasks complete.
 ```
 
 ## Common UI Rule
@@ -106,29 +108,6 @@ tests/...
 ```
 
 Do not modify controller/solver/math files unless the subtask explicitly requires it and reports why.
-
-## 4D — General Mass + Diaphragm Assignment UI
-
-Purpose: support arbitrary dynamic models, not only shear frames.
-
-Requirements:
-
-* Assign Mass edits node mass values:
-
-  * `mass_ux`
-  * `mass_uy`
-  * `mass_rz` / rotational inertia
-* Assign Diaphragm creates UX-sharing groups by typed node ids or click collection.
-* Tree/inspector/symbol refresh.
-* Wrong target is blocked clearly.
-
-Rules:
-
-* Mass assignment is general nodal mass assignment.
-* Shear-frame `Mass per floor` is only a template convenience.
-* Do not use legacy names `mass_x`, `mass_y`, `rotational_inertia_rz` in UI.
-
----
 
 ## Validation Commands
 
