@@ -9,7 +9,8 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from model_builder import ModelBuilder
 from ui_desktop import main_window
-from ui_desktop.result_formatting import format_matrix, format_scalar
+from ui_desktop.property_panel import PropertyPanel
+from ui_desktop.result_formatting import dof_equation_labels, format_matrix, format_scalar
 from visualizer import build_member_review_profile, plot_member_review_panel, plot_static_nvm_diagrams
 
 
@@ -73,6 +74,89 @@ def _window_with_model(model=object()):
     return window
 
 
+def _property_panel_for_builder(builder, selected_element_ids=None):
+    panel = PropertyPanel.__new__(PropertyPanel)
+    panel.messages = []
+    panel.status_callback = panel.messages.append
+    panel.current_command = "Materials / Sections"
+    panel.material_id_var = DummyVar("m1")
+    panel.assign_material_var = DummyVar("m1")
+    panel.material_var = DummyVar("m1")
+    panel.section_id_var = DummyVar("s1")
+    panel.assign_section_var = DummyVar("s1")
+    panel.section_var = DummyVar("s1")
+    panel.show_calls = []
+    panel.show_command = lambda command: panel.show_calls.append(command)
+    panel.model_canvas = SimpleNamespace(
+        builder=builder,
+        selected_element_ids=set(selected_element_ids or []),
+        redraws=0,
+        changes=0,
+        selected=None,
+        redraw_model=lambda: setattr(panel.model_canvas, "redraws", panel.model_canvas.redraws + 1),
+        change_callback=lambda: setattr(panel.model_canvas, "changes", panel.model_canvas.changes + 1),
+        select_element=lambda element_id: setattr(panel.model_canvas, "selected", element_id),
+        _set_multi_selection=lambda node_ids, element_ids: setattr(panel.model_canvas, "selected", sorted(element_ids)),
+    )
+    return panel
+
+
+def test_materials_sections_assign_existing_definitions_to_selected_members():
+    builder = ModelBuilder(name="Panel Model")
+    builder.add_material("m1", E=1.0)
+    builder.add_material("m2", E=2.0)
+    builder.add_section("s1", A=1.0, I=1.0)
+    builder.add_section("s2", A=2.0, I=2.0)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 1.0, 0.0)
+    builder.add_node(3, 2.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+    builder.add_element("e2", "frame", 2, 3, "m1", "s1")
+    panel = _property_panel_for_builder(builder, {"e1", "e2"})
+    panel.assign_material_var.set("m2")
+    panel.assign_section_var.set("s2")
+
+    panel._assign_material_section_to_selected_members()
+
+    assert {element.material.id for element in builder.model.elements.values()} == {"m2"}
+    assert {element.section.id for element in builder.model.elements.values()} == {"s2"}
+    assert panel.messages[-1] == "Assigned material m2 and section s2 to 2 member(s)."
+    assert panel.model_canvas.redraws == 1
+    assert panel.model_canvas.changes == 1
+
+
+def test_materials_sections_assignment_requires_selected_members():
+    builder = ModelBuilder(name="Panel Model")
+    builder.add_material("m1", E=1.0)
+    builder.add_section("s1", A=1.0, I=1.0)
+    panel = _property_panel_for_builder(builder)
+
+    panel._assign_material_to_selected_members()
+
+    assert panel.messages[-1] == "Select one or more members first."
+
+
+def test_materials_sections_delete_blocks_used_definition_and_deletes_unused():
+    builder = ModelBuilder(name="Panel Model")
+    builder.add_material("m1", E=1.0)
+    builder.add_material("m2", E=2.0)
+    builder.add_section("s1", A=1.0, I=1.0)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 1.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+    panel = _property_panel_for_builder(builder)
+
+    panel.material_id_var.set("m1")
+    panel._delete_material()
+    assert panel.messages[-1] == "Material m1 is used by 1 member(s); reassign them before deleting."
+    assert "m1" in builder.model.materials
+
+    panel.material_id_var.set("m2")
+    panel._delete_material()
+    assert "m2" not in builder.model.materials
+    assert panel.messages[-1] == "Deleted material m2."
+
+
 def test_desktop_run_static_analysis_stores_result_and_status(monkeypatch):
     expected_results = SimpleNamespace(load_case_id="LC1", displacements={1: [0.0]}, reactions={1: [10.0]})
 
@@ -109,7 +193,7 @@ def test_desktop_static_result_tables_use_cached_result_fields():
         displacements={1: [0.001, 0.0, 0.0]},
         reactions={1: [10.0, -2.5, 1.0e-12]},
         element_forces={"e1": {"i": [[10.0], [0.0], [0.0]], "j": [[-10.0], [0.0], [0.0]]}},
-        dof_map={1: [-1, 0, 3]},
+        dof_map={1: [0, 1, 2]},
         K=[[1.0, 0.0], [0.0, 1.0]],
         Kff=[[1.0]],
         F=[10.0, 0.0],
@@ -132,16 +216,30 @@ def test_desktop_static_result_tables_use_cached_result_fields():
 
     columns, rows = window._static_result_table_data("DOF Map")
     assert columns == ("Node", "UX", "UY", "RZ")
-    assert rows == [("1", "Fixed", "Eq 0", "Eq 3")]
+    assert rows == [("1", "Eq 0", "Eq 1", "Eq 2")]
 
     columns, rows = window._static_result_table_data("Global Stiffness Matrix K")
-    assert columns == ("Row", "C0", "C1")
-    assert rows == [("R0", "1", "0"), ("R1", "0", "1")]
+    assert columns == ("DOF", "N1 UX", "N1 UY")
+    assert rows == [("N1 UX", "1", "0"), ("N1 UY", "0", "1")]
+
+    columns, rows = window._static_result_table_data("Global Force Vector F")
+    assert columns == ("DOF", "N1 UX")
+    assert rows == [("N1 UX", "10"), ("N1 UY", "0")]
+
+
+def test_desktop_matrix_labels_use_node_dof_names_from_dof_map():
+    labels = dof_equation_labels({1: [-1, -1, 3], 2: [0, 1, 2]})
+
+    assert labels == ("N2 UX", "N2 UY", "N2 RZ", "N1 RZ")
 
 
 def test_desktop_result_formatting_handles_near_zero_and_missing_intermediate_data():
+    raw_matrix = [[1.0e-12, 2.5]]
+
     assert format_scalar(1.0e-12, tolerance=0.001) == "0"
     assert format_scalar(1.23456, tolerance=0.001) == "1.235"
+    assert format_matrix(raw_matrix, tolerance=0.001) == [("0", "2.5")]
+    assert raw_matrix == [[1.0e-12, 2.5]]
     assert format_matrix([10.0, 0.0], tolerance=0.001) == [("10",), ("0",)]
 
     results = SimpleNamespace(

@@ -113,6 +113,21 @@ def test_assignment3_portal_frame_reactions_benchmark():
     assert abs(sum(reaction[1] for reaction in results.reactions.values()) - 20.0) < 1.0e-9
 
 
+def test_assignment3_portal_frame_displacements_and_reactions_regression():
+    """Lock handout-compatible Example 2 static displacements and reactions."""
+    xml_path = os.path.join(os.path.dirname(__file__), "../data/example2_frame.xml")
+    model = XMLParser(xml_path).parse()
+
+    assert model.materials["steel_200"].E == 200000.0
+
+    results = _run_static(model, "LC1")
+
+    assert abs(results.displacements[2][0] - 0.03127717530931107) < 1.0e-12
+    assert abs(results.displacements[3][1] - (-0.018749999999999968)) < 1.0e-12
+    assert abs(results.reactions[1][0] - (-20.0)) < 1.0e-12
+    assert abs(results.reactions[4][1] - 25.0) < 1.0e-12
+
+
 def test_member_end_forces_for_simply_supported_midspan_point_load():
     """Verify local member-end force signs for a simply supported beam."""
     model = StructuralModel("simple_beam")

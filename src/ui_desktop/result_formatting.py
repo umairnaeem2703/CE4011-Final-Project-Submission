@@ -112,6 +112,57 @@ def matrix_rows(matrix: object, *, tolerance: float = DEFAULT_DISPLAY_TOLERANCE)
     return padded_rows
 
 
+def labeled_matrix_columns(matrix: object, dof_labels: Sequence[str] | None = None) -> tuple[str, ...]:
+    """Create matrix/vector display columns using active node DOF labels when available."""
+    rows = format_matrix(matrix)
+    if not rows:
+        return ("Message",)
+    width = max(len(row) for row in rows)
+    labels = _label_slice(dof_labels, width)
+    return ("DOF",) + labels
+
+
+def labeled_matrix_rows(
+    matrix: object,
+    *,
+    dof_labels: Sequence[str] | None = None,
+    tolerance: float = DEFAULT_DISPLAY_TOLERANCE,
+) -> list[tuple[str, ...]]:
+    """Create matrix/vector display rows using active node DOF labels when available."""
+    rows = format_matrix(matrix, tolerance=tolerance)
+    if not rows:
+        return []
+    width = max(len(row) for row in rows)
+    labels = _label_slice(dof_labels, len(rows))
+    padded_rows = []
+    for index, row in enumerate(rows):
+        padded = row + tuple("-" for _ in range(width - len(row)))
+        padded_rows.append((labels[index],) + padded)
+    return padded_rows
+
+
+def dof_equation_labels(dof_map: Mapping[object, object] | None) -> tuple[str, ...]:
+    """Return active equation labels such as 'N2 UY' from a node DOF map."""
+    labels_by_equation: dict[int, list[str]] = {}
+    for node_id, vector in (dof_map or {}).items():
+        values = as_sequence(vector)
+        for local_index, dof_name in enumerate(("UX", "UY", "RZ")):
+            if local_index >= len(values):
+                continue
+            dof = unwrap_scalar(values[local_index])
+            if not isinstance(dof, int) or dof < 0:
+                continue
+            labels_by_equation.setdefault(dof, []).append(f"N{node_id} {dof_name}")
+    if not labels_by_equation:
+        return ()
+    return tuple(" / ".join(labels_by_equation.get(index, [f"Eq {index}"])) for index in range(max(labels_by_equation) + 1))
+
+
+def _label_slice(dof_labels: Sequence[str] | None, width: int) -> tuple[str, ...]:
+    labels = tuple(dof_labels or ())
+    return tuple(labels[index] if index < len(labels) else f"Eq {index}" for index in range(width))
+
+
 def unwrap_scalar(value: object) -> object:
     """Unwrap nested single-item sequences into one scalar display value."""
     current = value

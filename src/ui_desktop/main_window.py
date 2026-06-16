@@ -28,11 +28,12 @@ from .object_tree import ObjectTreePanel
 from .property_panel import PropertyPanel
 from .result_formatting import (
     DEFAULT_DISPLAY_TOLERANCE,
+    dof_equation_labels,
     dof_display_rows,
     format_scalar,
     format_vector,
-    matrix_columns,
-    matrix_rows,
+    labeled_matrix_columns,
+    labeled_matrix_rows,
     unit_labels,
 )
 from .template_dialog import ask_new_model
@@ -1409,10 +1410,11 @@ class MainWindow:
         return unit_labels(getattr(model, "unit_system", None))
 
     def _matrix_table(self, matrix: object, missing_message: str) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
-        rows = matrix_rows(matrix, tolerance=self._display_tolerance())
+        labels = dof_equation_labels(getattr(self.latest_static_results, "dof_map", None))
+        rows = labeled_matrix_rows(matrix, dof_labels=labels, tolerance=self._display_tolerance())
         if not rows:
             return (("Message",), [(missing_message,)])
-        return (matrix_columns(matrix), rows)
+        return (labeled_matrix_columns(matrix, labels), rows)
 
     def _display_tolerance(self) -> float:
         return getattr(self, "result_display_tolerance", DEFAULT_DISPLAY_TOLERANCE)
