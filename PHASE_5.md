@@ -28,7 +28,7 @@ Architecture/UI cleanup is complete enough to proceed. Rigid-link behavior is cl
 
 ## Current State
 
-5D0, 5D1, 5D2, 5D2B, and 5D3 are complete. The Tkinter desktop UI now shows static results with clearer units, DOF-map columns, direct views of available intermediate matrices and vectors, and embedded static deformed-shape and N/V/M plots from the cached result. The next task is 5D4: modal run + mode shape/results integration.
+5D0, 5D1, 5D2, 5D2B, 5D3A, 5D3B, 5D3C, 5D3D, 5D3E, and 5D3F are complete. The Static Results workflow is stable after audit, including no-result guards, table/viewer launch paths, member-viewer cached refresh, and cursor-only slider updates. The next implementation task is 5D4 Modal.
 
 ## Task Status
 
@@ -38,8 +38,13 @@ Architecture/UI cleanup is complete enough to proceed. Rigid-link behavior is cl
 | 5D1 Static run from desktop UI          | DONE   | Desktop UI can run Static analysis from the current model, store the result, and show success/error status.             |
 | 5D2 Static result tables                | DONE   | Basic read-only static result tables are available for stored Static results.                                           |
 | 5D2B Static result readability cleanup  | DONE   | Desktop static result tables now use centralized formatting, unit-aware headers, clearer DOF-map rows, and intermediate K/Kff/F/Ff views. |
-| 5D3 Static deformed shape + N/V/M plots | DONE   | Desktop static results now include embedded deformed-shape and N/V/M plot views from the stored Static result.        |
-| 5D4 Modal run + mode shape/results      | TODO   |                                                                                                                         |
+| 5D3A Complete Model Static Viewer shell  | DONE   | Added a dedicated static viewer shell entry with reserved deformed-shape and N/V/M modes. |
+| 5D3B Complete Model deformed shape + full-model N/V/M | DONE   | Rendered the stored complete-model deformed shape and full-model N/V/M plots inside the Results workflow. |
+| 5D3C Individual Member Result Viewer shell | DONE   | Added a separate member-level static result viewer shell with selection-aware workflow tabs. |
+| 5D3D Member end forces + member N/V/M    | DONE   | Added selected-member end forces and filtered member N/V/M diagram rendering in the member-review tab. |
+| 5D3E Member displacement diagram + location/scroll/max values | DONE   | Added the integrated member review cursor, displacement strip, and current/max value summaries. |
+| 5D3F Static Results workflow stabilization audit | DONE   | Audited the Static Results workflow and confirmed stable no-result, table, complete-model viewer, and member-viewer behavior. |
+| 5D4 Modal run + mode shape/results       | TODO   |                                                                                                                         |
 | 5D5 RSA run + results                   | TODO   |                                                                                                                         |
 | 5D6 THA run + histories                 | TODO   |                                                                                                                         |
 | 5D7 Export visible tables/plots         | TODO   |                                                                                                                         |

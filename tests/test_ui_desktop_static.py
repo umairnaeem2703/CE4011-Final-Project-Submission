@@ -3,11 +3,25 @@ import sys
 from types import SimpleNamespace
 from pathlib import Path
 
+import matplotlib.pyplot as plt
+
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 from model_builder import ModelBuilder
 from ui_desktop import main_window
 from ui_desktop.result_formatting import format_matrix, format_scalar
+from visualizer import build_member_review_profile, plot_member_review_panel, plot_static_nvm_diagrams
+
+
+class DummyVar:
+    def __init__(self, value=""):
+        self.value = value
+
+    def get(self):
+        return self.value
+
+    def set(self, value):
+        self.value = value
 
 
 def _window_with_model(model=object()):
@@ -19,6 +33,41 @@ def _window_with_model(model=object()):
     window.static_analysis_error = None
     window.result_view_category = None
     window.result_view_tree = None
+    window.result_viewer_notebook = None
+    window.result_viewer_table_tab = None
+    window.result_viewer_shell_tab = None
+    window.result_viewer_member_tab = None
+    window.result_viewer_member_selector = None
+    window.result_viewer_member_message = None
+    window.result_viewer_member_notebook = None
+    window.result_viewer_member_frames = {}
+    window.result_viewer_member_forces_tree = None
+    window.result_viewer_member_nvm_container = None
+    window.result_viewer_member_nvm_canvas = None
+    window.result_viewer_member_var = None
+    window.result_viewer_member_plot_container = None
+    window.result_viewer_member_plot_canvas = None
+    window.result_viewer_member_canvas = None
+    window.result_viewer_member_canvas_geometry = None
+    window.result_viewer_member_profile_signature = None
+    window.result_viewer_member_suppress_cursor_callback = False
+    window.result_viewer_member_cursor_var = DummyVar("0")
+    window.result_viewer_member_cursor_scale = None
+    window.result_viewer_member_display_mode_var = DummyVar("Absolute")
+    window.result_viewer_member_display_mode_selector = None
+    window.result_viewer_member_scroll_var = DummyVar(True)
+    window.result_viewer_member_show_max_var = DummyVar(True)
+    window.result_viewer_member_profile = None
+    window.result_viewer_member_review_state = None
+    window.result_viewer_member_current_location_var = DummyVar("-")
+    window.result_viewer_member_current_n_var = DummyVar("-")
+    window.result_viewer_member_current_v_var = DummyVar("-")
+    window.result_viewer_member_current_m_var = DummyVar("-")
+    window.result_viewer_member_current_disp_var = DummyVar("-")
+    window.result_viewer_member_max_n_var = DummyVar("-")
+    window.result_viewer_member_max_v_var = DummyVar("-")
+    window.result_viewer_member_max_m_var = DummyVar("-")
+    window.result_viewer_member_max_disp_var = DummyVar("-")
     window.result_display_tolerance = 0.001
     window.result_tolerance_var = None
     return window
@@ -153,18 +202,41 @@ def test_desktop_static_result_table_empty_state():
     assert rows == [("Run Static Analysis first.",)]
 
 
-def test_desktop_static_plot_rendering_handles_missing_result_and_invalid_member(monkeypatch):
+def test_desktop_results_button_callback_handles_partial_viewer_state(monkeypatch):
     window = _window_with_model()
-    messages = []
-    window._set_plot_message = messages.append
-    monkeypatch.setattr(main_window.ttk, "Label", lambda *args, **kwargs: SimpleNamespace(grid=lambda **_kw: None))
+    selected_tabs = []
+    refreshes = []
+    window.result_viewer_notebook = SimpleNamespace(select=lambda tab: selected_tabs.append(tab))
+    delattr(window, "result_viewer_table_tab")
+    window._create_static_results_window = lambda: object()
+    window._refresh_static_result_table = lambda: refreshes.append("table")
+    window._refresh_static_viewer = lambda: refreshes.append("viewer")
 
-    class DummyContainer:
-        def __init__(self):
-            self.children = []
+    window._toolbar_action("Results")
 
+    assert refreshes == ["table", "viewer"]
+    assert selected_tabs == []
+    assert window.messages[-1] == "Run Static Analysis first."
+
+
+def test_desktop_results_workflow_initializes_individual_member_tab(monkeypatch):
+    builder = ModelBuilder(name="Viewer Model")
+    builder.add_material("m1", E=200000.0)
+    builder.add_section("s1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+    window = _window_with_model(model=builder.model)
+    window.latest_static_results = SimpleNamespace(
+        load_case_id="LC1",
+        displacements={1: [0.0, 0.0, 0.0], 2: [0.01, 0.02, 0.03]},
+        element_forces={"e1": {"i": [1.0, 2.0, 3.0], "j": [-4.0, -5.0, -6.0]}},
+        nvm_data={"e1": {"x": [0.0, 1.5, 3.0], "N": [5.0, -8.0, 2.0], "V": [1.0, -3.0, 4.0], "M": [0.5, 2.5, -1.0]}},
+    )
+
+    class DummyFrame:
         def winfo_children(self):
-            return self.children
+            return []
 
         def columnconfigure(self, *_args, **_kwargs):
             pass
@@ -172,25 +244,458 @@ def test_desktop_static_plot_rendering_handles_missing_result_and_invalid_member
         def rowconfigure(self, *_args, **_kwargs):
             pass
 
-    container = DummyContainer()
-    window.result_plot_deformed_container = container
-    window.result_plot_nvm_container = container
+    class DummySelector:
+        def configure(self, **_kwargs):
+            pass
 
-    window._render_static_deformed_plot()
-    window._render_static_nvm_plot()
+    class DummyScale:
+        def configure(self, **_kwargs):
+            pass
 
-    assert messages[0] == "Run Static Analysis first."
+        def set(self, _value):
+            pass
+
+    class DummyCanvas:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def grid(self, **_kwargs):
+            pass
+
+        def bind(self, *_args, **_kwargs):
+            pass
+
+        def winfo_exists(self):
+            return True
+
+        def winfo_width(self):
+            return 800
+
+        def winfo_height(self):
+            return 520
+
+        def delete(self, *_args):
+            pass
+
+        def create_text(self, *_args, **_kwargs):
+            pass
+
+        def create_line(self, *_args, **_kwargs):
+            pass
+
+        def create_oval(self, *_args, **_kwargs):
+            pass
+
+        def create_polygon(self, *_args, **_kwargs):
+            pass
+
+    selected_tabs = []
+    table_tab = object()
+    monkeypatch.setattr(main_window.tk, "Canvas", DummyCanvas)
+
+    def fake_create_results_window():
+        window.result_viewer_notebook = SimpleNamespace(select=lambda tab: selected_tabs.append(tab))
+        window.result_viewer_table_tab = table_tab
+        window.result_viewer_member_var = DummyVar("e1")
+        window.result_viewer_member_selector = DummySelector()
+        window.result_viewer_member_message = DummyVar("Select a member to review static results.")
+        window.result_viewer_member_display_mode_var = DummyVar("Absolute")
+        window.result_viewer_member_scroll_var = DummyVar(True)
+        window.result_viewer_member_show_max_var = DummyVar(True)
+        window.result_viewer_member_cursor_var = DummyVar("1.5")
+        window.result_viewer_member_cursor_scale = DummyScale()
+        window.result_viewer_member_plot_container = DummyFrame()
+        window._refresh_individual_member_viewer()
+        return object()
+
+    window._create_static_results_window = fake_create_results_window
+    window._refresh_static_result_table = lambda: None
+    window._refresh_static_viewer = lambda: None
+
+    window._toolbar_action("Results")
+
+    assert selected_tabs == [table_tab]
+    assert window.result_viewer_member_message.get() == "Member e1 selected for static review."
+    assert window.messages[-1] == "Static results opened."
+
+
+def test_desktop_static_complete_model_viewer_renders_plots(monkeypatch):
+    assert main_window.COMMAND_TABS[-1][1] == (("action", "Results"),)
+    window = _window_with_model()
+
+    class DummyFrame:
+        def winfo_children(self):
+            return []
+
+        def columnconfigure(self, *_args, **_kwargs):
+            pass
+
+        def rowconfigure(self, *_args, **_kwargs):
+            pass
+
+        def grid(self, **_kwargs):
+            pass
+
+        def grid(self, **_kwargs):
+            pass
+
+        def grid(self, **_kwargs):
+            pass
+
+        def grid(self, **_kwargs):
+            pass
+
+    messages = []
+    window.result_viewer_message = SimpleNamespace(set=messages.append)
+    window.result_viewer_plot_frames = {
+        "deformed": DummyFrame(),
+        "axial": DummyFrame(),
+        "shear": DummyFrame(),
+        "moment": DummyFrame(),
+    }
+    window.result_viewer_plot_canvases = {}
+    window.model_canvas = SimpleNamespace(builder=SimpleNamespace(model=SimpleNamespace(name="Viewer Model")))
+    calls = []
+
+    class DummyCanvas:
+        def __init__(self, fig, master=None):
+            calls.append(("canvas", master))
+            self._widget = SimpleNamespace(grid=lambda **_kw: None)
+
+        def get_tk_widget(self):
+            return self._widget
+
+        def draw(self):
+            calls.append(("draw", None))
+
+    monkeypatch.setattr(main_window, "FigureCanvasTkAgg", DummyCanvas)
+    monkeypatch.setattr(main_window, "plot_static_deformed_shape", lambda model, results: calls.append(("deformed", model, results)) or (SimpleNamespace(), None))
+    monkeypatch.setattr(
+        main_window,
+        "plot_static_nvm_diagram",
+        lambda model, results, diagram_key, show_extrema=False: calls.append((diagram_key, show_extrema)) or (SimpleNamespace(), None),
+    )
+
+    window.latest_static_results = SimpleNamespace(
+        displacements={1: [0.0, 0.0, 0.0]},
+        nvm_data={"e1": {"x": [0.0, 1.5, 3.0], "N": [5.0, -8.0, 2.0], "V": [1.0, -3.0, 4.0], "M": [0.5, 2.5, -1.0]}},
+    )
+    window._refresh_static_viewer()
+
+    assert messages[-1] == "Complete model viewer shows the stored Static result."
+    assert ("deformed", window.model_canvas.builder.model, window.latest_static_results) in calls
+    assert ("N", True) in calls
+    assert ("V", True) in calls
+    assert ("M", True) in calls
+    assert window.result_viewer_plot_canvases
+
+
+def test_desktop_static_complete_model_viewer_empty_states(monkeypatch):
+    window = _window_with_model()
+
+    class DummyFrame:
+        def winfo_children(self):
+            return []
+
+        def columnconfigure(self, *_args, **_kwargs):
+            pass
+
+        def rowconfigure(self, *_args, **_kwargs):
+            pass
+
+        def grid(self, **_kwargs):
+            pass
+
+    messages = []
+    labels = []
+    monkeypatch.setattr(main_window.ttk, "Label", lambda *args, **kwargs: SimpleNamespace(grid=lambda **_kw: labels.append(kwargs.get("text"))))
+    monkeypatch.setattr(main_window, "FigureCanvasTkAgg", lambda fig, master=None: SimpleNamespace(get_tk_widget=lambda: SimpleNamespace(grid=lambda **_kw: None), draw=lambda: None))
+    monkeypatch.setattr(main_window, "plot_static_deformed_shape", lambda model, results: (SimpleNamespace(), None))
+    window.result_viewer_message = SimpleNamespace(set=messages.append)
+    window.result_viewer_plot_frames = {
+        "deformed": DummyFrame(),
+        "axial": DummyFrame(),
+        "shear": DummyFrame(),
+        "moment": DummyFrame(),
+    }
+    window.result_viewer_plot_canvases = {}
+
+    window._refresh_static_viewer()
+    assert messages[-1] == "Run Static Analysis first."
+    assert "Run Static Analysis first." in labels
 
     window.latest_static_results = SimpleNamespace(displacements={1: [0.0, 0.0, 0.0]}, nvm_data={})
-    window.result_plot_member_var = SimpleNamespace(get=lambda: "All members")
-    window._render_static_nvm_plot()
-    assert messages[-1] == "No N/V/M data available for diagrams."
+    window._refresh_static_viewer()
+    assert messages[-1] == "Complete model viewer shows the stored Static result."
+    assert labels.count("No N/V/M data available.") >= 3
 
-    window.latest_static_results = SimpleNamespace(displacements={1: [0.0, 0.0, 0.0]}, nvm_data={"e1": {"N": [], "V": [], "M": []}})
-    window.result_plot_member_var = SimpleNamespace(get=lambda: "missing-member")
-    window._resolve_nvm_member_key = lambda member_id, nvm_data: None
-    window._render_static_nvm_plot()
-    assert messages[-1] == "Selected member is invalid for N/V/M diagrams."
+
+def test_desktop_member_review_viewer_renders_cursor_summary(monkeypatch):
+    builder = ModelBuilder(name="Viewer Model")
+    builder.add_material("m1", E=200000.0)
+    builder.add_section("s1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+
+    window = _window_with_model(model=builder.model)
+
+    class DummyFrame:
+        def __init__(self):
+            self.configured = []
+
+        def winfo_children(self):
+            return []
+
+        def columnconfigure(self, *_args, **_kwargs):
+            pass
+
+        def rowconfigure(self, *_args, **_kwargs):
+            pass
+
+        def grid(self, **_kwargs):
+            pass
+
+    class DummySelector:
+        def __init__(self):
+            self.values = []
+
+        def configure(self, **kwargs):
+            self.values = list(kwargs.get("values", []))
+
+    class DummyScale:
+        def __init__(self):
+            self.configured = {}
+            self.value = None
+            self.command = None
+
+        def configure(self, **kwargs):
+            self.configured.update(kwargs)
+
+        def set(self, value):
+            self.value = value
+            if self.command is not None:
+                self.command(value)
+
+    class DummyCanvas:
+        instances = []
+
+        def __init__(self, *args, **kwargs):
+            self.operations = []
+            self.bindings = {}
+            DummyCanvas.instances.append(self)
+
+        def grid(self, **_kwargs):
+            pass
+
+        def bind(self, event, callback):
+            self.bindings[event] = callback
+
+        def winfo_exists(self):
+            return True
+
+        def winfo_width(self):
+            return 800
+
+        def winfo_height(self):
+            return 520
+
+        def delete(self, *args):
+            self.operations.append(("delete", args))
+
+        def create_text(self, *args, **kwargs):
+            self.operations.append(("text", args, kwargs))
+
+        def create_line(self, *args, **kwargs):
+            self.operations.append(("line", args, kwargs))
+
+        def create_oval(self, *args, **kwargs):
+            self.operations.append(("oval", args, kwargs))
+
+        def create_polygon(self, *args, **kwargs):
+            self.operations.append(("polygon", args, kwargs))
+
+    monkeypatch.setattr(main_window.tk, "Canvas", DummyCanvas)
+    profile_builds = []
+    real_build_member_review_profile = main_window.build_member_review_profile
+
+    def counted_build_member_review_profile(*args, **kwargs):
+        profile_builds.append(args[2])
+        return real_build_member_review_profile(*args, **kwargs)
+
+    monkeypatch.setattr(main_window, "build_member_review_profile", counted_build_member_review_profile)
+
+    window.latest_static_results = SimpleNamespace(
+        load_case_id="LC1",
+        displacements={1: [0.0, 0.0, 0.0], 2: [0.01, 0.02, 0.03]},
+        element_forces={"e1": {"i": [1.0, 2.0, 3.0], "j": [4.0, 5.0, 6.0]}},
+        nvm_data={"e1": {"x": [0.0, 1.5, 3.0], "N": [5.0, -8.0, 2.0], "V": [1.0, -3.0, 4.0], "M": [0.5, 2.5, -1.0]}},
+    )
+    window.selected_member_id = "e1"
+    window.result_viewer_member_var = DummyVar("e1")
+    window.result_viewer_member_selector = DummySelector()
+    window.result_viewer_member_message = DummyVar("Select a member to review static results.")
+    window.result_viewer_member_display_mode_var = DummyVar("Absolute")
+    window.result_viewer_member_scroll_var = DummyVar(True)
+    window.result_viewer_member_show_max_var = DummyVar(True)
+    window.result_viewer_member_cursor_var = DummyVar("1.5")
+    window.result_viewer_member_cursor_scale = DummyScale()
+    window.result_viewer_member_cursor_scale.command = window._on_member_review_cursor_changed
+    window.result_viewer_member_plot_container = DummyFrame()
+    window.result_viewer_member_plot_canvas = None
+    window.result_viewer_member_current_location_var = DummyVar("-")
+    window.result_viewer_member_current_n_var = DummyVar("-")
+    window.result_viewer_member_current_v_var = DummyVar("-")
+    window.result_viewer_member_current_m_var = DummyVar("-")
+    window.result_viewer_member_current_disp_var = DummyVar("-")
+    window.result_viewer_member_max_n_var = DummyVar("-")
+    window.result_viewer_member_max_v_var = DummyVar("-")
+    window.result_viewer_member_max_m_var = DummyVar("-")
+    window.result_viewer_member_max_disp_var = DummyVar("-")
+
+    window._refresh_individual_member_viewer()
+
+    assert window.result_viewer_member_message.get() == "Member e1 selected for static review."
+    assert window.result_viewer_member_selector.values == ["e1"]
+    assert profile_builds == ["e1"]
+    assert len(DummyCanvas.instances) == 1
+    assert window.result_viewer_member_current_location_var.get() == "x = 1.5 / 3 m"
+    assert window.result_viewer_member_current_n_var.get() == "-8 kN"
+    assert window.result_viewer_member_max_n_var.get() == "x = 1.5, -8 kN"
+    assert window.result_viewer_member_cursor_scale.configured["to"] == 3.0
+
+    first_canvas = DummyCanvas.instances[0]
+    line_styles = [operation[2] for operation in first_canvas.operations if operation[0] == "line"]
+    polygon_styles = [operation[2] for operation in first_canvas.operations if operation[0] == "polygon"]
+    text_labels = [operation[2].get("text") for operation in first_canvas.operations if operation[0] == "text"]
+    assert any(style.get("fill") == "#2e7d32" for style in line_styles)
+    assert any(style.get("fill") == "#c62828" for style in line_styles)
+    assert any(style.get("fill") == "#2e7d32" for style in polygon_styles)
+    assert any(style.get("fill") == "#c62828" for style in polygon_styles)
+    assert any(style.get("arrow") == main_window.tk.LAST for style in line_styles)
+    assert any(label and label.startswith("N=") for label in text_labels)
+    assert any(label and label.startswith("V=") for label in text_labels)
+    assert any(label and label.startswith("M=") for label in text_labels)
+    redraw_deletes = [operation for operation in first_canvas.operations if operation == ("delete", ("all",))]
+    window._on_member_review_cursor_changed("0.75")
+
+    assert profile_builds == ["e1"]
+    assert len(DummyCanvas.instances) == 1
+    assert [operation for operation in first_canvas.operations if operation == ("delete", ("all",))] == redraw_deletes
+    assert window.result_viewer_member_current_location_var.get() == "x = 0.75 / 3 m"
+    assert window.result_viewer_member_current_n_var.get() == "-1.5 kN"
+
+
+def test_desktop_member_review_viewer_empty_states(monkeypatch):
+    window = _window_with_model()
+
+    class DummyFrame:
+        def winfo_children(self):
+            return []
+
+        def columnconfigure(self, *_args, **_kwargs):
+            pass
+
+        def rowconfigure(self, *_args, **_kwargs):
+            pass
+
+    messages = []
+    labels = []
+    monkeypatch.setattr(main_window.ttk, "Label", lambda *args, **kwargs: SimpleNamespace(grid=lambda **_kw: labels.append(kwargs.get("text"))))
+    window.result_viewer_member_message = SimpleNamespace(set=messages.append)
+    window.result_viewer_member_var = DummyVar("")
+    window.result_viewer_member_selector = SimpleNamespace(configure=lambda **_kwargs: None)
+    window.result_viewer_member_display_mode_var = DummyVar("Absolute")
+    window.result_viewer_member_scroll_var = DummyVar(True)
+    window.result_viewer_member_show_max_var = DummyVar(True)
+    window.result_viewer_member_cursor_var = DummyVar("0")
+    window.result_viewer_member_cursor_scale = SimpleNamespace(configure=lambda **_kwargs: None)
+    window.result_viewer_member_plot_container = DummyFrame()
+    window.result_viewer_member_current_location_var = DummyVar("-")
+    window.result_viewer_member_current_n_var = DummyVar("-")
+    window.result_viewer_member_current_v_var = DummyVar("-")
+    window.result_viewer_member_current_m_var = DummyVar("-")
+    window.result_viewer_member_current_disp_var = DummyVar("-")
+    window.result_viewer_member_max_n_var = DummyVar("-")
+    window.result_viewer_member_max_v_var = DummyVar("-")
+    window.result_viewer_member_max_m_var = DummyVar("-")
+    window.result_viewer_member_max_disp_var = DummyVar("-")
+
+    window._refresh_individual_member_viewer()
+    assert messages[-1] == "Run Static Analysis first."
+    assert "Run Static Analysis first." in labels
+    assert window.result_viewer_member_current_location_var.get() == "-"
+
+    window.latest_static_results = SimpleNamespace(element_forces={}, nvm_data={})
+    window._refresh_individual_member_viewer()
+    assert messages[-1] == "Select a valid member."
+    assert "Select a valid member." in labels
+
+
+def test_member_review_profile_and_panel_labels():
+    builder = ModelBuilder(name="Viewer Model")
+    builder.add_material("m1", E=200000.0)
+    builder.add_section("s1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+    results = SimpleNamespace(
+        load_case_id="LC1",
+        displacements={1: [0.0, 0.0, 0.0], 2: [0.01, 0.02, 0.03]},
+        element_forces={"e1": {"i": [1.0, 2.0, 3.0], "j": [4.0, 5.0, 6.0]}},
+        nvm_data={"e1": {"x": [0.0, 1.5, 3.0], "N": [5.0, -8.0, 2.0], "V": [1.0, -3.0, 4.0], "M": [0.5, 2.5, -1.0]}},
+    )
+
+    profile = build_member_review_profile(builder.model, results, "e1")
+    assert profile is not None
+    assert profile["member_id"] == "e1"
+    assert profile["end_forces"]["Ni"] == 1.0
+
+    fig, axes, state = plot_member_review_panel(profile, 1.5, show_max=True)
+    assert state["current"]["N"] == -8.0
+    assert any(text.get_text() for text in axes[1].texts)
+    assert any(text.get_text() for text in axes[4].texts)
+    plt.close(fig)
+
+    empty_results = SimpleNamespace(
+        load_case_id="LC1",
+        displacements={1: [0.0, 0.0, 0.0], 2: [0.01, 0.02, 0.03]},
+        element_forces={"e1": {"i": [1.0, 2.0, 3.0], "j": [4.0, 5.0, 6.0]}},
+        nvm_data={},
+    )
+    empty_profile = build_member_review_profile(builder.model, empty_results, "e1")
+    fig2, axes2, _ = plot_member_review_panel(empty_profile, 0.0, show_max=True)
+    empty_texts = list(axes2[1].texts) + list(axes2[2].texts) + list(axes2[3].texts)
+    assert any("No N/V/M data available." in text.get_text() for text in empty_texts)
+    plt.close(fig2)
+
+
+def test_desktop_static_nvm_diagrams_label_extrema():
+    builder = ModelBuilder(name="Viewer Model")
+    builder.add_material("m1", E=200000.0)
+    builder.add_section("s1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+    results = SimpleNamespace(
+        load_case_id="LC1",
+        nvm_data={
+            "e1": {
+                "x": [0.0, 1.5, 3.0],
+                "N": [5.0, -8.0, 2.0],
+                "V": [1.0, -3.0, 4.0],
+                "M": [0.5, 2.5, -1.0],
+            }
+        },
+    )
+
+    fig, axes = plot_static_nvm_diagrams(builder.model, results, show_extrema=True)
+
+    labels_n = [text.get_text() for text in axes[0].texts if text.get_text()]
+    labels_m = [text.get_text() for text in axes[2].texts if text.get_text()]
+    assert labels_n
+    assert labels_m
+    plt.close(fig)
 
 
 def test_desktop_open_xml_replaces_builder_refreshes_ui_and_clears_results(tmp_path, monkeypatch):
