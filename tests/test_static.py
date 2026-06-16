@@ -16,6 +16,7 @@ from parser import (
     Section,
     StructuralModel,
     Support,
+    UniformlyDL,
     XMLParser,
 )
 from post_processor import PostProcessor
@@ -172,3 +173,51 @@ def test_nvm_data_for_simply_supported_midspan_point_load():
     assert abs(max(nvm["M"]) - 10.0) < 0.02 * 10.0
     assert abs(nvm["M"][0]) < 1.0e-9
     assert abs(nvm["M"][-1]) < 1.0e-9
+
+
+def _frame_element(xj=4.0, yj=0.0):
+    mat = Material("m", E=2.0e8)
+    sec = Section("s", A=1.0, I=1.0e-4)
+    n1 = Node(1, 0.0, 0.0)
+    n2 = Node(2, xj, yj)
+    return Element("e1", "frame", n1, n2, mat, sec)
+
+
+def test_horizontal_global_y_udl_matches_existing_local_transverse_udl():
+    element = _frame_element()
+    local = UniformlyDL(element, wy=-10.0)
+    global_y = UniformlyDL(element, coord_system="global", direction="Y", value=-10.0)
+
+    assert global_y.local_components() == local.local_components()
+    assert global_y.FEF("fixed-fixed", 4.0) == local.FEF("fixed-fixed", 4.0)
+
+
+def test_inclined_global_vertical_udl_resolves_to_local_axial_and_transverse_components():
+    element = _frame_element(3.0, 4.0)
+    load = UniformlyDL(element, coord_system="global", direction="Y", value=-10.0)
+
+    wx, wy = load.local_components()
+    fef = load.FEF("fixed-fixed", 5.0)
+
+    assert abs(wx - (-8.0)) < 1.0e-12
+    assert abs(wy - (-6.0)) < 1.0e-12
+    assert abs(fef[0][0] - (-20.0)) < 1.0e-12
+    assert abs(fef[1][0] - 15.0) < 1.0e-12
+
+
+def test_local_2_udl_remains_existing_local_transverse_behavior():
+    element = _frame_element(3.0, 4.0)
+    explicit = UniformlyDL(element, coord_system="local", direction="2", value=-7.0)
+    legacy = UniformlyDL(element, wy=-7.0)
+
+    assert explicit.local_components() == legacy.local_components()
+    assert explicit.FEF("fixed-fixed", 5.0) == legacy.FEF("fixed-fixed", 5.0)
+
+
+def test_member_point_load_uses_same_coordinate_system_convention_as_udl():
+    element = _frame_element(3.0, 4.0)
+    global_y = PointLoad(element, position=2.0, coord_system="global", direction="Y", value=-10.0)
+    equivalent_local = PointLoad(element, position=2.0, fx=-8.0, fy=-6.0)
+
+    assert global_y.local_components() == equivalent_local.local_components()
+    assert global_y.FEF("fixed-fixed", 5.0) == equivalent_local.FEF("fixed-fixed", 5.0)

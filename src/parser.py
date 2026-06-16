@@ -94,13 +94,26 @@ class PointLoad(MemberLoad):
     position: float
     fx: float = 0.0
     fy: float = 0.0
+    coord_system: str = "local"
+    direction: str = ""
+    value: float | None = None
+
+    def local_components(self) -> tuple[float, float]:
+        return _member_load_components(
+            self.element,
+            self.fx,
+            self.fy,
+            self.coord_system,
+            self.direction,
+            self.value,
+        )
 
     def FEF(self, fef_condition: str, L: float) -> list:
         fef = [[0.0] for _ in range(6)]
         a = self.position
         b = L - a
-        P = abs(self.fy)
-        fx_load = self.fx
+        fx_load, fy_load = self.local_components()
+        P = abs(fy_load)
         # Axial FEF (sign preserved for compression/tension)
         fef[0][0] = fx_load * b / L
         fef[3][0] = fx_load * a / L
@@ -134,11 +147,24 @@ class PointLoad(MemberLoad):
 class UniformlyDL(MemberLoad):
     wx: float = 0.0
     wy: float = 0.0
+    coord_system: str = "local"
+    direction: str = ""
+    value: float | None = None
+
+    def local_components(self) -> tuple[float, float]:
+        return _member_load_components(
+            self.element,
+            self.wx,
+            self.wy,
+            self.coord_system,
+            self.direction,
+            self.value,
+        )
 
     def FEF(self, fef_condition: str, L: float) -> list:
         fef = [[0.0] for _ in range(6)]
-        w = abs(self.wy)
-        wx = self.wx
+        wx, wy = self.local_components()
+        w = abs(wy)
         # Axial FEF (sign preserved for consistency)
         fef[0][0] = wx * L / 2.0
         fef[3][0] = wx * L / 2.0
@@ -165,6 +191,47 @@ class UniformlyDL(MemberLoad):
             fef[5][0] = 0.0
             
         return fef
+
+
+def _member_load_components(
+    element: Element,
+    component_1: float,
+    component_2: float,
+    coord_system: str,
+    direction: str,
+    value: float | None,
+) -> tuple[float, float]:
+    system = (coord_system or "local").strip().lower()
+    direction_key = (direction or "").strip().upper()
+    first, second = _components_from_direction(component_1, component_2, direction_key, value)
+    if system == "local":
+        return first, second
+    if system != "global":
+        raise ValueError(f"Member load coordinate system must be 'local' or 'global', got {coord_system!r}.")
+
+    dx = element.node_j.x - element.node_i.x
+    dy = element.node_j.y - element.node_i.y
+    L = (dx * dx + dy * dy) ** 0.5
+    if L == 0:
+        raise ValueError(f"Element {element.id} has zero length.")
+    c = dx / L
+    s = dy / L
+    return c * first + s * second, -s * first + c * second
+
+
+def _components_from_direction(
+    component_1: float,
+    component_2: float,
+    direction: str,
+    value: float | None,
+) -> tuple[float, float]:
+    if value is None or not direction:
+        return component_1, component_2
+    if direction in ("X", "1"):
+        return value, 0.0
+    if direction in ("Y", "2"):
+        return 0.0, value
+    raise ValueError(f"Member load direction must be X/Y or 1/2, got {direction!r}.")
 
 @dataclass
 class TemperatureL(MemberLoad):
@@ -439,7 +506,10 @@ class XMLParser:
                 element = self.model.elements[udl.attrib['element']]
                 wx = float(udl.attrib.get('wx', 0.0))
                 wy = float(udl.attrib.get('wy', 0.0))
-                lc.loads.append(UniformlyDL(element, wx, wy))
+                coord_system = udl.attrib.get('coord_system', 'local')
+                direction = udl.attrib.get('direction', '')
+                value = _optional_float(udl.attrib.get('value'))
+                lc.loads.append(UniformlyDL(element, wx, wy, coord_system, direction, value))
 
             # SCHEMA: member_point_load -> PointLoad
             for mpl in lc_node.findall('member_point_load'):
@@ -447,7 +517,10 @@ class XMLParser:
                 pos = float(mpl.attrib['position'])
                 fx = float(mpl.attrib.get('fx', 0.0))
                 fy = float(mpl.attrib.get('fy', 0.0))
-                lc.loads.append(PointLoad(element, pos, fx, fy))
+                coord_system = mpl.attrib.get('coord_system', 'local')
+                direction = mpl.attrib.get('direction', '')
+                value = _optional_float(mpl.attrib.get('value'))
+                lc.loads.append(PointLoad(element, pos, fx, fy, coord_system, direction, value))
                 
             # SCHEMA: temperature_load -> TemperatureL
             for tload in lc_node.findall('temperature_load'):
@@ -479,6 +552,15 @@ class XMLParser:
                 element = self.model.elements[udl.attrib['element']]
                 wx = float(udl.attrib.get('wx', 0.0))
                 wy = float(udl.attrib.get('wy', 0.0))
-                lc.loads.append(UniformlyDL(element, wx, wy))
+                coord_system = udl.attrib.get('coord_system', 'local')
+                direction = udl.attrib.get('direction', '')
+                value = _optional_float(udl.attrib.get('value'))
+                lc.loads.append(UniformlyDL(element, wx, wy, coord_system, direction, value))
                 
             self.model.load_cases[lc_id] = lc
+
+
+def _optional_float(value: str | None) -> float | None:
+    if value is None or value == "":
+        return None
+    return float(value)

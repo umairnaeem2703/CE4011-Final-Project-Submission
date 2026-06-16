@@ -133,9 +133,19 @@ class ModelBuilder:
         wx: float = 0.0,
         wy: float = 0.0,
         *,
+        coord_system: str = "local",
+        direction: str = "",
+        value: float | None = None,
         load_case_name: str = "",
     ) -> UniformlyDL:
-        udl = UniformlyDL(element=self._element(element), wx=wx, wy=wy)
+        udl = UniformlyDL(
+            element=self._element(element),
+            wx=wx,
+            wy=wy,
+            coord_system=coord_system,
+            direction=direction,
+            value=value,
+        )
         self._load_case(load_case, load_case_name).loads.append(udl)
         self._mark_dirty()
         return udl
@@ -148,9 +158,20 @@ class ModelBuilder:
         fx: float = 0.0,
         fy: float = 0.0,
         *,
+        coord_system: str = "local",
+        direction: str = "",
+        value: float | None = None,
         load_case_name: str = "",
     ) -> PointLoad:
-        point_load = PointLoad(element=self._element(element), position=position, fx=fx, fy=fy)
+        point_load = PointLoad(
+            element=self._element(element),
+            position=position,
+            fx=fx,
+            fy=fy,
+            coord_system=coord_system,
+            direction=direction,
+            value=value,
+        )
         self._load_case(load_case, load_case_name).loads.append(point_load)
         self._mark_dirty()
         return point_load
@@ -360,21 +381,25 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
                         },
                     )
                 elif isinstance(load, UniformlyDL):
+                    attrs = {"element": load.element.id, "wx": _fmt(load.wx), "wy": _fmt(load.wy)}
+                    _append_member_load_metadata(attrs, load)
                     ET.SubElement(
                         lc_el,
                         "member_udl",
-                        {"element": load.element.id, "wx": _fmt(load.wx), "wy": _fmt(load.wy)},
+                        attrs,
                     )
                 elif isinstance(load, PointLoad):
+                    attrs = {
+                        "element": load.element.id,
+                        "position": _fmt(load.position),
+                        "fx": _fmt(load.fx),
+                        "fy": _fmt(load.fy),
+                    }
+                    _append_member_load_metadata(attrs, load)
                     ET.SubElement(
                         lc_el,
                         "member_point_load",
-                        {
-                            "element": load.element.id,
-                            "position": _fmt(load.position),
-                            "fx": _fmt(load.fx),
-                            "fy": _fmt(load.fy),
-                        },
+                        attrs,
                     )
                 elif isinstance(load, TemperatureL):
                     _append_temperature_load(lc_el, load)
@@ -390,6 +415,18 @@ def _append_temperature_load(parent: ET.Element, load: TemperatureL) -> None:
     else:
         attrs.update({"type": "combined", "T_top": _fmt(load.Tu), "T_bottom": _fmt(load.Tb)})
     ET.SubElement(parent, "temperature_load", attrs)
+
+
+def _append_member_load_metadata(attrs: dict[str, str], load: UniformlyDL | PointLoad) -> None:
+    coord_system = getattr(load, "coord_system", "local")
+    direction = getattr(load, "direction", "")
+    value = getattr(load, "value", None)
+    if coord_system != "local":
+        attrs["coord_system"] = coord_system
+    if direction:
+        attrs["direction"] = direction
+    if value is not None:
+        attrs["value"] = _fmt(value)
 
 
 def _bool_int(value: bool) -> str:

@@ -6,7 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 
 from model_builder import ModelBuilder
 from banded_solver import UnstableStructureError
-from parser import StructuralModel, TemperatureL, XMLParser
+from parser import PointLoad, StructuralModel, TemperatureL, UniformlyDL, XMLParser
 import pytest
 
 
@@ -175,3 +175,34 @@ def test_model_builder_xml_export_round_trips_lumped_mass(tmp_path):
     assert parsed_mass.mass_ux == pytest.approx(10.0)
     assert parsed_mass.mass_uy == pytest.approx(12.5)
     assert parsed_mass.inertia_rz == pytest.approx(0.75)
+
+
+def test_model_builder_xml_export_preserves_member_load_coordinate_metadata(tmp_path):
+    builder = ModelBuilder(name="Member Load Metadata")
+    builder.add_material("m1", E=200000.0)
+    builder.add_section("s1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 4.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+    builder.add_member_udl("LC1", "e1", coord_system="global", direction="Y", value=-5.0)
+    builder.add_member_point_load("LC1", "e1", position=2.0, coord_system="local", direction="2", value=-7.0)
+
+    xml_path = tmp_path / "member_load_metadata.xml"
+    builder.export_xml(xml_path)
+    root = ET.parse(xml_path).getroot()
+    udl_el = root.find("./load_cases/load_case/member_udl")
+    point_el = root.find("./load_cases/load_case/member_point_load")
+    parsed_loads = XMLParser(xml_path).parse().load_cases["LC1"].loads
+
+    assert udl_el.attrib["coord_system"] == "global"
+    assert udl_el.attrib["direction"] == "Y"
+    assert udl_el.attrib["value"] == "-5"
+    assert point_el.attrib["direction"] == "2"
+    assert isinstance(parsed_loads[0], UniformlyDL)
+    assert isinstance(parsed_loads[1], PointLoad)
+    assert parsed_loads[0].coord_system == "global"
+    assert parsed_loads[0].direction == "Y"
+    assert parsed_loads[0].value == pytest.approx(-5.0)
+    assert parsed_loads[1].coord_system == "local"
+    assert parsed_loads[1].direction == "2"
+    assert parsed_loads[1].value == pytest.approx(-7.0)
