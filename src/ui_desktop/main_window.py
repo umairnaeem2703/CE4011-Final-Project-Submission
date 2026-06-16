@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import tkinter as tk
 from tkinter import filedialog, ttk
-from collections.abc import Mapping, Sequence
+from collections.abc import Mapping
 
 try:
     from ui.static_analysis import run_static_analysis
@@ -14,6 +14,15 @@ except ImportError:  # pragma: no cover - used when launched as python -m src.ui
 from .canvas import ModelCanvas
 from .object_tree import ObjectTreePanel
 from .property_panel import PropertyPanel
+from .result_formatting import (
+    DEFAULT_DISPLAY_TOLERANCE,
+    dof_display_rows,
+    format_scalar,
+    format_vector,
+    matrix_columns,
+    matrix_rows,
+    unit_labels,
+)
 from .template_dialog import ask_new_model
 
 
@@ -91,6 +100,8 @@ class MainWindow:
         self.static_analysis_error = None
         self.result_view_category = None
         self.result_view_tree = None
+        self.result_display_tolerance = DEFAULT_DISPLAY_TOLERANCE
+        self.result_tolerance_var = None
 
         self._configure_grid()
         self._build_command_area()
@@ -293,8 +304,18 @@ class MainWindow:
         selector.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 6))
         selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_static_result_table())
 
+        controls = ttk.Frame(window)
+        controls.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 6))
+        controls.columnconfigure(2, weight=1)
+        ttk.Label(controls, text="Display tolerance").grid(row=0, column=0, sticky="w")
+        self.result_tolerance_var = tk.StringVar(value=f"{self._display_tolerance():g}")
+        tolerance_entry = ttk.Entry(controls, textvariable=self.result_tolerance_var, width=10)
+        tolerance_entry.grid(row=0, column=1, padx=(8, 4), sticky="w")
+        tolerance_entry.bind("<Return>", lambda _event: self._apply_result_tolerance())
+        ttk.Button(controls, text="Apply", command=self._apply_result_tolerance).grid(row=0, column=2, sticky="w")
+
         frame = ttk.Frame(window)
-        frame.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
+        frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=(0, 10))
         frame.columnconfigure(0, weight=1)
         frame.rowconfigure(0, weight=1)
         self.result_view_tree = ttk.Treeview(frame, show="headings")
@@ -313,7 +334,10 @@ class MainWindow:
             "Support Reactions",
             "Member End Forces",
             "DOF Map",
-            "Matrix Summary",
+            "Global Stiffness Matrix K",
+            "Reduced Stiffness Matrix Kff",
+            "Global Force Vector F",
+            "Reduced Force Vector Ff",
         ]
 
     def _refresh_static_result_table(self) -> None:
@@ -333,73 +357,114 @@ class MainWindow:
         results = self.latest_static_results
         if results is None:
             return (("Message",), [("Run Static Analysis first.",)])
+        units = self._result_unit_labels()
         if category == "Nodal Displacements":
-            return (("Node", "UX", "UY", "RZ"), self._vector_rows(results.displacements))
-        if category == "Support Reactions":
-            return (("Node", "FX", "FY", "MZ"), self._vector_rows(results.reactions))
-        if category == "Member End Forces":
-            return self._member_force_rows(results.element_forces)
-        if category == "DOF Map":
-            return self._mapping_rows(results.dof_map)
-        if category == "Matrix Summary":
             return (
-                ("Item", "Rows", "Columns"),
-                [
-                    self._matrix_summary_row("K", results.K),
-                    self._matrix_summary_row("Kff", results.Kff),
-                    self._matrix_summary_row("F", results.F),
-                    self._matrix_summary_row("Ff", results.Ff),
-                ],
+                ("Node", f"UX [{units['length']}]", f"UY [{units['length']}]", f"RZ [{units['rotation']}]"),
+                self._vector_rows(getattr(results, "displacements", None)),
             )
+        if category == "Support Reactions":
+            return (
+                ("Node", f"FX [{units['force']}]", f"FY [{units['force']}]", f"MZ [{units['moment']}]"),
+                self._vector_rows(getattr(results, "reactions", None)),
+            )
+        if category == "Member End Forces":
+            return self._member_force_rows(getattr(results, "element_forces", None), units)
+        if category == "DOF Map":
+            return self._mapping_rows(getattr(results, "dof_map", None))
+        if category == "Global Stiffness Matrix K":
+            return self._matrix_table(getattr(results, "K", None), "Global stiffness matrix K is unavailable.")
+        if category == "Reduced Stiffness Matrix Kff":
+            return self._matrix_table(getattr(results, "Kff", None), "Reduced stiffness matrix Kff is unavailable.")
+        if category == "Global Force Vector F":
+            return self._matrix_table(getattr(results, "F", None), "Global force vector F is unavailable.")
+        if category == "Reduced Force Vector Ff":
+            return self._matrix_table(getattr(results, "Ff", None), "Reduced force vector Ff is unavailable.")
         return (("Message",), [("No result data available.",)])
 
-    def _vector_rows(self, values_by_id: Mapping[object, object]) -> list[tuple[str, ...]]:
+    def _result_unit_labels(self) -> dict[str, str]:
+        model = getattr(getattr(self, "model_canvas", None), "builder", None)
+        model = getattr(model, "model", None)
+        return unit_labels(getattr(model, "unit_system", None))
+
+    def _matrix_table(self, matrix: object, missing_message: str) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
+        rows = matrix_rows(matrix, tolerance=self._display_tolerance())
+        if not rows:
+            return (("Message",), [(missing_message,)])
+        return (matrix_columns(matrix), rows)
+
+    def _display_tolerance(self) -> float:
+        return getattr(self, "result_display_tolerance", DEFAULT_DISPLAY_TOLERANCE)
+
+    def _apply_result_tolerance(self) -> None:
+        if self.result_tolerance_var is None:
+            return
+        try:
+            tolerance = float(self.result_tolerance_var.get())
+        except ValueError:
+            self._write_status("Result display tolerance must be numeric.")
+            return
+        if tolerance <= 0.0:
+            self._write_status("Result display tolerance must be positive.")
+            return
+        self.result_display_tolerance = tolerance
+        self.result_tolerance_var.set(f"{tolerance:g}")
+        self._refresh_static_result_table()
+        self._write_status(f"Static result display tolerance set to {tolerance:g}.")
+
+    def _vector_rows(self, values_by_id: Mapping[object, object] | None) -> list[tuple[str, ...]]:
+        if not values_by_id:
+            return [("Unavailable", "-", "-", "-")]
         rows = []
         for key, values in values_by_id.items():
-            vector = self._as_sequence(values)
+            vector = format_vector(values, tolerance=self._display_tolerance())
             rows.append((str(key), self._format_value_at(vector, 0), self._format_value_at(vector, 1), self._format_value_at(vector, 2)))
-        return rows or [("-", "-", "-", "-")]
+        return rows
 
-    def _member_force_rows(self, element_forces: Mapping[object, object]) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
+    def _member_force_rows(
+        self,
+        element_forces: Mapping[object, object] | None,
+        units: Mapping[str, str],
+    ) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
+        columns = (
+            "Element",
+            "End",
+            f"N [{units['force']}]",
+            f"V [{units['force']}]",
+            f"M [{units['moment']}]",
+        )
+        if not element_forces:
+            return (columns, [("Unavailable", "-", "-", "-", "-")])
         rows = []
         for element_id, forces in element_forces.items():
             if isinstance(forces, Mapping):
                 for label, values in forces.items():
-                    vector = self._as_sequence(values)
-                    rows.append((str(element_id), str(label), ", ".join(self._format_number(value) for value in vector)))
+                    vector = format_vector(values, tolerance=self._display_tolerance())
+                    rows.append((str(element_id), str(label), self._format_value_at(vector, 0), self._format_value_at(vector, 1), self._format_value_at(vector, 2)))
             else:
-                vector = self._as_sequence(forces)
-                rows.append((str(element_id), "end forces", ", ".join(self._format_number(value) for value in vector)))
-        return (("Element", "Location", "Values"), rows or [("-", "-", "-")])
+                vector = format_vector(forces, tolerance=self._display_tolerance())
+                if len(vector) >= 6:
+                    rows.append((str(element_id), "i", self._format_value_at(vector, 0), self._format_value_at(vector, 1), self._format_value_at(vector, 2)))
+                    rows.append((str(element_id), "j", self._format_value_at(vector, 3), self._format_value_at(vector, 4), self._format_value_at(vector, 5)))
+                else:
+                    rows.append((str(element_id), "end", self._format_value_at(vector, 0), self._format_value_at(vector, 1), self._format_value_at(vector, 2)))
+        return (columns, rows)
 
-    def _mapping_rows(self, mapping: Mapping[object, object]) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
-        rows = [(str(key), str(value)) for key, value in mapping.items()]
-        return (("DOF", "Map Entry"), rows or [("-", "-")])
+    def _mapping_rows(self, mapping: Mapping[object, object] | None) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
+        if not mapping:
+            model = getattr(getattr(self, "model_canvas", None), "builder", None)
+            model = getattr(model, "model", None)
+            mapping = getattr(model, "cached_dof_map", None)
+        rows = dof_display_rows(mapping or {})
+        return (("Node", "UX", "UY", "RZ"), rows or [("Unavailable", "-", "-", "-")])
 
-    def _matrix_summary_row(self, name: str, matrix: object) -> tuple[str, str, str]:
-        if not isinstance(matrix, Sequence) or isinstance(matrix, (str, bytes)):
-            return (name, "0", "0")
-        row_count = len(matrix)
-        if row_count == 0:
-            return (name, "0", "0")
-        first_row = matrix[0]
-        column_count = len(first_row) if isinstance(first_row, Sequence) and not isinstance(first_row, (str, bytes)) else 1
-        return (name, str(row_count), str(column_count))
-
-    def _as_sequence(self, values: object) -> tuple[object, ...]:
-        if isinstance(values, Sequence) and not isinstance(values, (str, bytes)):
-            return tuple(values)
-        return (values,)
-
-    def _format_value_at(self, values: Sequence[object], index: int) -> str:
+    def _format_value_at(self, values: tuple[object, ...], index: int) -> str:
         if index >= len(values):
             return "-"
-        return self._format_number(values[index])
+        return format_scalar(values[index], tolerance=self._display_tolerance())
 
     def _format_number(self, value: object) -> str:
-        if isinstance(value, (int, float)):
-            return f"{value:.6g}"
-        return str(value)
+        return format_scalar(value, tolerance=self._display_tolerance())
 
     def _new_model(self) -> None:
         builder = ask_new_model(self.root)

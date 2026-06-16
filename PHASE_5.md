@@ -28,7 +28,7 @@ Architecture/UI cleanup is complete enough to proceed. Rigid-link behavior is cl
 
 ## Current State
 
-5D0, 5D1, and 5D2 are complete. Static analysis can now be launched from the Tkinter desktop UI, the latest static result is stored in desktop/controller state, and basic static result tables are available. The next task is 5D3: add static deformed-shape and N/V/M plots using the stored static result.
+5D0, 5D1, 5D2, and 5D2B are complete. The Tkinter desktop UI now shows static results with clearer units, DOF-map columns, and direct views of available intermediate matrices and vectors without changing solver output. A 5D2B display bugfix also cleaned the DOF-map source handling and member end-force cell formatting. The next task is 5D3: add static deformed-shape and N/V/M plots using the stored static result.
 
 ## Task Status
 
@@ -37,6 +37,7 @@ Architecture/UI cleanup is complete enough to proceed. Rigid-link behavior is cl
 | 5D0 Integration entry-point audit       | DONE   | Identified the desktop UI/controller, static backend, result object, and visualization entry points needed for Phase 5. |
 | 5D1 Static run from desktop UI          | DONE   | Desktop UI can run Static analysis from the current model, store the result, and show success/error status.             |
 | 5D2 Static result tables                | DONE   | Basic read-only static result tables are available for stored Static results.                                           |
+| 5D2B Static result readability cleanup  | DONE   | Desktop static result tables now use centralized formatting, unit-aware headers, clearer DOF-map rows, and intermediate K/Kff/F/Ff views. |
 | 5D3 Static deformed shape + N/V/M plots | TODO   |                                                                                                                         |
 | 5D4 Modal run + mode shape/results      | TODO   |                                                                                                                         |
 | 5D5 RSA run + results                   | TODO   |                                                                                                                         |
