@@ -3,7 +3,7 @@
 ## Goal
 Build a complete but incremental CE 4011 structural analysis program:
 ```text
-OOP model -> static/modal/RSA/THA solvers -> visualization -> Streamlit UI -> docs/tests
+OOP model -> static/modal/RSA/THA solvers -> visualization -> Tkinter desktop MVP -> docs/tests
 ```
 
 ## Development Rule
@@ -449,13 +449,13 @@ Verify: y-axis units shown (m, m/s, m/s², kN, etc.).
 
 ---
 
-## Phase 8: Streamlit UI
+## Phase 8: Tkinter Desktop MVP
 
-**What:** Input tables/forms, model preview, analysis run buttons, result tables, plots, export.
+**What:** Desktop app with New Model workflows, canvas-based 2D model builder, analysis controls, embedded result tables/plots, and XML save/load/export.
 
 **Files to modify / create:**
-- `src/ui/app.py` (main Streamlit app)
-- `src/ui/pages/` (input, results, export pages)
+- `src/ui/app.py` (main Tkinter app)
+- `src/ui/` desktop views for canvas input, properties, analyses, results, and export
 - `src/io/export.py` (report generation)
 
 **Files to read (context only):**
@@ -467,9 +467,10 @@ Verify: y-axis units shown (m, m/s, m/s², kN, etc.).
 
 ✓ **Test 1: Model input and validation**
 ```
-User enters 2-node frame in table.
+User creates a Blank, 2D Frame-Truss, or 2D Shear Frame model from the New Model workflow.
 Verify: StructuralModel built correctly.
 Verify: invalid input (zero-length element) rejected.
+Verify: model creation goes through ModelBuilder.
 ```
 
 ✓ **Test 2: Run static analysis button**
@@ -489,11 +490,18 @@ Verify: results updated (load changed).
 ✓ **Test 4: Plot display**
 ```
 Run modal analysis, display mode 1 shape.
-Verify: plot renders in Streamlit.
+Verify: plot renders embedded in the Tkinter app.
 Verify: user can toggle between modes 1, 2, 3.
 ```
 
-✓ **Test 5: Export report**
+✓ **Test 5: All analyses and XML workflow**
+```
+Run Static, Modal, RSA, and THA from the desktop UI.
+Verify: result tables and plots are embedded in the app.
+Verify: XML save/load/export works as backend persistence, not manual user input.
+```
+
+✓ **Test 6: Export report**
 ```
 Generate PDF or text report with analysis summary.
 Verify: includes DOF map, K/M matrices, eigenvalues, mode shapes, etc.

@@ -20,7 +20,7 @@ src/
   io/                # CSV/XML/JSON read-write, report/export helpers
   templates/         # shear frame, cantilever, portal frame examples
   visualization/     # matplotlib figures only
-  ui/                # Streamlit forms/views/session state
+  ui/                # Tkinter desktop MVP views, canvas builder, result panels
 tests/
 ```
 
@@ -301,14 +301,24 @@ def validate_phase_4_complete(results_modal):
 ## UI Flow (Phase 8)
 
 ```text
-user input (table/form) -> validate -> mark model dirty 
+New Model (Blank / 2D Frame-Truss / 2D Shear Frame)
+  -> Tkinter canvas/table edits
+  -> ModelBuilder
+  -> validate -> mark model dirty
   -> rebuild model/DOFs (if needed, check is_dirty) 
   -> run selected analysis (static/modal/RSA/THA) 
   -> cache results 
-  -> plot/export
+  -> embedded plots/tables
+  -> XML save/load/export
 ```
 
 On subsequent runs, if input unchanged, reuse cached matrices.
+
+The desktop UI is responsible for collecting geometry, supports, properties, loads,
+masses, spectra, and ground-motion settings; all model creation flows go through
+`ModelBuilder`. XML is the backend persistence/export format, not a manual input
+requirement for students. Static, Modal, RSA, and THA analyses must be accessible
+from the UI, with plots and educational result tables embedded in the application.
 
 ---
 

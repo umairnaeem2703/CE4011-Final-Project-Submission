@@ -1,7 +1,7 @@
 # AGENTS.md
 
 ## Mission
-Build CE 4011 educational structural analysis software with OOP static/dynamic solvers, spreadsheet-style input, XML save/load, model preview, visualization, tests, and concise docs.
+Build CE 4011 educational structural analysis software with OOP static/dynamic solvers, a Tkinter desktop MVP, canvas-based model building, XML save/load/export, visualization, tests, and concise docs.
 
 ## Token Rules
 - Work one feature/subsystem per task.
@@ -14,23 +14,24 @@ Build CE 4011 educational structural analysis software with OOP static/dynamic s
 ## Core Architecture Rule
 Pipeline:
 ```text
-input tables/XML/templates -> StructuralModel -> DOF/K/M/C/F assembly -> solvers -> result objects -> plots/export
+Tkinter canvas/tables/templates/XML -> ModelBuilder -> StructuralModel -> DOF/K/M/C/F assembly -> solvers -> result objects -> embedded plots/tables/export
 ```
 Solvers must receive matrices/vectors and must not branch by structure type. Shear frames, cantilevers, frames, trusses, and benchmarks are models/templates, not separate solver families.
 
 ## Input Workflow Architecture
 - Preserve the current flat `src/` layout unless explicitly asked to refactor.
 - Do not create `src/model/`, `src/io/`, `src/assembly/`, or `src/solvers/` package folders unless explicitly requested.
-- `ModelBuilder` is the internal model creation API for programmatic, table, template, and future graphical input.
-- Future graphical/table input should call `ModelBuilder` rather than directly constructing parser dataclasses.
-- XML is the backend save/load and reproducibility format; students should not be expected to manually write XML.
-- `Controller` is a thin coordination layer only. It must not contain solver math or Streamlit-specific code.
+- `ModelBuilder` is the only model creation API for programmatic, table, template, XML, and graphical input.
+- The Tkinter desktop MVP shall provide New Model workflows for Blank, 2D Frame-Truss, and 2D Shear Frame models, backed by `ModelBuilder`.
+- Canvas/table input must call `ModelBuilder` rather than directly constructing parser dataclasses.
+- XML is the backend save/load/export and reproducibility format; students should not be expected to manually write XML.
+- `Controller` is a thin coordination layer only. It must not contain solver math or UI toolkit-specific code.
 - Reuse `StructuralValidator` for model validation; do not replace validation with parallel logic.
 
 ## Dependency Rules
 - Core numerical solver: Python standard library only unless approved.
 - Visualization: matplotlib allowed.
-- UI: Streamlit allowed.
+- UI: Tkinter for the final desktop MVP; Streamlit may remain only as a legacy/prototype interface.
 - Tests: pytest allowed.
 - Avoid numpy/scipy/sympy/pandas in solver core.
 
@@ -127,7 +128,7 @@ When a task says "run relevant tests", apply this rule:
 
 ## Do Not
 - Do not duplicate static/modal/RSA/THA logic by model type.
-- Do not move solver math into Streamlit/UI.
+- Do not move solver math into UI code.
 - Do not remove intermediate variables needed for reports/tests.
 - Do not skip pre-task checklist (2 minutes well spent prevents 2 hours of rework).
 - Do not commit changes if relevant tests do not pass.

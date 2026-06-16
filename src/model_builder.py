@@ -40,14 +40,22 @@ class ModelBuilder:
         self._mark_dirty()
         return material
 
-    def add_section(self, id: str, A: float, I: float = 0.0, d: float = 0.0) -> Section:
-        section = Section(id=id, A=A, I=I, d=d)
+    def add_section(
+        self,
+        id: str,
+        A: float,
+        I: float = 0.0,
+        d: float = 0.0,
+        EA: float | None = None,
+        EI: float | None = None,
+    ) -> Section:
+        section = Section(id=id, A=A, I=I, d=d, EA=EA, EI=EI)
         self.model.sections[id] = section
         self._mark_dirty()
         return section
 
-    def add_node(self, id: int, x: float, y: float) -> Node:
-        node = Node(id=id, x=x, y=y)
+    def add_node(self, id: int, x: float, y: float, is_hinged: bool = False) -> Node:
+        node = Node(id=id, x=x, y=y, is_hinged=is_hinged)
         self.model.nodes[id] = node
         self._mark_dirty()
         return node
@@ -125,9 +133,19 @@ class ModelBuilder:
         wx: float = 0.0,
         wy: float = 0.0,
         *,
+        coord_system: str = "local",
+        direction: str = "",
+        value: float | None = None,
         load_case_name: str = "",
     ) -> UniformlyDL:
-        udl = UniformlyDL(element=self._element(element), wx=wx, wy=wy)
+        udl = UniformlyDL(
+            element=self._element(element),
+            wx=wx,
+            wy=wy,
+            coord_system=coord_system,
+            direction=direction,
+            value=value,
+        )
         self._load_case(load_case, load_case_name).loads.append(udl)
         self._mark_dirty()
         return udl
@@ -140,12 +158,37 @@ class ModelBuilder:
         fx: float = 0.0,
         fy: float = 0.0,
         *,
+        coord_system: str = "local",
+        direction: str = "",
+        value: float | None = None,
         load_case_name: str = "",
     ) -> PointLoad:
-        point_load = PointLoad(element=self._element(element), position=position, fx=fx, fy=fy)
+        point_load = PointLoad(
+            element=self._element(element),
+            position=position,
+            fx=fx,
+            fy=fy,
+            coord_system=coord_system,
+            direction=direction,
+            value=value,
+        )
         self._load_case(load_case, load_case_name).loads.append(point_load)
         self._mark_dirty()
         return point_load
+
+    def add_temperature_load(
+        self,
+        load_case: str,
+        element: str | Element,
+        Tu: float,
+        Tb: float,
+        *,
+        load_case_name: str = "",
+    ) -> TemperatureL:
+        temperature_load = TemperatureL(element=self._element(element), Tu=Tu, Tb=Tb)
+        self._load_case(load_case, load_case_name).loads.append(temperature_load)
+        self._mark_dirty()
+        return temperature_load
 
     def add_lumped_mass(
         self,
@@ -237,15 +280,23 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
 
     sections_el = ET.SubElement(root, "sections")
     for section in model.sections.values():
+        attrs = {"id": section.id, "A": _fmt(section.A), "I": _fmt(section.I), "d": _fmt(section.d)}
+        if section.EA is not None:
+            attrs["EA"] = _fmt(section.EA)
+        if section.EI is not None:
+            attrs["EI"] = _fmt(section.EI)
         ET.SubElement(
             sections_el,
             "section",
-            {"id": section.id, "A": _fmt(section.A), "I": _fmt(section.I), "d": _fmt(section.d)},
+            attrs,
         )
 
     nodes_el = ET.SubElement(root, "nodes")
     for node in model.nodes.values():
-        ET.SubElement(nodes_el, "node", {"id": str(node.id), "x": _fmt(node.x), "y": _fmt(node.y)})
+        attrs = {"id": str(node.id), "x": _fmt(node.x), "y": _fmt(node.y)}
+        if getattr(node, "is_hinged", False):
+            attrs["is_hinged"] = "true"
+        ET.SubElement(nodes_el, "node", attrs)
 
     if model.lumped_masses:
         lumped_masses_el = ET.SubElement(root, "lumped_masses")
@@ -333,21 +384,25 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
                         },
                     )
                 elif isinstance(load, UniformlyDL):
+                    attrs = {"element": load.element.id, "wx": _fmt(load.wx), "wy": _fmt(load.wy)}
+                    _append_member_load_metadata(attrs, load)
                     ET.SubElement(
                         lc_el,
                         "member_udl",
-                        {"element": load.element.id, "wx": _fmt(load.wx), "wy": _fmt(load.wy)},
+                        attrs,
                     )
                 elif isinstance(load, PointLoad):
+                    attrs = {
+                        "element": load.element.id,
+                        "position": _fmt(load.position),
+                        "fx": _fmt(load.fx),
+                        "fy": _fmt(load.fy),
+                    }
+                    _append_member_load_metadata(attrs, load)
                     ET.SubElement(
                         lc_el,
                         "member_point_load",
-                        {
-                            "element": load.element.id,
-                            "position": _fmt(load.position),
-                            "fx": _fmt(load.fx),
-                            "fy": _fmt(load.fy),
-                        },
+                        attrs,
                     )
                 elif isinstance(load, TemperatureL):
                     _append_temperature_load(lc_el, load)
@@ -363,6 +418,18 @@ def _append_temperature_load(parent: ET.Element, load: TemperatureL) -> None:
     else:
         attrs.update({"type": "combined", "T_top": _fmt(load.Tu), "T_bottom": _fmt(load.Tb)})
     ET.SubElement(parent, "temperature_load", attrs)
+
+
+def _append_member_load_metadata(attrs: dict[str, str], load: UniformlyDL | PointLoad) -> None:
+    coord_system = getattr(load, "coord_system", "local")
+    direction = getattr(load, "direction", "")
+    value = getattr(load, "value", None)
+    if coord_system != "local":
+        attrs["coord_system"] = coord_system
+    if direction:
+        attrs["direction"] = direction
+    if value is not None:
+        attrs["value"] = _fmt(value)
 
 
 def _bool_int(value: bool) -> str:

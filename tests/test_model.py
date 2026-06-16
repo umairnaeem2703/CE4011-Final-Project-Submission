@@ -106,6 +106,42 @@ def test_axially_rigid_member_coupling():
     assert num_eq == 3
 
 
+def test_shared_frame_node_is_moment_continuous_by_default():
+    model = _new_model()
+    _add_node(model, 1, 0.0, 0.0)
+    _add_node(model, 2, 1.0, 0.0)
+    _add_node(model, 3, 2.0, 0.0)
+    _add_frame(model, "e1", 1, 2)
+    _add_frame(model, "e2", 2, 3)
+    model.supports[1] = Support(model.nodes[1], True, True, True)
+    model.supports[3] = Support(model.nodes[3], True, True, True)
+
+    _, dof_map, _, _ = DOFManager(model).build()
+
+    assert dof_map[2][2] >= 0
+    assert model.elements["e1"].effective_release_end() is False
+    assert model.elements["e2"].effective_release_start() is False
+
+
+def test_hinged_shared_frame_node_releases_connected_frame_ends():
+    model = _new_model()
+    _add_node(model, 1, 0.0, 0.0)
+    _add_node(model, 2, 1.0, 0.0)
+    _add_node(model, 3, 2.0, 0.0)
+    model.nodes[2].is_hinged = True
+    _add_frame(model, "e1", 1, 2)
+    _add_frame(model, "e2", 2, 3)
+    model.supports[1] = Support(model.nodes[1], True, True, True)
+    model.supports[3] = Support(model.nodes[3], True, True, True)
+
+    _, dof_map, _, _ = DOFManager(model).build()
+
+    assert dof_map[2][0] >= 0 and dof_map[2][1] >= 0
+    assert dof_map[2][2] == -1
+    assert model.elements["e1"].effective_release_end() is True
+    assert model.elements["e2"].effective_release_start() is True
+
+
 def test_spinning_node_suppressed_from_active_dynamic_dofs():
     model = _new_model()
     _add_node(model, 1, -1.0, 0.0)

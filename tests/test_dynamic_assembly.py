@@ -6,6 +6,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../s
 from dof_optimizer import DOFOptimizer
 from matrix_assembly import DynamicAssembler, MatrixAssembler
 from model_builder import ModelBuilder
+from modal_solver import ModalSolver
 from parser import Element, LoadCase, LumpedMass, Material, Node, Section, StructuralModel, Support, XMLParser
 
 
@@ -69,6 +70,20 @@ def test_reduced_dynamic_matrices_free_dofs():
     assert data.Mff == [[5.0, 0.0], [0.0, 5.0]]
     assert data.Kff[1][1] == 30.0 / 64.0
     assert data.condensed_massless_dofs == [2]
+
+
+def test_uy_only_lumped_mass_cantilever_modal_pipeline():
+    """Verify a cantilever with only tip UY mass remains dynamically active."""
+    model = _cantilever(density=0.0)
+    model.lumped_masses = {2: LumpedMass(model.nodes[2], mass_ux=0.0, mass_uy=5.0, inertia_rz=0.0)}
+
+    data = _assemble(model)
+    results = ModalSolver(data.Kff, data.Mff).solve(num_modes=1)
+
+    assert data.active_dynamic_dofs == [model.nodes[2].dofs[1]]
+    assert data.Mff == [[5.0]]
+    assert data.Kff[0][0] > 0.0
+    assert results.frequencies[0] > 0.0
 
 
 def test_density_unit_conversion_kg_to_tonne():

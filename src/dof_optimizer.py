@@ -163,9 +163,9 @@ class DOFOptimizer:
         """
         for el in self.model.elements.values():
             if el.type == 'frame':
-                if el.node_i.id == node_id and not el.release_start:
+                if el.node_i.id == node_id and not el.effective_release_start():
                     return True
-                if el.node_j.id == node_id and not el.release_end:
+                if el.node_j.id == node_id and not el.effective_release_end():
                     return True
         return False
 
