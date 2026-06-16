@@ -6,18 +6,22 @@ import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from collections.abc import Mapping
 
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+
 try:
     from banded_solver import UnstableStructureError
     from model_builder import ModelBuilder
     from parser import XMLParser
     from structural_validator import StructuralValidator
     from ui.static_analysis import run_static_analysis
+    from visualizer import plot_static_deformed_shape, plot_static_nvm_diagrams
 except ImportError:  # pragma: no cover - used when launched as python -m src.ui_desktop.app
     from ..banded_solver import UnstableStructureError
     from ..model_builder import ModelBuilder
     from ..parser import XMLParser
     from ..structural_validator import StructuralValidator
     from ..ui.static_analysis import run_static_analysis
+    from ..visualizer import plot_static_deformed_shape, plot_static_nvm_diagrams
 
 from .canvas import ModelCanvas
 from .object_tree import ObjectTreePanel
@@ -108,6 +112,15 @@ class MainWindow:
         self.static_analysis_error = None
         self.result_view_category = None
         self.result_view_tree = None
+        self.result_plot_window = None
+        self.result_plot_member_var = None
+        self.result_plot_member_selector = None
+        self.result_plot_message = None
+        self.result_plot_deformed_container = None
+        self.result_plot_nvm_container = None
+        self.result_plot_deformed_canvas = None
+        self.result_plot_nvm_canvas = None
+        self.selected_member_id = None
         self.result_display_tolerance = DEFAULT_DISPLAY_TOLERANCE
         self.result_tolerance_var = None
 
@@ -301,25 +314,71 @@ class MainWindow:
         )
 
     def _show_static_results(self) -> None:
-        window = tk.Toplevel(self.root)
-        window.title("Static Results")
-        window.geometry("760x420")
-        window.columnconfigure(0, weight=1)
-        window.rowconfigure(1, weight=1)
-
+        window = self._create_static_results_window()
+        self._refresh_static_plot_member_options()
+        self._refresh_static_result_table()
+        self._refresh_static_plots()
         if self.latest_static_results is None:
-            ttk.Label(window, text="Run Static Analysis first.").grid(row=0, column=0, sticky="w", padx=10, pady=10)
             self._write_status("Run Static Analysis first.")
             return
+        self._write_status("Static results opened.")
+
+    def _create_static_results_window(self) -> tk.Toplevel:
+        if self.result_plot_window is not None and self.result_plot_window.winfo_exists():
+            self.result_plot_window.lift()
+            self.result_plot_window.focus_force()
+            return self.result_plot_window
+
+        window = tk.Toplevel(self.root)
+        window.title("Static Results")
+        window.geometry("1020x660")
+        window.columnconfigure(0, weight=1)
+        window.rowconfigure(1, weight=1)
+        window.protocol("WM_DELETE_WINDOW", self._close_static_results_window)
+        self.result_plot_window = window
+
+        header = ttk.Frame(window)
+        header.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 6))
+        header.columnconfigure(0, weight=1)
+        ttk.Label(header, text="Static Results").grid(row=0, column=0, sticky="w")
+        ttk.Button(header, text="Refresh Plots", command=self._refresh_static_plots).grid(row=0, column=1, sticky="e")
+
+        body = ttk.Notebook(window)
+        body.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
+
+        table_tab = ttk.Frame(body, padding=6)
+        plots_tab = ttk.Frame(body, padding=6)
+        body.add(table_tab, text="Tables")
+        body.add(plots_tab, text="Plots")
+
+        self._build_static_results_table_tab(table_tab)
+        self._build_static_results_plots_tab(plots_tab)
+        return window
+
+    def _close_static_results_window(self) -> None:
+        if self.result_plot_window is not None and self.result_plot_window.winfo_exists():
+            self.result_plot_window.destroy()
+        self.result_plot_window = None
+        self.result_plot_member_var = None
+        self.result_plot_member_selector = None
+        self.result_plot_message = None
+        self.result_plot_deformed_container = None
+        self.result_plot_nvm_container = None
+        self.result_plot_deformed_canvas = None
+        self.result_plot_nvm_canvas = None
+
+    def _build_static_results_table_tab(self, parent: ttk.Frame) -> None:
+        parent.columnconfigure(0, weight=1)
+        parent.rowconfigure(2, weight=1)
 
         categories = tuple(self._static_result_categories())
         self.result_view_category = tk.StringVar(value=categories[0])
-        selector = ttk.Combobox(window, textvariable=self.result_view_category, values=categories, state="readonly")
-        selector.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 6))
+        selector = ttk.Combobox(parent, textvariable=self.result_view_category, values=categories, state="readonly")
+        selector.grid(row=0, column=0, sticky="ew", pady=(0, 6))
         selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_static_result_table())
 
-        controls = ttk.Frame(window)
-        controls.grid(row=1, column=0, sticky="ew", padx=10, pady=(0, 6))
+        controls = ttk.Frame(parent)
+        controls.grid(row=1, column=0, sticky="ew", pady=(0, 6))
         controls.columnconfigure(2, weight=1)
         ttk.Label(controls, text="Display tolerance").grid(row=0, column=0, sticky="w")
         self.result_tolerance_var = tk.StringVar(value=f"{self._display_tolerance():g}")
@@ -328,8 +387,8 @@ class MainWindow:
         tolerance_entry.bind("<Return>", lambda _event: self._apply_result_tolerance())
         ttk.Button(controls, text="Apply", command=self._apply_result_tolerance).grid(row=0, column=2, sticky="w")
 
-        frame = ttk.Frame(window)
-        frame.grid(row=2, column=0, sticky="nsew", padx=10, pady=(0, 10))
+        frame = ttk.Frame(parent)
+        frame.grid(row=2, column=0, sticky="nsew")
         frame.columnconfigure(0, weight=1)
         frame.rowconfigure(0, weight=1)
         self.result_view_tree = ttk.Treeview(frame, show="headings")
@@ -340,7 +399,33 @@ class MainWindow:
         y_scroll.grid(row=0, column=1, sticky="ns")
         x_scroll.grid(row=1, column=0, sticky="ew")
         self._refresh_static_result_table()
-        self._write_status("Static results opened.")
+
+    def _build_static_results_plots_tab(self, parent: ttk.Frame) -> None:
+        parent.columnconfigure(0, weight=1)
+        parent.rowconfigure(2, weight=1)
+
+        controls = ttk.Frame(parent)
+        controls.grid(row=0, column=0, sticky="ew", pady=(0, 6))
+        controls.columnconfigure(1, weight=1)
+        ttk.Label(controls, text="Selected member").grid(row=0, column=0, sticky="w")
+        self.result_plot_member_var = tk.StringVar(value="All members")
+        self.result_plot_member_selector = ttk.Combobox(controls, textvariable=self.result_plot_member_var, state="readonly")
+        self.result_plot_member_selector.grid(row=0, column=1, sticky="ew", padx=(8, 4))
+        self.result_plot_member_selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_static_plots())
+        ttk.Button(controls, text="Use Canvas Selection", command=self._sync_plot_member_from_selection).grid(row=0, column=2, sticky="e")
+
+        self.result_plot_message = tk.StringVar(value="Plots use the stored Static result.")
+        ttk.Label(parent, textvariable=self.result_plot_message).grid(row=1, column=0, sticky="w", pady=(0, 6))
+
+        plots = ttk.Notebook(parent)
+        plots.grid(row=2, column=0, sticky="nsew")
+
+        self.result_plot_deformed_container = ttk.Frame(plots)
+        self.result_plot_nvm_container = ttk.Frame(plots)
+        plots.add(self.result_plot_deformed_container, text="Deformed Shape")
+        plots.add(self.result_plot_nvm_container, text="N/V/M Diagrams")
+        self._refresh_static_plot_member_options()
+        self._refresh_static_plots()
 
     def _static_result_categories(self) -> list[str]:
         return [
@@ -353,6 +438,94 @@ class MainWindow:
             "Global Force Vector F",
             "Reduced Force Vector Ff",
         ]
+
+    def _refresh_static_plot_member_options(self) -> None:
+        selector = self.result_plot_member_selector
+        if selector is None:
+            return
+        members = ["All members"]
+        results = self.latest_static_results
+        if results is not None:
+            nvm_data = getattr(results, "nvm_data", None) or {}
+            members.extend(str(member_id) for member_id in nvm_data.keys())
+        selector.configure(values=members)
+        if self.result_plot_member_var is None:
+            return
+        current = self.result_plot_member_var.get()
+        if current not in members:
+            current = "All members"
+            if self.selected_member_id is not None and str(self.selected_member_id) in members:
+                current = str(self.selected_member_id)
+            self.result_plot_member_var.set(current)
+
+    def _sync_plot_member_from_selection(self) -> None:
+        if self.selected_member_id is None:
+            self._write_status("Select a member first.")
+            return
+        if self.result_plot_member_var is None:
+            return
+        self.result_plot_member_var.set(str(self.selected_member_id))
+        self._refresh_static_plots()
+
+    def _refresh_static_plots(self) -> None:
+        self._render_static_deformed_plot()
+        self._render_static_nvm_plot()
+
+    def _render_static_deformed_plot(self) -> None:
+        container = self.result_plot_deformed_container
+        if container is None:
+            return
+        self._clear_plot_container(container)
+        if self.latest_static_results is None:
+            ttk.Label(container, text="Run Static Analysis first.").grid(row=0, column=0, sticky="w")
+            self._set_plot_message("Run Static Analysis first.")
+            return
+        fig, _ = plot_static_deformed_shape(self.model_canvas.builder.model, self.latest_static_results)
+        self.result_plot_deformed_canvas = self._embed_figure(container, fig)
+        self._set_plot_message("Static deformed-shape plot updated.")
+
+    def _render_static_nvm_plot(self) -> None:
+        container = self.result_plot_nvm_container
+        if container is None:
+            return
+        self._clear_plot_container(container)
+        if self.latest_static_results is None:
+            ttk.Label(container, text="Run Static Analysis first.").grid(row=0, column=0, sticky="w")
+            return
+        nvm_data = getattr(self.latest_static_results, "nvm_data", None) or {}
+        if not nvm_data:
+            ttk.Label(container, text="No N/V/M data available for diagrams.").grid(row=0, column=0, sticky="w")
+            self._set_plot_message("No N/V/M data available for diagrams.")
+            return
+        member_id = self.result_plot_member_var.get() if self.result_plot_member_var is not None else "All members"
+        if member_id != "All members" and self._resolve_nvm_member_key(member_id, nvm_data) is None:
+            ttk.Label(container, text="Selected member is invalid for N/V/M diagrams.").grid(row=0, column=0, sticky="w")
+            self._set_plot_message("Selected member is invalid for N/V/M diagrams.")
+            return
+        fig, _ = plot_static_nvm_diagrams(self.model_canvas.builder.model, self.latest_static_results)
+        self.result_plot_nvm_canvas = self._embed_figure(container, fig)
+
+    def _resolve_nvm_member_key(self, member_id: object, nvm_data: Mapping[object, object]) -> object | None:
+        for key in nvm_data.keys():
+            if str(key) == str(member_id):
+                return key
+        return None
+
+    def _clear_plot_container(self, parent: ttk.Frame) -> None:
+        for child in parent.winfo_children():
+            child.destroy()
+
+    def _embed_figure(self, parent: ttk.Frame, fig):
+        canvas = FigureCanvasTkAgg(fig, master=parent)
+        canvas.get_tk_widget().grid(row=0, column=0, sticky="nsew")
+        parent.columnconfigure(0, weight=1)
+        parent.rowconfigure(0, weight=1)
+        canvas.draw()
+        return canvas
+
+    def _set_plot_message(self, message: str) -> None:
+        if self.result_plot_message is not None:
+            self.result_plot_message.set(message)
 
     def _refresh_static_result_table(self) -> None:
         if self.result_view_tree is None or self.result_view_category is None:
@@ -527,6 +700,7 @@ class MainWindow:
         self.static_analysis_error = None
         self.result_view_category = None
         self.result_view_tree = None
+        self.selected_member_id = None
 
     def _save_xml(self) -> None:
         path = filedialog.asksaveasfilename(
@@ -562,6 +736,10 @@ class MainWindow:
 
     def _show_selection(self, kind: str | None, obj: object | None) -> None:
         self.property_panel.show_selection(kind, obj)
+        if kind == "element" and obj is not None:
+            self.selected_member_id = obj.id
+        elif kind is None:
+            self.selected_member_id = None
         if not hasattr(self, "object_tree"):
             return
         if kind == "node" and obj is not None:

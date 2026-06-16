@@ -153,6 +153,46 @@ def test_desktop_static_result_table_empty_state():
     assert rows == [("Run Static Analysis first.",)]
 
 
+def test_desktop_static_plot_rendering_handles_missing_result_and_invalid_member(monkeypatch):
+    window = _window_with_model()
+    messages = []
+    window._set_plot_message = messages.append
+    monkeypatch.setattr(main_window.ttk, "Label", lambda *args, **kwargs: SimpleNamespace(grid=lambda **_kw: None))
+
+    class DummyContainer:
+        def __init__(self):
+            self.children = []
+
+        def winfo_children(self):
+            return self.children
+
+        def columnconfigure(self, *_args, **_kwargs):
+            pass
+
+        def rowconfigure(self, *_args, **_kwargs):
+            pass
+
+    container = DummyContainer()
+    window.result_plot_deformed_container = container
+    window.result_plot_nvm_container = container
+
+    window._render_static_deformed_plot()
+    window._render_static_nvm_plot()
+
+    assert messages[0] == "Run Static Analysis first."
+
+    window.latest_static_results = SimpleNamespace(displacements={1: [0.0, 0.0, 0.0]}, nvm_data={})
+    window.result_plot_member_var = SimpleNamespace(get=lambda: "All members")
+    window._render_static_nvm_plot()
+    assert messages[-1] == "No N/V/M data available for diagrams."
+
+    window.latest_static_results = SimpleNamespace(displacements={1: [0.0, 0.0, 0.0]}, nvm_data={"e1": {"N": [], "V": [], "M": []}})
+    window.result_plot_member_var = SimpleNamespace(get=lambda: "missing-member")
+    window._resolve_nvm_member_key = lambda member_id, nvm_data: None
+    window._render_static_nvm_plot()
+    assert messages[-1] == "Selected member is invalid for N/V/M diagrams."
+
+
 def test_desktop_open_xml_replaces_builder_refreshes_ui_and_clears_results(tmp_path, monkeypatch):
     builder = ModelBuilder(name="Imported Desktop Model")
     builder.add_material("m1", E=200000.0)

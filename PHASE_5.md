@@ -28,7 +28,7 @@ Architecture/UI cleanup is complete enough to proceed. Rigid-link behavior is cl
 
 ## Current State
 
-5D0, 5D1, 5D2, and 5D2B are complete. The Tkinter desktop UI now shows static results with clearer units, DOF-map columns, and direct views of available intermediate matrices and vectors without changing solver output. A 5D2B display bugfix also cleaned the DOF-map source handling and member end-force cell formatting. The next task is 5D3: add static deformed-shape and N/V/M plots using the stored static result.
+5D0, 5D1, 5D2, 5D2B, and 5D3 are complete. The Tkinter desktop UI now shows static results with clearer units, DOF-map columns, direct views of available intermediate matrices and vectors, and embedded static deformed-shape and N/V/M plots from the cached result. The next task is 5D4: modal run + mode shape/results integration.
 
 ## Task Status
 
@@ -38,7 +38,7 @@ Architecture/UI cleanup is complete enough to proceed. Rigid-link behavior is cl
 | 5D1 Static run from desktop UI          | DONE   | Desktop UI can run Static analysis from the current model, store the result, and show success/error status.             |
 | 5D2 Static result tables                | DONE   | Basic read-only static result tables are available for stored Static results.                                           |
 | 5D2B Static result readability cleanup  | DONE   | Desktop static result tables now use centralized formatting, unit-aware headers, clearer DOF-map rows, and intermediate K/Kff/F/Ff views. |
-| 5D3 Static deformed shape + N/V/M plots | TODO   |                                                                                                                         |
+| 5D3 Static deformed shape + N/V/M plots | DONE   | Desktop static results now include embedded deformed-shape and N/V/M plot views from the stored Static result.        |
 | 5D4 Modal run + mode shape/results      | TODO   |                                                                                                                         |
 | 5D5 RSA run + results                   | TODO   |                                                                                                                         |
 | 5D6 THA run + histories                 | TODO   |                                                                                                                         |
