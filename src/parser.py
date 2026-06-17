@@ -61,6 +61,15 @@ class Section:
                 return area, inertia
         return self.A, self.I
 
+    def thermal_depth(self) -> float:
+        """Return the through-depth used for thermal curvature."""
+        shape = (self.shape or "Generic").strip().lower()
+        if shape == "rectangular" and self.depth:
+            return self.depth
+        if shape == "pipe" and self.outside_diameter:
+            return self.outside_diameter
+        return self.d
+
 @dataclass
 class Node:
     id: int
@@ -283,21 +292,21 @@ class TemperatureL(MemberLoad):
     Tb: float = 0.0  # Temperature at bottom surface
 
     def FEF(self, fef_condition: str, L: float) -> list:
-        """Computes thermal FEF using effective section axial/flexural stiffness."""
+        """Computes thermal FEF using the solver's fixed-end force convention."""
         fef = [[0.0] for _ in range(6)]
         
         alpha = self.element.material.alpha
         EA = self.element.section.effective_EA(self.element.material)
         EI = self.element.section.effective_EI(self.element.material)
-        d = self.element.section.d
+        d = self.element.section.thermal_depth()
         
         delta_T = self.Tb - self.Tu
         T_uniform = self.Tu + (delta_T / 2.0)
         
         # Axial thermal force
         F_T = alpha * T_uniform * EA
-        fef[0][0] = -F_T
-        fef[3][0] =  F_T
+        fef[0][0] =  F_T
+        fef[3][0] = -F_T
         
         # Trusses have only axial thermal effects
         if self.element.type == 'truss':
@@ -305,28 +314,8 @@ class TemperatureL(MemberLoad):
         
         # Moment magnitude for frame elements
         M_T = (alpha * delta_T / d) * EI if d != 0 else 0.0
-        
-        # Adjust FEF based on end releases
-        if fef_condition == "fixed-fixed":
-            # Base case: fully fixed at both ends
-            fef[2][0] = -M_T
-            fef[5][0] =  M_T
-        elif fef_condition == "pin-fixed":
-            # Pin at start, fixed at end: distribute moment and induce shear
-            fef[2][0] = 0.0
-            fef[5][0] = M_T - 0.5 * M_T  # Moment adjustment for pin release
-            fef[1][0] = -1.5 * M_T / L    # Induced shear for equilibrium
-            fef[4][0] =  1.5 * M_T / L
-        elif fef_condition == "fixed-pin":
-            # Fixed at start, pin at end: distribute moment and induce shear
-            fef[2][0] = -M_T + 0.5 * M_T  # Moment adjustment for pin release
-            fef[5][0] = 0.0
-            fef[1][0] =  1.5 * M_T / L    # Induced shear for equilibrium
-            fef[4][0] = -1.5 * M_T / L
-        elif fef_condition == "pin-pin":
-            # Both ends pinned: no bending moment restraint
-            fef[2][0] = 0.0
-            fef[5][0] = 0.0
+        fef[2][0] =  M_T
+        fef[5][0] = -M_T
             
         return fef
 

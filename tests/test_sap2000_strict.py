@@ -189,6 +189,81 @@ class TestSettlementBenchmark(StrictSAP2000TestBase):
                 self.assertLessEqual(abs(computed - reference), 5.0e-6)
 
 
+class TestTemperatureBenchmark(StrictSAP2000TestBase):
+    """Validate the corrected temperature benchmark against SAP2000 output."""
+
+    TEMP_DISP_TOL = 1.0e-5
+    TEMP_FORCE_TOL = 0.05
+    TEMP_MOMENT_TOL = 0.6
+
+    def _parse_sap_member_forces_by_joint(self, filepath):
+        forces = {}
+        in_table = False
+
+        with open(filepath, "r") as file:
+            for line in file:
+                stripped = line.strip()
+                if stripped == "Table:  Element Joint Forces - Frames":
+                    in_table = True
+                    continue
+                if in_table and stripped.startswith("Table:"):
+                    break
+                if not in_table or not stripped or stripped.startswith("Frame") or stripped.startswith("KN"):
+                    continue
+
+                parts = stripped.split()
+                if len(parts) < 11:
+                    continue
+
+                try:
+                    element_id = parts[0]
+                    joint_id = int(parts[1])
+                    fx = float(parts[4])
+                    fy = float(parts[6])
+                    mz = -float(parts[8])
+                except (ValueError, IndexError):
+                    continue
+
+                forces.setdefault(element_id, {})[joint_id] = (fx, fy, mz)
+
+        return forces
+
+    def test_temperature_displacements_reactions_and_member_end_forces(self):
+        xml_path = os.path.join(os.path.dirname(__file__), "../data/test-temperature.xml")
+        sap_path = os.path.join(os.path.dirname(__file__), "../sap2000/test-temperature-results.txt")
+
+        sap_parser = SAP2000Parser(sap_path)
+        sap_disp, sap_react, _ = sap_parser.parse()
+        sap_member_forces = self._parse_sap_member_forces_by_joint(sap_path)
+
+        model = XMLParser(xml_path).parse()
+        processor = self._run_full_analysis(model, load_case="LC1")
+
+        for node_id, expected_disp in sap_disp.items():
+            self.assertIn(node_id, processor.displacements)
+            for computed, expected in zip(processor.displacements[node_id], expected_disp):
+                self.assertLessEqual(abs(computed - expected), self.TEMP_DISP_TOL)
+
+        for node_id, expected_reaction in sap_react.items():
+            self.assertIn(node_id, processor.reactions)
+            for index, (computed, expected) in enumerate(zip(processor.reactions[node_id], expected_reaction)):
+                tolerance = self.TEMP_MOMENT_TOL if index == 2 else self.TEMP_FORCE_TOL
+                self.assertLessEqual(abs(computed - expected), tolerance)
+
+        for element_id, element in model.elements.items():
+            self.assertIn(element_id, processor.member_end_forces)
+            self.assertIn(element_id, sap_member_forces)
+
+            for end_label, joint_id in (("i", element.node_i.id), ("j", element.node_j.id)):
+                self.assertIn(joint_id, sap_member_forces[element_id])
+                computed_forces = processor.member_end_forces[element_id][end_label]
+                expected_forces = sap_member_forces[element_id][joint_id]
+
+                for index, (computed, expected) in enumerate(zip(computed_forces, expected_forces)):
+                    tolerance = self.TEMP_MOMENT_TOL if index == 2 else self.TEMP_FORCE_TOL
+                    self.assertLessEqual(abs(computed - expected), tolerance)
+
+
 class TestAssignment4Q2b(StrictSAP2000TestBase):
     """
     Test Assignment 4 Q2(b) - Thermal Loading with Inclined Trusses

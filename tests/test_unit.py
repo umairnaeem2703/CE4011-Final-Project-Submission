@@ -159,7 +159,7 @@ class TestThermalLoading(unittest.TestCase):
         
         Verifies axial thermal force only (no bending).
         Formula: F_T = alpha * T_uniform * E * A
-        Expected: [-F_T, 0, 0, F_T, 0, 0]^T
+        Expected: [F_T, 0, 0, -F_T, 0, 0]^T
         """
         mat_truss = Material(id="steel", E=2.0e8, alpha=1.2e-5)
         sec_truss = Section(id="truss_sec", A=0.01, I=0.0, d=0.0)
@@ -177,8 +177,8 @@ class TestThermalLoading(unittest.TestCase):
         F_T = alpha * T_uniform * E * A
         
         # Verify axial forces
-        self.assertAlmostEqual(fef[0][0], -F_T, places=6)
-        self.assertAlmostEqual(fef[3][0], F_T, places=6)
+        self.assertAlmostEqual(fef[0][0], F_T, places=6)
+        self.assertAlmostEqual(fef[3][0], -F_T, places=6)
         # Verify no transverse/moment effects
         self.assertAlmostEqual(fef[1][0], 0.0, places=10)
         self.assertAlmostEqual(fef[2][0], 0.0, places=10)
@@ -209,11 +209,11 @@ class TestThermalLoading(unittest.TestCase):
         F_T = alpha * T_uniform * E * A
         M_T = (alpha * delta_T / d) * E * I
         
-        # Verify: [-F_T, 0, -M_T, F_T, 0, M_T]^T
-        self.assertAlmostEqual(fef[0][0], -F_T, places=4)
-        self.assertAlmostEqual(fef[2][0], -M_T, places=4)
-        self.assertAlmostEqual(fef[3][0], F_T, places=4)
-        self.assertAlmostEqual(fef[5][0], M_T, places=4)
+        # Verify: [F_T, 0, M_T, -F_T, 0, -M_T]^T
+        self.assertAlmostEqual(fef[0][0], F_T, places=4)
+        self.assertAlmostEqual(fef[2][0], M_T, places=4)
+        self.assertAlmostEqual(fef[3][0], -F_T, places=4)
+        self.assertAlmostEqual(fef[5][0], -M_T, places=4)
 
 
 class TestSupportSettlement(unittest.TestCase):
