@@ -142,7 +142,7 @@ class TestSettlementBenchmark(StrictSAP2000TestBase):
 
     def test_settlement_displacements_and_reactions(self):
         xml_path = os.path.join(os.path.dirname(__file__), "../data/test-settlement.xml")
-        sap_path = os.path.join(os.path.dirname(__file__), "../sap2000/test-settlement.txt")
+        sap_path = os.path.join(os.path.dirname(__file__), "../sap2000/test-settlement-results.txt")
 
         sap_parser = SAP2000Parser(sap_path)
         sap_disp, sap_react, _ = sap_parser.parse()
