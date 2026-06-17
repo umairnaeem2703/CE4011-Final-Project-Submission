@@ -263,10 +263,10 @@ class ModelBuilder:
 
 def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
     """Write a StructuralModel using the XMLParser-compatible schema."""
-    root = ET.Element("structural_model", {"name": model.name, "unit_system": model.unit_system})
+    root = ET.Element("model", {"name": model.name, "unit_system": model.unit_system})
 
     materials_el = ET.SubElement(root, "materials")
-    for material in model.materials.values():
+    for material in sorted(model.materials.values(), key=lambda item: item.id):
         ET.SubElement(
             materials_el,
             "material",
@@ -279,7 +279,7 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
         )
 
     sections_el = ET.SubElement(root, "sections")
-    for section in model.sections.values():
+    for section in sorted(model.sections.values(), key=lambda item: item.id):
         attrs = {"id": section.id, "A": _fmt(section.A), "I": _fmt(section.I), "d": _fmt(section.d)}
         if section.EA is not None:
             attrs["EA"] = _fmt(section.EA)
@@ -292,7 +292,7 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
         )
 
     nodes_el = ET.SubElement(root, "nodes")
-    for node in model.nodes.values():
+    for node in sorted(model.nodes.values(), key=lambda item: item.id):
         attrs = {"id": str(node.id), "x": _fmt(node.x), "y": _fmt(node.y)}
         if getattr(node, "is_hinged", False):
             attrs["is_hinged"] = "true"
@@ -300,7 +300,7 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
 
     if model.lumped_masses:
         lumped_masses_el = ET.SubElement(root, "lumped_masses")
-        for node_id, mass in model.lumped_masses.items():
+        for node_id, mass in sorted(model.lumped_masses.items(), key=lambda item: item[0]):
             if isinstance(mass, (int, float)):
                 attrs = {
                     "node": str(node_id),
@@ -318,7 +318,7 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
             ET.SubElement(lumped_masses_el, "lumped_mass", attrs)
 
     elements_el = ET.SubElement(root, "elements")
-    for element in model.elements.values():
+    for element in sorted(model.elements.values(), key=lambda item: item.id):
         element_el = ET.SubElement(
             elements_el,
             element.type,
@@ -341,7 +341,7 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
 
     if model.diaphragm_ux_groups:
         diaphragms_el = ET.SubElement(root, "diaphragms")
-        for group_id, node_ids in model.diaphragm_ux_groups.items():
+        for group_id, node_ids in sorted(model.diaphragm_ux_groups.items(), key=lambda item: item[0]):
             ET.SubElement(
                 diaphragms_el,
                 "diaphragm",
@@ -349,7 +349,7 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
             )
 
     boundaries_el = ET.SubElement(root, "boundary_conditions")
-    for support in model.supports.values():
+    for support in sorted(model.supports.values(), key=lambda item: item.node.id):
         attrs = {
             "node": str(support.node.id),
             "ux": _bool_int(support.restrain_ux),
@@ -366,7 +366,7 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
 
     if model.load_cases:
         load_cases_el = ET.SubElement(root, "load_cases")
-        for load_case in model.load_cases.values():
+        for load_case in sorted(model.load_cases.values(), key=lambda item: item.id):
             lc_attrs = {"id": load_case.id}
             if load_case.name:
                 lc_attrs["name"] = load_case.name

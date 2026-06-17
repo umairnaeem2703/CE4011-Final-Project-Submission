@@ -1,5 +1,7 @@
 import os
 import sys
+import math
+from types import SimpleNamespace
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
@@ -8,6 +10,7 @@ from matrix_assembly import DynamicAssembler, MatrixAssembler
 from model_builder import ModelBuilder
 from modal_solver import ModalSolver
 from parser import Element, LoadCase, LumpedMass, Material, Node, Section, StructuralModel, Support, XMLParser
+from ui.dynamic_analysis import _build_rayleigh_damping_data
 
 
 def _cantilever(density=0.0, tip_mass=0.0, unit_system="kN_m_tonne"):
@@ -144,3 +147,59 @@ def test_parsed_lumped_mass_contributes_to_mass_matrix(tmp_path):
     data = _assemble(XMLParser(xml_path).parse())
 
     assert [data.M[i][i] for i in range(3)] == [4.0, 6.0, 1.5]
+
+
+def test_modal_rayleigh_equal_damping_coefficients_match_ce586_rigid_case():
+    results = SimpleNamespace(eigenvalues=[8.574**2, 19.537**2])
+    rigid_kff = [[12800.0, -6400.0, 0.0], [-6400.0, 9600.0, -3200.0], [0.0, -3200.0, 3200.0]]
+    rigid_mff = [[20.0, 0.0, 0.0], [0.0, 15.0, 0.0], [0.0, 0.0, 15.0]]
+
+    rayleigh = _build_rayleigh_damping_data(
+        results,
+        rigid_kff,
+        rigid_mff,
+        target_mode_i=1,
+        zeta_i=0.05,
+        target_mode_j=2,
+        zeta_j=0.05,
+    )
+
+    assert abs(rayleigh["alpha"] - 0.5959) < 1.0e-4
+    assert abs(rayleigh["beta"] - 0.003557) < 1.0e-6
+
+
+def test_modal_rayleigh_unequal_damping_hits_requested_target_modes():
+    results = SimpleNamespace(eigenvalues=[4.0, 25.0])
+    rayleigh = _build_rayleigh_damping_data(
+        results,
+        [[10.0, 1.0], [1.0, 6.0]],
+        [[2.0, 0.0], [0.0, 3.0]],
+        target_mode_i=1,
+        zeta_i=0.02,
+        target_mode_j=2,
+        zeta_j=0.05,
+    )
+
+    assert abs(rayleigh["modal_damping_ratios"][0] - 0.02) < 1.0e-12
+    assert abs(rayleigh["modal_damping_ratios"][1] - 0.05) < 1.0e-12
+
+
+def test_modal_rayleigh_cff_matches_alpha_m_plus_beta_k():
+    results = SimpleNamespace(eigenvalues=[4.0, 25.0])
+    kff = [[10.0, 1.0], [1.0, 6.0]]
+    mff = [[2.0, 0.0], [0.0, 3.0]]
+
+    rayleigh = _build_rayleigh_damping_data(
+        results,
+        kff,
+        mff,
+        target_mode_i=1,
+        zeta_i=0.02,
+        target_mode_j=2,
+        zeta_j=0.05,
+    )
+
+    for row_index, row in enumerate(rayleigh["Cff"]):
+        for column_index, value in enumerate(row):
+            expected = (rayleigh["alpha"] * mff[row_index][column_index]) + (rayleigh["beta"] * kff[row_index][column_index])
+            assert math.isclose(value, expected, rel_tol=0.0, abs_tol=1.0e-12)

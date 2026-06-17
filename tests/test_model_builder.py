@@ -225,3 +225,35 @@ def test_model_builder_xml_export_preserves_member_load_coordinate_metadata(tmp_
     assert parsed_loads[1].coord_system == "local"
     assert parsed_loads[1].direction == "2"
     assert parsed_loads[1].value == pytest.approx(-7.0)
+
+
+def test_model_builder_xml_export_preserves_live_builder_state(tmp_path):
+    builder = ModelBuilder(name="Live State Export")
+    builder.add_material("M1", E=200000.0, alpha=1.2e-5, density=7.85)
+    builder.add_material("M2", E=150000.0, alpha=9.5e-6, density=6.9)
+    builder.add_section("S1", A=0.02, I=0.0001, d=0.3)
+    builder.add_section("S2", A=0.03, I=0.0002, d=0.4, EA=1234.0, EI=567.0)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_node(3, 6.0, 0.0)
+    builder.add_element("E1", "frame", 1, 2, "M1", "S1")
+    builder.add_element("E2", "frame", 2, 3, "M2", "S2")
+    builder.add_support(1, restrain_ux=True, restrain_uy=True, restrain_rz=True)
+    builder.add_lumped_mass(3, mass_ux=4.5, mass_uy=5.5, inertia_rz=0.75)
+    builder.add_diaphragm_group("D1", [2, 3])
+
+    xml_path = tmp_path / "live_state_export.xml"
+    builder.export_xml(xml_path)
+    root = ET.parse(xml_path).getroot()
+    parsed = XMLParser(xml_path).parse()
+
+    assert [mat.attrib["id"] for mat in root.find("./materials").findall("material")] == ["M1", "M2"]
+    assert [sec.attrib["id"] for sec in root.find("./sections").findall("section")] == ["S1", "S2"]
+    assert root.find("./elements/frame[@id='E1']").attrib["material"] == "M1"
+    assert root.find("./elements/frame[@id='E2']").attrib["section"] == "S2"
+    assert root.find("./lumped_masses/lumped_mass").attrib["node"] == "3"
+    assert root.find("./diaphragms/diaphragm").attrib["nodes"] == "2,3"
+    assert parsed.materials["M2"].density == pytest.approx(6.9)
+    assert parsed.sections["S2"].EA == pytest.approx(1234.0)
+    assert parsed.lumped_masses[3].mass_uy == pytest.approx(5.5)
+    assert parsed.diaphragm_ux_groups["D1"] == [2, 3]

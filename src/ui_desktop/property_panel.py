@@ -40,6 +40,7 @@ class PropertyPanel(ttk.LabelFrame):
         self.material_e_var = tk.StringVar(value="1.0")
         self.material_alpha_var = tk.StringVar(value="0.0")
         self.material_density_var = tk.StringVar(value="0.0")
+        self.assign_material_var = tk.StringVar(value="M1")
         self.section_input_mode_var = tk.StringVar(value="Geometric")
         self.section_id_var = tk.StringVar(value="S1")
         self.section_a_var = tk.StringVar(value="1.0")
@@ -47,6 +48,7 @@ class PropertyPanel(ttk.LabelFrame):
         self.section_d_var = tk.StringVar(value="0.0")
         self.section_ea_var = tk.StringVar(value="")
         self.section_ei_var = tk.StringVar(value="")
+        self.assign_section_var = tk.StringVar(value="S1")
         self.draw_mode_var = tk.StringVar(value="Click end node")
         self.support_type_var = tk.StringVar(value="fixed")
         self.restrain_ux_var = tk.BooleanVar(value=True)
@@ -326,6 +328,21 @@ class PropertyPanel(ttk.LabelFrame):
             sticky="ew",
             pady=(6, 0),
         )
+        self._combo(material, 6, "Assign existing", self.assign_material_var, self._material_ids(), lambda: None)
+        ttk.Button(material, text="Assign Material to Selected Members", command=self._assign_material_to_selected_members).grid(
+            row=7,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(6, 0),
+        )
+        ttk.Button(material, text="Delete Material", command=self._delete_material).grid(
+            row=8,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(6, 0),
+        )
 
         section = ttk.LabelFrame(self, text="Section", padding=6)
         section.grid(row=2, column=0, sticky="ew", pady=(8, 0))
@@ -375,8 +392,30 @@ class PropertyPanel(ttk.LabelFrame):
             sticky="ew",
             pady=(6, 0),
         )
+        self._combo(section, 10, "Assign existing", self.assign_section_var, self._section_ids(), lambda: None)
+        ttk.Button(section, text="Assign Section to Selected Members", command=self._assign_section_to_selected_members).grid(
+            row=11,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(6, 0),
+        )
+        ttk.Button(section, text="Assign Material + Section to Selected Members", command=self._assign_material_section_to_selected_members).grid(
+            row=12,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(6, 0),
+        )
+        ttk.Button(section, text="Delete Section", command=self._delete_section).grid(
+            row=13,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(6, 0),
+        )
         ttk.Button(section, text="Reset to Default", command=self._reset_current_command).grid(
-            row=10,
+            row=14,
             column=0,
             columnspan=2,
             sticky="ew",
@@ -922,8 +961,9 @@ class PropertyPanel(ttk.LabelFrame):
             return
         self.model_canvas.builder.add_material(material_id, E=E, alpha=alpha, density=density)
         self.material_var.set(material_id)
+        self.assign_material_var.set(material_id)
         self.model_canvas.set_active_material(material_id)
-        self.model_canvas.change_callback()
+        self._refresh_after_material_section_change()
         self.status_callback(f"Material {material_id} saved.")
 
     def _add_section(self) -> None:
@@ -951,9 +991,128 @@ class PropertyPanel(ttk.LabelFrame):
             A = I = 0.0
         self.model_canvas.builder.add_section(section_id, A=A, I=I, d=d, EA=EA, EI=EI)
         self.section_var.set(section_id)
+        self.assign_section_var.set(section_id)
         self.model_canvas.set_active_section(section_id)
-        self.model_canvas.change_callback()
+        self._refresh_after_material_section_change()
         self.status_callback(f"Section {section_id} saved.")
+
+    def _assign_material_to_selected_members(self) -> None:
+        material_id = self.assign_material_var.get().strip() or self.material_id_var.get().strip()
+        if material_id not in self.model_canvas.builder.model.materials:
+            self.status_callback(f"Material assignment: unknown material {material_id}.")
+            return
+        count = self._assign_selected_members(material_id=material_id)
+        if count:
+            self.status_callback(f"Assigned material {material_id} to {count} member(s).")
+
+    def _assign_section_to_selected_members(self) -> None:
+        section_id = self.assign_section_var.get().strip() or self.section_id_var.get().strip()
+        if section_id not in self.model_canvas.builder.model.sections:
+            self.status_callback(f"Section assignment: unknown section {section_id}.")
+            return
+        count = self._assign_selected_members(section_id=section_id)
+        if count:
+            self.status_callback(f"Assigned section {section_id} to {count} member(s).")
+
+    def _assign_material_section_to_selected_members(self) -> None:
+        material_id = self.assign_material_var.get().strip() or self.material_id_var.get().strip()
+        section_id = self.assign_section_var.get().strip() or self.section_id_var.get().strip()
+        if material_id not in self.model_canvas.builder.model.materials:
+            self.status_callback(f"Material assignment: unknown material {material_id}.")
+            return
+        if section_id not in self.model_canvas.builder.model.sections:
+            self.status_callback(f"Section assignment: unknown section {section_id}.")
+            return
+        count = self._assign_selected_members(material_id=material_id, section_id=section_id)
+        if count:
+            self.status_callback(f"Assigned material {material_id} and section {section_id} to {count} member(s).")
+
+    def _assign_selected_members(self, *, material_id: str | None = None, section_id: str | None = None) -> int:
+        element_ids = self._selected_member_ids()
+        if not element_ids:
+            self.status_callback("Select one or more members first.")
+            return 0
+        model = self.model_canvas.builder.model
+        material = model.materials.get(material_id) if material_id is not None else None
+        section = model.sections.get(section_id) if section_id is not None else None
+        for element_id in element_ids:
+            element = model.elements[element_id]
+            if material is not None:
+                element.material = material
+            if section is not None:
+                element.section = section
+        self._mark_model_dirty()
+        self.model_canvas.redraw_model()
+        self.model_canvas.change_callback()
+        if len(element_ids) == 1:
+            self.model_canvas.select_element(element_ids[0])
+        elif hasattr(self.model_canvas, "_set_multi_selection"):
+            self.model_canvas._set_multi_selection(set(), set(element_ids))
+        self._refresh_material_section_dropdown_defaults()
+        return len(element_ids)
+
+    def _delete_material(self) -> None:
+        material_id = self.material_id_var.get().strip() or self.assign_material_var.get().strip()
+        model = self.model_canvas.builder.model
+        if material_id not in model.materials:
+            self.status_callback(f"Material {material_id} does not exist.")
+            return
+        used_by = sorted(element_id for element_id, element in model.elements.items() if element.material.id == material_id)
+        if used_by:
+            self.status_callback(
+                f"Material {material_id} is used by {len(used_by)} member(s); reassign them before deleting."
+            )
+            return
+        del model.materials[material_id]
+        self._mark_model_dirty()
+        self._refresh_after_material_section_change()
+        self.status_callback(f"Deleted material {material_id}.")
+
+    def _delete_section(self) -> None:
+        section_id = self.section_id_var.get().strip() or self.assign_section_var.get().strip()
+        model = self.model_canvas.builder.model
+        if section_id not in model.sections:
+            self.status_callback(f"Section {section_id} does not exist.")
+            return
+        used_by = sorted(element_id for element_id, element in model.elements.items() if element.section.id == section_id)
+        if used_by:
+            self.status_callback(
+                f"Section {section_id} is used by {len(used_by)} member(s); reassign them before deleting."
+            )
+            return
+        del model.sections[section_id]
+        self._mark_model_dirty()
+        self._refresh_after_material_section_change()
+        self.status_callback(f"Deleted section {section_id}.")
+
+    def _selected_member_ids(self) -> list[str]:
+        selected = getattr(self.model_canvas, "selected_element_ids", set())
+        model = self.model_canvas.builder.model
+        return [element_id for element_id in sorted(selected) if element_id in model.elements]
+
+    def _mark_model_dirty(self) -> None:
+        mark_dirty = getattr(self.model_canvas.builder.model, "mark_dirty", None)
+        if mark_dirty is not None:
+            mark_dirty()
+
+    def _refresh_after_material_section_change(self) -> None:
+        self.model_canvas.redraw_model()
+        self.model_canvas.change_callback()
+        self._refresh_material_section_dropdown_defaults()
+        if self.current_command == "Materials / Sections":
+            self.show_command("Materials / Sections")
+
+    def _refresh_material_section_dropdown_defaults(self) -> None:
+        materials = self._material_ids()
+        sections = self._section_ids()
+        if self.assign_material_var.get() not in materials:
+            self.assign_material_var.set(materials[0])
+        if self.material_var.get() not in materials:
+            self.material_var.set(materials[0])
+        if self.assign_section_var.get() not in sections:
+            self.assign_section_var.set(sections[0])
+        if self.section_var.get() not in sections:
+            self.section_var.set(sections[0])
 
     def _reset_current_command(self) -> None:
         command = self.current_command
@@ -977,6 +1136,7 @@ class PropertyPanel(ttk.LabelFrame):
             self.material_e_var.set("1.0")
             self.material_alpha_var.set("0.0")
             self.material_density_var.set("0.0")
+            self.assign_material_var.set(next(iter(self.model_canvas.builder.model.materials), "M1"))
             self.section_input_mode_var.set("Geometric")
             self.section_id_var.set("S1")
             self.section_a_var.set("1.0")
@@ -984,6 +1144,7 @@ class PropertyPanel(ttk.LabelFrame):
             self.section_d_var.set("0.0")
             self.section_ea_var.set("")
             self.section_ei_var.set("")
+            self.assign_section_var.set(next(iter(self.model_canvas.builder.model.sections), "S1"))
             self._sync_section_input_mode()
         elif command == "Assign Support":
             self.support_action_var.set("Replace")

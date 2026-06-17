@@ -7,6 +7,7 @@ from ground_motion import GroundMotionConfig
 from parser import Element, LoadCase, LumpedMass, Material, Node, Section, StructuralModel, Support
 from results import ModalResults, RSAResults, THAResults
 from ui.dynamic_analysis import (
+    run_modal_analysis,
     run_modal_analysis_into_state,
     run_response_spectrum_analysis_into_state,
     run_time_history_analysis_into_state,
@@ -29,6 +30,13 @@ def _dynamic_cantilever():
     return model
 
 
+def _single_mode_dynamic_cantilever():
+    model = _dynamic_cantilever()
+    node = model.nodes[2]
+    model.lumped_masses = {2: LumpedMass(node, mass_ux=0.0, mass_uy=5.0, inertia_rz=0.0)}
+    return model
+
+
 def test_modal_ui_runs_existing_modal_pipeline():
     state = {"model": _dynamic_cantilever()}
 
@@ -38,6 +46,38 @@ def test_modal_ui_runs_existing_modal_pipeline():
     assert state["modal_results"] is result.results
     assert result.results.num_modes_extracted == 2
     assert state["modal_analysis_error"] is None
+
+
+def test_modal_ui_keeps_results_when_default_rayleigh_targets_are_unavailable():
+    result = run_modal_analysis(
+        _single_mode_dynamic_cantilever(),
+        num_modes=1,
+        rayleigh_target_mode_i=1,
+        rayleigh_zeta_i=0.05,
+        rayleigh_target_mode_j=2,
+        rayleigh_zeta_j=0.05,
+    )
+
+    assert result.ok and isinstance(result.results, ModalResults)
+    assert result.results.num_modes_extracted == 1
+    assert result.results.rayleigh_target_modes == (1, 2)
+    assert result.results.rayleigh_target_damping_ratios == (0.05, 0.05)
+    assert result.results.Cff is None
+    assert result.results.modal_damping_ratios is None
+
+
+def test_modal_ui_rejects_invalid_explicit_rayleigh_targets():
+    result = run_modal_analysis(
+        _dynamic_cantilever(),
+        num_modes=2,
+        rayleigh_target_mode_i=1,
+        rayleigh_zeta_i=0.05,
+        rayleigh_target_mode_j=1,
+        rayleigh_zeta_j=0.05,
+    )
+
+    assert not result.ok
+    assert result.error == "Modal analysis failed: Rayleigh target modes must be distinct."
 
 
 def test_rsa_ui_runs_existing_rsa_pipeline():

@@ -1,0 +1,67 @@
+# PHASE_5.md — Desktop Analysis + Results
+
+## Goal
+
+Connect the Tkinter desktop model builder to existing backend analysis and result visualization.
+
+Workflow:
+
+```text
+Desktop model -> Run analysis -> Store result -> Show table/plot -> Export
+```
+
+## Rules
+
+* Preserve current flat `src/` layout.
+* Do not move solver math into UI.
+* Do not create new solver paths by model type.
+* Reuse existing backend APIs.
+* Modify only files needed for the current task.
+* Prefer fewer than 5 changed files.
+* Do not read unrelated docs/files.
+* Do not write detailed logs here.
+* After each task, update only `Current State` and the task status table.
+
+## Previous Phase Summary
+
+Architecture/UI cleanup is complete enough to proceed. Rigid-link behavior is clarified, flexurally rigid backend work is deferred, local/global member loads and local-axis display are implemented, diaphragm assignment is selection-based, and next work is desktop analysis/results integration.
+
+## Current State
+
+5D0, 5D1, 5D2, 5D2B, 5D3A, 5D3B, 5D3C, 5D3D, 5D3E, 5D3F, 5D4A, 5D4B, and 5D4C are complete. Modal workflow cleanup now uses a tabbed engineering-style Dynamic Results view whose matrices resolve from the modal result cache only and now shows reduced `Kff`/`Mff`/`Cff` labels, DOF-indexed rows, mode-shape normalization controls, phi-value tables, and Rayleigh damping metadata. The existing Static Results workflow stays intact, and the next implementation task is the modal validation/audit pass.
+
+## Task Status
+
+| Task                                    | Status | One-line Result                                                                                                         |
+| --------------------------------------- | ------ | ----------------------------------------------------------------------------------------------------------------------- |
+| 5D0 Integration entry-point audit       | DONE   | Identified the desktop UI/controller, static backend, result object, and visualization entry points needed for Phase 5. |
+| 5D1 Static run from desktop UI          | DONE   | Desktop UI can run Static analysis from the current model, store the result, and show success/error status.             |
+| 5D2 Static result tables                | DONE   | Basic read-only static result tables are available for stored Static results.                                           |
+| 5D2B Static result readability cleanup  | DONE   | Desktop static result tables now use centralized formatting, unit-aware headers, clearer DOF-map rows, and intermediate K/Kff/F/Ff views. |
+| 5D3A Complete Model Static Viewer shell  | DONE   | Added a dedicated static viewer shell entry with reserved deformed-shape and N/V/M modes. |
+| 5D3B Complete Model deformed shape + full-model N/V/M | DONE   | Rendered the stored complete-model deformed shape and full-model N/V/M plots inside the Results workflow. |
+| 5D3C Individual Member Result Viewer shell | DONE   | Added a separate member-level static result viewer shell with selection-aware workflow tabs. |
+| 5D3D Member end forces + member N/V/M    | DONE   | Added selected-member end forces and filtered member N/V/M diagram rendering in the member-review tab. |
+| 5D3E Member displacement diagram + location/scroll/max values | DONE   | Added the integrated member review cursor, displacement strip, and current/max value summaries. |
+| 5D3F Static Results workflow stabilization audit | DONE   | Audited the Static Results workflow and confirmed stable no-result, table, complete-model viewer, and member-viewer behavior. |
+| 5D4A Modal run from desktop UI           | DONE   | Desktop UI can run Modal analysis from the current model, validate first, store the result, and show success/error status. |
+| 5D4B Modal results UI audit              | DONE   | Modal Results now uses the singular cached result state, has safer summary fallbacks, and keeps the static-result workflow intact. |
+| 5D4C Modal mode-shape plotting           | DONE   | Dynamic Results now uses modal summary, mode-shape, and matrix tabs with reduced `Kff`/`Mff`/`Cff` labels, normalization controls, Rayleigh damping metadata, and clear missing-data handling. |
+| 5D4 Modal run + mode shape/results       | DONE   | Modal run, result tables, and mode-shape plotting are all wired into the desktop Dynamic Results workflow. |
+| 5D4D Modal validation/audit              | TODO   |                                                                                                                         |
+| 5D5 RSA run + results                   | TODO   |                                                                                                                         |
+| 5D6 THA run + histories                 | TODO   |                                                                                                                         |
+| 5D7 Export visible tables/plots         | TODO   |                                                                                                                         |
+| 5D8 Final smoke audit                   | TODO   |                                                                                                                         |
+
+## Update Rule
+
+After each task, update only:
+
+1. task status from TODO to DONE
+2. one-line result
+3. Current State in 1–3 sentences
+
+Do not add detailed completion logs.
+Do not paste test output.
+Do not paste code.

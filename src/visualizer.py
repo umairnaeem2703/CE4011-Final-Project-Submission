@@ -1,6 +1,7 @@
 # src/visualizer.py
 
 import math
+from collections.abc import Mapping, Sequence
 from typing import Dict, List, Optional
 
 import matplotlib.pyplot as plt
@@ -431,7 +432,43 @@ def plot_static_deformed_shape(
     return ax.figure, ax
 
 
-def _draw_element_diagram_from_nvm(ax, el, nvm: dict, diagram_key: str, dynamic_scale: float):
+def _annotate_extrema_labels(ax, raw_values: list[float], diag_x: list[float], diag_y: list[float]) -> None:
+    if not raw_values:
+        return
+
+    max_val = max(raw_values)
+    min_val = min(raw_values)
+
+    if max(abs(max_val), abs(min_val)) < 1e-5:
+        return
+
+    indices_to_label = set()
+    if abs(max_val - min_val) < 1e-5:
+        indices_to_label.add(len(raw_values) // 2)
+    else:
+        indices_to_label.add(raw_values.index(max_val))
+        indices_to_label.add(raw_values.index(min_val))
+
+    for idx in indices_to_label:
+        val = raw_values[idx]
+        if abs(val) < 1e-5:
+            continue
+
+        val_str = f"{val:.2f}".rstrip("0").rstrip(".")
+        ax.text(
+            diag_x[idx],
+            diag_y[idx],
+            val_str,
+            color="black",
+            fontsize=8,
+            ha="center",
+            va="center",
+            bbox=dict(facecolor="white", alpha=0.7, edgecolor="none", pad=1.0),
+            zorder=5,
+        )
+
+
+def _draw_element_diagram_from_nvm(ax, el, nvm: dict, diagram_key: str, dynamic_scale: float, *, show_extrema: bool = False):
     phys = ElementPhysics(el)
     cos_x, sin_x = phys.cos_x, phys.sin_x
     nx, ny = -sin_x, cos_x
@@ -499,12 +536,352 @@ def _draw_element_diagram_from_nvm(ax, el, nvm: dict, diagram_key: str, dynamic_
     if diag_pts:
         ax.plot([p[0] for p in diag_pts], [p[1] for p in diag_pts], color="black", linewidth=1.0, zorder=3)
 
+    if show_extrema:
+        _annotate_extrema_labels(ax, raw_values, [p[0] for p in diag_pts], [p[1] for p in diag_pts])
+
+
+def _flatten_scalar(value):
+    current = value
+    while isinstance(current, Sequence) and not isinstance(current, (str, bytes)) and len(current) == 1:
+        current = current[0]
+    return current
+
+
+def _coerce_float_sequence(values) -> list[float]:
+    if values is None:
+        return []
+    if isinstance(values, Mapping):
+        values = values.values()
+    if isinstance(values, (str, bytes)):
+        values = [values]
+
+    coerced: list[float] = []
+    for value in values:
+        scalar = _flatten_scalar(value)
+        try:
+            coerced.append(float(scalar))
+        except (TypeError, ValueError):
+            coerced.append(0.0)
+    return coerced
+
+
+def _resolve_member_key(values: Mapping, member_id: object):
+    for key in values.keys():
+        if str(key) == str(member_id):
+            return key
+    return None
+
+
+def _series_value_at(stations: list[float], values: list[float], x: float) -> float:
+    if not stations or not values:
+        return 0.0
+    if len(stations) == 1:
+        return values[0]
+    if x <= stations[0]:
+        return values[0]
+    if x >= stations[-1]:
+        return values[-1]
+
+    for index in range(len(stations) - 1):
+        x0 = stations[index]
+        x1 = stations[index + 1]
+        if x0 <= x <= x1:
+            if x1 == x0:
+                return values[index]
+            ratio = (x - x0) / (x1 - x0)
+            return values[index] + (values[index + 1] - values[index]) * ratio
+    return values[-1]
+
+
+def _series_extrema(stations: list[float], values: list[float]) -> dict:
+    if not stations or not values:
+        return {}
+    max_index = max(range(len(values)), key=lambda idx: abs(values[idx]))
+    return {
+        "x": stations[max_index],
+        "value": values[max_index],
+        "index": max_index,
+    }
+
+
+def build_member_review_profile(model: StructuralModel, results: StaticResults, member_id: object) -> dict | None:
+    """Build SAP-style member review data from stored StaticResults."""
+    if model is None or results is None:
+        return None
+
+    element_key = None
+    model_elements = getattr(model, "elements", {}) or {}
+    result_keys = []
+    for source in (getattr(results, "element_forces", None) or {}, getattr(results, "nvm_data", None) or {}):
+        result_keys.extend(list(source.keys()))
+
+    for key in list(model_elements.keys()) + result_keys:
+        if str(key) == str(member_id):
+            element_key = key
+            break
+    if element_key is None or element_key not in model_elements:
+        return None
+
+    element = model_elements[element_key]
+    phys = ElementPhysics(element)
+    L = phys.L
+    nvm_data = getattr(results, "nvm_data", None) or {}
+    member_nvm = nvm_data.get(element_key) or nvm_data.get(str(element_key)) or {}
+    stations = _coerce_float_sequence(member_nvm.get("x")) if member_nvm else []
+    if not stations:
+        station_count = 20
+        stations = [L * i / station_count for i in range(station_count + 1)]
+
+    n_values = _coerce_float_sequence(member_nvm.get("N"))
+    v_values = _coerce_float_sequence(member_nvm.get("V"))
+    m_values = _coerce_float_sequence(member_nvm.get("M"))
+
+    displacements = getattr(results, "displacements", {}) or {}
+    d_i = _coerce_float_sequence(displacements.get(element.node_i.id))
+    d_j = _coerce_float_sequence(displacements.get(element.node_j.id))
+    while len(d_i) < 3:
+        d_i.append(0.0)
+    while len(d_j) < 3:
+        d_j.append(0.0)
+    c, s = phys.cos_x, phys.sin_x
+    u1, v1, th1, u2, v2, th2 = _local_nodal_displacements(c, s, d_i[:3], d_j[:3])
+    if element.type == "truss":
+        disp_values = [((1.0 - x / L) * u1 + (x / L) * u2) if L else 0.0 for x in stations]
+        disp_label = "Axial displacement"
+    else:
+        disp_values = [_hermite_transverse_displacement(x, L, v1, th1, v2, th2) if L else 0.0 for x in stations]
+        disp_label = "Transverse displacement"
+
+    forces = getattr(results, "element_forces", None) or {}
+    raw_forces = forces.get(element_key) or forces.get(str(element_key)) or {}
+    if isinstance(raw_forces, Mapping):
+        i_forces = _coerce_float_sequence(raw_forces.get("i"))
+        j_forces = _coerce_float_sequence(raw_forces.get("j"))
+    else:
+        force_values = _coerce_float_sequence(raw_forces)
+        if len(force_values) >= 6:
+            i_forces = force_values[:3]
+            j_forces = force_values[3:6]
+        elif len(force_values) >= 4:
+            i_forces = force_values[:2] + [0.0]
+            j_forces = force_values[2:4] + [0.0]
+        else:
+            i_forces = force_values[:3] + [0.0] * max(0, 3 - len(force_values))
+            j_forces = [0.0, 0.0, 0.0]
+
+    if len(i_forces) < 3:
+        i_forces += [0.0] * (3 - len(i_forces))
+    if len(j_forces) < 3:
+        j_forces += [0.0] * (3 - len(j_forces))
+    end_forces = {
+        "Ni": i_forces[0],
+        "Vi": i_forces[1],
+        "Mi": i_forces[2],
+        "Nj": j_forces[0],
+        "Vj": j_forces[1],
+        "Mj": j_forces[2],
+    }
+
+    return {
+        "member_id": element_key,
+        "element": element,
+        "length": L,
+        "stations": stations,
+        "N": n_values,
+        "V": v_values,
+        "M": m_values,
+        "disp": disp_values,
+        "disp_label": disp_label,
+        "end_forces": end_forces,
+        "load_case_id": getattr(results, "load_case_id", None),
+    }
+
+
+def _prepare_display_series(profile: dict, displacement_mode: str) -> tuple[list[float], list[float], list[float], list[float]]:
+    stations = list(profile.get("stations", []) or [])
+    n_values = list(profile.get("N", []) or [])
+    v_values = list(profile.get("V", []) or [])
+    m_values = list(profile.get("M", []) or [])
+    disp_values = list(profile.get("disp", []) or [])
+
+    if displacement_mode == "relative_min" and disp_values:
+        min_value = min(disp_values)
+        disp_values = [value - min_value for value in disp_values]
+    elif displacement_mode == "relative_ends" and len(disp_values) >= 2 and stations:
+        start_value = disp_values[0]
+        end_value = disp_values[-1]
+        length = stations[-1] if stations[-1] else 1.0
+        disp_values = [value - (start_value + (end_value - start_value) * (station / length)) for station, value in zip(stations, disp_values)]
+
+    return stations, n_values, v_values, m_values, disp_values
+
+
+def _annotate_series_extrema(ax, stations: list[float], values: list[float]) -> None:
+    if not stations or not values:
+        return
+    max_index = max(range(len(values)), key=lambda idx: abs(values[idx]))
+    if abs(values[max_index]) < 1e-5:
+        return
+    ax.scatter([stations[max_index]], [values[max_index]], color="black", s=18, zorder=4)
+    ax.annotate(
+        f"{values[max_index]:.2f}".rstrip("0").rstrip("."),
+        xy=(stations[max_index], values[max_index]),
+        xytext=(5, 6),
+        textcoords="offset points",
+        fontsize=8,
+        bbox=dict(facecolor="white", alpha=0.8, edgecolor="none", pad=1.0),
+    )
+
+
+def plot_member_review_panel(
+    profile: dict,
+    cursor_x: float,
+    *,
+    displacement_mode: str = "absolute",
+    scroll_for_values: bool = True,
+    show_max: bool = True,
+):
+    """Plot a SAP-style member review panel for one static member."""
+    fig, axes = plt.subplots(
+        5,
+        1,
+        sharex=True,
+        figsize=(12, 10),
+        gridspec_kw={"height_ratios": [0.9, 1.0, 1.0, 1.0, 1.0]},
+        constrained_layout=True,
+    )
+
+    stations, n_values, v_values, m_values, disp_values = _prepare_display_series(profile, displacement_mode)
+    length = profile.get("length", 1.0) or 1.0
+    cursor_x = max(0.0, min(float(cursor_x), length))
+    current = {
+        "N": _series_value_at(stations, n_values, cursor_x),
+        "V": _series_value_at(stations, v_values, cursor_x),
+        "M": _series_value_at(stations, m_values, cursor_x),
+        "disp": _series_value_at(stations, disp_values, cursor_x),
+    }
+
+    titles = [
+        "Member End Forces",
+        "Axial Force N",
+        "Shear Force V",
+        "Bending Moment M",
+        f"{profile.get('disp_label', 'Displacement')} Diagram",
+    ]
+
+    end_forces = profile.get("end_forces", {}) or {}
+    forces_axis = axes[0]
+    forces_axis.set_title(titles[0], fontsize=11, fontweight="bold")
+    forces_axis.set_xlim(0, length)
+    forces_axis.set_ylim(-1.2, 1.2)
+    forces_axis.set_yticks([])
+    forces_axis.grid(True, axis="x", alpha=0.15)
+    forces_axis.axhline(0.0, color="0.45", linewidth=1.0)
+    forces_axis.axvline(cursor_x, color="tab:blue", linestyle="--", linewidth=1.0)
+    forces_axis.plot([0.0, length], [0.0, 0.0], color="black", linewidth=1.4)
+    left_text = f"I-End\nN={end_forces.get('Ni', 0.0):.2f}\nV={end_forces.get('Vi', 0.0):.2f}\nM={end_forces.get('Mi', 0.0):.2f}"
+    right_text = f"J-End\nN={end_forces.get('Nj', 0.0):.2f}\nV={end_forces.get('Vj', 0.0):.2f}\nM={end_forces.get('Mj', 0.0):.2f}"
+    forces_axis.text(0.01 * length, 0.75, left_text, fontsize=8, ha="left", va="top", bbox=dict(facecolor="white", alpha=0.8, edgecolor="none", pad=1.0))
+    forces_axis.text(0.99 * length, 0.75, right_text, fontsize=8, ha="right", va="top", bbox=dict(facecolor="white", alpha=0.8, edgecolor="none", pad=1.0))
+
+    series_payload = [
+        (axes[1], stations, n_values, "N", "Axial"),
+        (axes[2], stations, v_values, "V", "Shear"),
+        (axes[3], stations, m_values, "M", "Moment"),
+        (axes[4], stations, disp_values, "disp", profile.get("disp_label", "Displacement")),
+    ]
+
+    maxima = {}
+    for index, (ax, x_values, y_values, key, ylabel) in enumerate(series_payload):
+        ax.set_title(titles[index + 1] if key != "disp" else titles[4], fontsize=11, fontweight="bold")
+        ax.set_ylabel(ylabel)
+        ax.set_xlim(0, length)
+        ax.axhline(0.0, color="0.45", linewidth=1.0)
+        ax.axvline(cursor_x, color="tab:blue", linestyle="--", linewidth=1.0)
+        ax.grid(True, alpha=0.2)
+
+        if not x_values or not y_values:
+            ax.text(0.5, 0.5, "No N/V/M data available." if key in {"N", "V", "M"} else "Displacement unavailable.", ha="center", va="center", transform=ax.transAxes)
+            continue
+
+        ax.plot(x_values, y_values, color="black", linewidth=1.3)
+        ax.fill_between(x_values, 0.0, y_values, where=[value >= 0.0 for value in y_values], color="tab:green", alpha=0.22)
+        ax.fill_between(x_values, 0.0, y_values, where=[value < 0.0 for value in y_values], color="tab:red", alpha=0.18)
+        if show_max:
+            _annotate_series_extrema(ax, x_values, y_values)
+            max_index = max(range(len(y_values)), key=lambda idx: abs(y_values[idx]))
+            maxima[key] = {"x": x_values[max_index], "value": y_values[max_index]}
+        else:
+            max_index = max(range(len(y_values)), key=lambda idx: abs(y_values[idx]))
+            maxima[key] = {"x": x_values[max_index], "value": y_values[max_index]}
+
+        if scroll_for_values:
+            y_at_cursor = _series_value_at(x_values, y_values, cursor_x)
+            ax.scatter([cursor_x], [y_at_cursor], color="tab:blue", s=14, zorder=5)
+            ax.annotate(
+                f"{y_at_cursor:.2f}".rstrip("0").rstrip("."),
+                xy=(cursor_x, y_at_cursor),
+                xytext=(5, 6),
+                textcoords="offset points",
+                fontsize=8,
+                bbox=dict(facecolor="white", alpha=0.8, edgecolor="none", pad=1.0),
+            )
+
+    axes[-1].set_xlabel("Member Length")
+    fig.suptitle(f"Member Review - {profile.get('member_id', '')} ({profile.get('load_case_id', '')})", fontsize=13, fontweight="bold")
+    return fig, axes, {"cursor_x": cursor_x, "current": current, "end_forces": end_forces, "maxima": maxima}
+
+
+def plot_static_nvm_diagram(
+    model: StructuralModel,
+    results: StaticResults,
+    diagram_key: str,
+    scale: Optional[float] = None,
+    ax: Optional[plt.Axes] = None,
+    show_extrema: bool = False,
+):
+    """Plot one axial/shear/moment diagram from StaticResults.nvm_data."""
+    labels = {
+        "N": "Axial Force (N)",
+        "V": "Shear Force (V)",
+        "M": "Bending Moment (M)",
+    }
+    if diagram_key not in labels:
+        raise ValueError("diagram_key must be one of 'N', 'V', or 'M'.")
+    if ax is None:
+        fig, ax = plt.subplots(figsize=(7, 6))
+    else:
+        fig = ax.figure
+
+    x_coords = [node.x for node in model.nodes.values()]
+    y_coords = [node.y for node in model.nodes.values()]
+    max_dim = max(max(x_coords) - min(x_coords), max(y_coords) - min(y_coords)) if x_coords and y_coords else 1.0
+    nvm_data = getattr(results, "nvm_data", {}) or {}
+
+    _draw_structure(ax, model)
+    max_value = max((abs(value) for data in nvm_data.values() for value in data.get(diagram_key, [])), default=1.0)
+    dynamic_scale = scale if scale is not None else (0.15 * max_dim) / max_value if max_value > 0 else 1.0
+
+    for element_id, element in model.elements.items():
+        if element_id in nvm_data:
+            _draw_element_diagram_from_nvm(ax, element, nvm_data[element_id], diagram_key, dynamic_scale, show_extrema=show_extrema)
+
+    ax.set_title(labels[diagram_key], fontsize=11, fontweight="bold")
+    ax.set_aspect("equal")
+    ax.grid(True, alpha=0.3)
+    ax.set_xlabel("X (m)")
+    ax.set_ylabel("Y (m)")
+    fig.suptitle(f"{labels[diagram_key]} - {getattr(results, 'load_case_id', '')}", fontsize=13, fontweight="bold")
+    fig.tight_layout()
+    return fig, ax
+
 
 def plot_static_nvm_diagrams(
     model: StructuralModel,
     results: StaticResults,
     scale: Optional[float] = None,
     axes: Optional[List[plt.Axes]] = None,
+    show_extrema: bool = False,
 ):
     """Plot axial, shear, and moment diagrams from StaticResults.nvm_data."""
     if axes is None:
@@ -520,15 +897,12 @@ def plot_static_nvm_diagrams(
 
     for ax, (key, label) in zip(axes, labels):
         _draw_structure(ax, model)
-        max_value = max(
-            (abs(value) for data in nvm_data.values() for value in data.get(key, [])),
-            default=1.0,
-        )
+        max_value = max((abs(value) for data in nvm_data.values() for value in data.get(key, [])), default=1.0)
         dynamic_scale = scale if scale is not None else (0.15 * max_dim) / max_value if max_value > 0 else 1.0
 
         for element_id, element in model.elements.items():
             if element_id in nvm_data:
-                _draw_element_diagram_from_nvm(ax, element, nvm_data[element_id], key, dynamic_scale)
+                _draw_element_diagram_from_nvm(ax, element, nvm_data[element_id], key, dynamic_scale, show_extrema=show_extrema)
 
         ax.set_title(label, fontsize=11, fontweight="bold")
         ax.set_aspect("equal")
@@ -580,6 +954,50 @@ def plot_mode_shape(
     suffix = f", T = {period:.3g} s" if period is not None else ""
     ax.set_title(f"Mode Shape {mode_index + 1}{suffix}")
     return ax.figure, ax
+
+
+def plot_modal_mode_shape(
+    model: StructuralModel,
+    results: ModalResults,
+    mode_index: int = 0,
+    scale_factor: Optional[float] = None,
+    ax: Optional[plt.Axes] = None,
+) -> tuple:
+    """Plot a mode shape, accepting either vectors or nodal displacement dictionaries."""
+    mode_shapes = getattr(results, "mode_shapes", []) or []
+    if mode_index < 0 or mode_index >= len(mode_shapes):
+        raise ValueError("mode_index is outside available mode_shapes.")
+
+    mode_shape = mode_shapes[mode_index]
+    if isinstance(mode_shape, dict):
+        if all(isinstance(key, int) for key in mode_shape):
+            max_index = max(mode_shape, default=-1)
+            vector = [mode_shape.get(index, 0.0) for index in range(max_index + 1)]
+            proxy = type("ModalResultsProxy", (), {})()
+            proxy.__dict__.update(getattr(results, "__dict__", {}))
+            proxy.mode_shapes = [vector]
+            proxy.periods = getattr(results, "periods", []) or []
+            proxy.frequencies = getattr(results, "frequencies", []) or []
+            return plot_mode_shape(model, proxy, mode_index=0, scale_factor=scale_factor, ax=ax)
+        if all(hasattr(value, "__len__") and not isinstance(value, (str, bytes)) for value in mode_shape.values()):
+            displacements = {node_id: list(values)[:3] for node_id, values in mode_shape.items()}
+            if ax is None:
+                fig, ax = plt.subplots(figsize=(9, 6))
+            else:
+                fig = ax.figure
+            plot_deformed_shape(model=model, displacements=displacements, scale_factor=scale_factor, show_undeformed=True, ax=ax)
+            periods = getattr(results, "periods", []) or []
+            frequencies = getattr(results, "frequencies", []) or []
+            parts = [f"Mode Shape {mode_index + 1}"]
+            if mode_index < len(frequencies):
+                parts.append(f"f = {frequencies[mode_index]:.3g} Hz")
+            if mode_index < len(periods):
+                parts.append(f"T = {periods[mode_index]:.3g} s")
+            ax.set_title(", ".join(parts))
+            return fig, ax
+        raise ValueError("Mode shape dictionary does not contain usable nodal or DOF data.")
+
+    return plot_mode_shape(model, results, mode_index=mode_index, scale_factor=scale_factor, ax=ax)
 
 
 def _response_component(history: list, dof: int) -> list:
