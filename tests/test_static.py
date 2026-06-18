@@ -100,7 +100,7 @@ def test_cantilever_beam_tip_deflection():
 
 def test_assignment3_portal_frame_reactions_benchmark():
     """Verify Assignment 3 Example 2 portal-frame reactions and equilibrium."""
-    xml_path = os.path.join(os.path.dirname(__file__), "../data/example2_frame.xml")
+    xml_path = os.path.join(os.path.dirname(__file__), "../data/test-frame.xml")
     model = XMLParser(xml_path).parse()
 
     results = _run_static(model, "LC1")
@@ -115,10 +115,10 @@ def test_assignment3_portal_frame_reactions_benchmark():
 
 def test_assignment3_portal_frame_displacements_and_reactions_regression():
     """Lock handout-compatible Example 2 static displacements and reactions."""
-    xml_path = os.path.join(os.path.dirname(__file__), "../data/example2_frame.xml")
+    xml_path = os.path.join(os.path.dirname(__file__), "../data/test-frame.xml")
     model = XMLParser(xml_path).parse()
 
-    assert model.materials["steel_200"].E == 200000.0
+    assert model.materials["M1"].E == 200000.0
 
     results = _run_static(model, "LC1")
 
