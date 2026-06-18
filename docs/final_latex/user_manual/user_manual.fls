@@ -1,12 +1,13 @@
-PWD C:\Users\MOHAMMAD UMAIR\Documents\GitHub\CE4011-Final-Project-V2\docs\final_latex\main_report
+PWD C:\Users\MOHAMMAD UMAIR\Documents\GitHub\CE4011-Final-Project-V2\docs\final_latex\user_manual
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\MiKTeX\miktex\data\le\pdftex\pdflatex.fmt
-INPUT main_report.tex
-OUTPUT main_report.log
+INPUT user_manual.tex
+OUTPUT user_manual.log
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\base\size10.clo
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\base\size10.clo
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\base\size10.clo
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\base\size11.clo
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\base\size11.clo
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\base\size11.clo
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmr10.tfm
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\geometry\geometry.sty
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\geometry\geometry.sty
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\graphics\keyval.sty
@@ -94,12 +95,6 @@ INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\rerunfilec
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\rerunfilecheck\rerunfilecheck.sty
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\generic\uniquecounter\uniquecounter.sty
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\generic\uniquecounter\uniquecounter.sty
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\caption\caption.sty
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\caption\caption.sty
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\caption\caption3.sty
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\caption\caption3.sty
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\caption\ltcaption.sty
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\caption\ltcaption.sty
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\graphics\graphicx.sty
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\graphics\graphicx.sty
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\graphics\graphics.sty
@@ -111,10 +106,10 @@ INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\graphics-c
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\graphics-cfg\graphics.cfg
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\l3backend\l3backend-pdftex.def
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\l3backend\l3backend-pdftex.def
-INPUT .\main_report.aux
-INPUT .\main_report.aux
-INPUT main_report.aux
-OUTPUT main_report.aux
+INPUT .\user_manual.aux
+INPUT .\user_manual.aux
+INPUT user_manual.aux
+OUTPUT user_manual.aux
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\context\base\mkii\supp-pdf.mkii
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\context\base\mkii\supp-pdf.mkii
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\context\base\mkii\supp-pdf.mkii
@@ -123,14 +118,14 @@ INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\epstopdf-p
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\00miktex\epstopdf-sys.cfg
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\00miktex\epstopdf-sys.cfg
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\00miktex\epstopdf-sys.cfg
-INPUT .\main_report.out
-INPUT .\main_report.out
-INPUT main_report.out
-INPUT main_report.out
-OUTPUT main_report.pdf
-INPUT .\main_report.out
-INPUT .\main_report.out
-OUTPUT main_report.out
+INPUT .\user_manual.out
+INPUT .\user_manual.out
+INPUT user_manual.out
+INPUT user_manual.out
+OUTPUT user_manual.pdf
+INPUT .\user_manual.out
+INPUT .\user_manual.out
+OUTPUT user_manual.out
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmr17.tfm
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmbx12.tfm
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmr12.tfm
@@ -145,121 +140,151 @@ INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmex10.tfm
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\cmextra\cmex8.tfm
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\cmextra\cmex7.tfm
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmr9.tfm
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmbx9.tfm
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmr12.tfm
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmbx12.tfm
-INPUT .\main_report.toc
-INPUT .\main_report.toc
-INPUT main_report.toc
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmbx10.tfm
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\cmextra\cmex7.tfm
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\amsfonts\cmextra\cmex7.tfm
-OUTPUT main_report.toc
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\MiKTeX\fonts\map\pdftex\pdftex.map
-INPUT .\sections\01_introduction.tex
-INPUT .\sections\01_introduction.tex
-INPUT .\sections\01_introduction.tex
-INPUT .\sections\01_introduction.tex
-INPUT sections\01_introduction.tex
-INPUT .\figures\main_ui.png
-INPUT .\figures\main_ui.png
-INPUT .\figures\main_ui.png
-INPUT .\figures\main_ui.png
-INPUT .\figures\main_ui.png
-INPUT .\figures\main_ui.png
-INPUT .\sections\02_scope.tex
-INPUT .\sections\02_scope.tex
-INPUT .\sections\02_scope.tex
-INPUT .\sections\02_scope.tex
-INPUT sections\02_scope.tex
-INPUT .\sections\03_theory.tex
-INPUT .\sections\03_theory.tex
-INPUT .\sections\03_theory.tex
-INPUT .\sections\03_theory.tex
-INPUT sections\03_theory.tex
-INPUT .\sections\04_architecture.tex
-INPUT .\sections\04_architecture.tex
-INPUT .\sections\04_architecture.tex
-INPUT .\sections\04_architecture.tex
-INPUT sections\04_architecture.tex
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmtt10.tfm
-INPUT ..\diagrams\rendered\architecture_pipeline.png
-INPUT ..\diagrams\rendered\architecture_pipeline.png
-INPUT ..\diagrams\rendered\architecture_pipeline.png
-INPUT ..\diagrams\rendered\architecture_pipeline.png
-INPUT ..\diagrams\rendered\architecture_pipeline.png
-INPUT ..\diagrams\rendered\architecture_pipeline.png
-INPUT ..\diagrams\rendered\domain_model_classes.png
-INPUT ..\diagrams\rendered\domain_model_classes.png
-INPUT ..\diagrams\rendered\domain_model_classes.png
-INPUT ..\diagrams\rendered\domain_model_classes.png
-INPUT ..\diagrams\rendered\domain_model_classes.png
-INPUT ..\diagrams\rendered\domain_model_classes.png
-INPUT .\sections\05_input_output.tex
-INPUT .\sections\05_input_output.tex
-INPUT .\sections\05_input_output.tex
-INPUT .\sections\05_input_output.tex
-INPUT sections\05_input_output.tex
-INPUT .\sections\06_analysis_workflow.tex
-INPUT .\sections\06_analysis_workflow.tex
-INPUT .\sections\06_analysis_workflow.tex
-INPUT .\sections\06_analysis_workflow.tex
-INPUT sections\06_analysis_workflow.tex
+INPUT ..\diagrams\rendered\desktop_workflow.png
+INPUT ..\diagrams\rendered\desktop_workflow.png
+INPUT ..\diagrams\rendered\desktop_workflow.png
+INPUT ..\diagrams\rendered\desktop_workflow.png
+INPUT ..\diagrams\rendered\desktop_workflow.png
+INPUT ..\diagrams\rendered\desktop_workflow.png
+INPUT ..\main_report\figures\quick_start.png
+INPUT ..\main_report\figures\quick_start.png
+INPUT ..\main_report\figures\quick_start.png
+INPUT ..\main_report\figures\quick_start.png
+INPUT ..\main_report\figures\quick_start.png
+INPUT ..\main_report\figures\quick_start.png
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmbx12.tfm
-INPUT .\sections\07_visualization.tex
-INPUT .\sections\07_visualization.tex
-INPUT .\sections\07_visualization.tex
-INPUT .\sections\07_visualization.tex
-INPUT sections\07_visualization.tex
-INPUT .\figures\static_frame_deformed.png
-INPUT .\figures\static_frame_deformed.png
-INPUT .\figures\static_frame_deformed.png
-INPUT .\figures\static_frame_deformed.png
-INPUT .\figures\static_frame_deformed.png
-INPUT .\figures\static_frame_deformed.png
-INPUT .\sections\08_validation_summary.tex
-INPUT .\sections\08_validation_summary.tex
-INPUT .\sections\08_validation_summary.tex
-INPUT .\sections\08_validation_summary.tex
-INPUT sections\08_validation_summary.tex
-INPUT .\sections\09_limitations.tex
-INPUT .\sections\09_limitations.tex
-INPUT .\sections\09_limitations.tex
-INPUT .\sections\09_limitations.tex
-INPUT sections\09_limitations.tex
-INPUT .\sections\10_conclusion.tex
-INPUT .\sections\10_conclusion.tex
-INPUT .\sections\10_conclusion.tex
-INPUT .\sections\10_conclusion.tex
-INPUT sections\10_conclusion.tex
-INPUT .\main_report.bbl
-INPUT .\main_report.bbl
-INPUT main_report.bbl
-INPUT main_report.aux
-INPUT .\main_report.out
-INPUT .\main_report.out
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\MiKTeX\fonts\map\pdftex\pdftex.map
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmbx10.tfm
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmti10.tfm
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmmi10.tfm
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmsy10.tfm
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmex10.tfm
+INPUT ..\main_report\figures\shear_frame_template.png
+INPUT ..\main_report\figures\shear_frame_template.png
+INPUT ..\main_report\figures\shear_frame_template.png
+INPUT ..\main_report\figures\shear_frame_template.png
+INPUT ..\main_report\figures\shear_frame_template.png
+INPUT ..\main_report\figures\shear_frame_template.png
+INPUT ..\main_report\figures\main_ui.png
+INPUT ..\main_report\figures\main_ui.png
+INPUT ..\main_report\figures\main_ui.png
+INPUT ..\main_report\figures\main_ui.png
+INPUT ..\main_report\figures\main_ui.png
+INPUT ..\main_report\figures\main_ui.png
+INPUT ..\main_report\figures\property_panel.png
+INPUT ..\main_report\figures\property_panel.png
+INPUT ..\main_report\figures\property_panel.png
+INPUT ..\main_report\figures\property_panel.png
+INPUT ..\main_report\figures\property_panel.png
+INPUT ..\main_report\figures\property_panel.png
+INPUT ..\main_report\figures\property_panel.png
+INPUT ..\main_report\figures\property_panel.png
+INPUT ..\main_report\figures\property_panel.png
+INPUT ..\main_report\figures\support_assignment.png
+INPUT ..\main_report\figures\support_assignment.png
+INPUT ..\main_report\figures\support_assignment.png
+INPUT ..\main_report\figures\support_assignment.png
+INPUT ..\main_report\figures\support_assignment.png
+INPUT ..\main_report\figures\support_assignment.png
+INPUT ..\main_report\figures\member_load_assignment.png
+INPUT ..\main_report\figures\member_load_assignment.png
+INPUT ..\main_report\figures\member_load_assignment.png
+INPUT ..\main_report\figures\member_load_assignment.png
+INPUT ..\main_report\figures\member_load_assignment.png
+INPUT ..\main_report\figures\member_load_assignment.png
+INPUT ..\main_report\figures\mass_assignments.png
+INPUT ..\main_report\figures\mass_assignments.png
+INPUT ..\main_report\figures\mass_assignments.png
+INPUT ..\main_report\figures\mass_assignments.png
+INPUT ..\main_report\figures\mass_assignments.png
+INPUT ..\main_report\figures\mass_assignments.png
+INPUT ..\main_report\figures\succesful_model_validation.png
+INPUT ..\main_report\figures\succesful_model_validation.png
+INPUT ..\main_report\figures\succesful_model_validation.png
+INPUT ..\main_report\figures\succesful_model_validation.png
+INPUT ..\main_report\figures\succesful_model_validation.png
+INPUT ..\main_report\figures\succesful_model_validation.png
+INPUT ..\diagrams\rendered\static_analysis_workflow.png
+INPUT ..\diagrams\rendered\static_analysis_workflow.png
+INPUT ..\diagrams\rendered\static_analysis_workflow.png
+INPUT ..\diagrams\rendered\static_analysis_workflow.png
+INPUT ..\diagrams\rendered\static_analysis_workflow.png
+INPUT ..\diagrams\rendered\static_analysis_workflow.png
+INPUT ..\main_report\figures\static_frame_result_summary.png
+INPUT ..\main_report\figures\static_frame_result_summary.png
+INPUT ..\main_report\figures\static_frame_result_summary.png
+INPUT ..\main_report\figures\static_frame_result_summary.png
+INPUT ..\main_report\figures\static_frame_result_summary.png
+INPUT ..\main_report\figures\static_frame_result_summary.png
+INPUT ..\main_report\figures\static_dof_map.png
+INPUT ..\main_report\figures\static_dof_map.png
+INPUT ..\main_report\figures\static_dof_map.png
+INPUT ..\main_report\figures\static_dof_map.png
+INPUT ..\main_report\figures\static_dof_map.png
+INPUT ..\main_report\figures\static_dof_map.png
+INPUT ..\main_report\figures\static_frame_deformed.png
+INPUT ..\main_report\figures\static_frame_deformed.png
+INPUT ..\main_report\figures\static_frame_deformed.png
+INPUT ..\main_report\figures\static_frame_deformed.png
+INPUT ..\main_report\figures\static_frame_deformed.png
+INPUT ..\main_report\figures\static_frame_deformed.png
+INPUT ..\main_report\figures\static_frame_moment.png
+INPUT ..\main_report\figures\static_frame_moment.png
+INPUT ..\main_report\figures\static_frame_moment.png
+INPUT ..\main_report\figures\static_frame_moment.png
+INPUT ..\main_report\figures\static_frame_moment.png
+INPUT ..\main_report\figures\static_frame_moment.png
+INPUT ..\diagrams\rendered\modal_analysis_workflow.png
+INPUT ..\diagrams\rendered\modal_analysis_workflow.png
+INPUT ..\diagrams\rendered\modal_analysis_workflow.png
+INPUT ..\diagrams\rendered\modal_analysis_workflow.png
+INPUT ..\diagrams\rendered\modal_analysis_workflow.png
+INPUT ..\diagrams\rendered\modal_analysis_workflow.png
+INPUT ..\main_report\figures\modal_analysis_results_summary.png
+INPUT ..\main_report\figures\modal_analysis_results_summary.png
+INPUT ..\main_report\figures\modal_analysis_results_summary.png
+INPUT ..\main_report\figures\modal_analysis_results_summary.png
+INPUT ..\main_report\figures\modal_analysis_results_summary.png
+INPUT ..\main_report\figures\modal_analysis_results_summary.png
+INPUT ..\main_report\figures\modal_stiffness_matrix.png
+INPUT ..\main_report\figures\modal_stiffness_matrix.png
+INPUT ..\main_report\figures\modal_stiffness_matrix.png
+INPUT ..\main_report\figures\modal_stiffness_matrix.png
+INPUT ..\main_report\figures\modal_stiffness_matrix.png
+INPUT ..\main_report\figures\modal_stiffness_matrix.png
+INPUT ..\main_report\figures\mode_shapes.png
+INPUT ..\main_report\figures\mode_shapes.png
+INPUT ..\main_report\figures\mode_shapes.png
+INPUT ..\main_report\figures\mode_shapes.png
+INPUT ..\main_report\figures\mode_shapes.png
+INPUT ..\main_report\figures\mode_shapes.png
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmtt10.tfm
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\jknappen\ec\tcrm1095.tfm
+INPUT user_manual.aux
+INPUT .\user_manual.out
+INPUT .\user_manual.out
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\tcrm1095.pk
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\tcrm1095.pk
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmbx10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmbx10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmbx12.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmbx12.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmbx9.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmbx9.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmmi10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmmi10.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmmi7.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmmi7.pfb
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmmi8.pfb
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmmi8.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr12.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr12.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr7.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr7.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr9.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr9.pfb
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr8.pfb
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmr8.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmsy10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmsy10.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmsy7.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmsy7.pfb
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmti10.pfb
+INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmti10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmtt10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmtt10.pfb

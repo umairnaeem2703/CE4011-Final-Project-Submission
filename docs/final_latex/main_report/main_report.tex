@@ -46,6 +46,24 @@
 \end{figure}
 }
 
+\newcommand{\diagramfigure}[3]{%
+\begin{figure}[htbp]
+\centering
+\IfFileExists{#2}{%
+\includegraphics[width=0.95\linewidth,height=0.30\textheight,keepaspectratio]{#2}%
+}{%
+\fbox{%
+\begin{minipage}[c][0.11\textheight][c]{0.88\linewidth}
+\centering
+\textbf{#1}\\[0.4em]
+\small #3\\[0.4em]
+\textit{Render the matching PlantUML source in \texttt{../diagrams/plantuml/}.}
+\end{minipage}}%
+}
+\caption{#1}
+\end{figure}
+}
+
 \newcommand{\codeterm}[1]{\texttt{#1}}
 
 \title{\textbf{CE 4011 Static and Modal Structural Analysis Desktop MVP}}

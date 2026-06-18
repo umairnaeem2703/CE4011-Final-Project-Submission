@@ -53,15 +53,14 @@ Show: main Tkinter window.
 \section{0:45--1:45 Architecture and OOP Pipeline}
 
 Explain the pipeline:
-\[
-\text{Tkinter canvas/templates/XML}
-\rightarrow \text{ModelBuilder}
-\rightarrow \text{StructuralModel}
-\rightarrow \text{DOF/K/M/F assembly}
-\rightarrow \text{Static or Modal solver}
-\rightarrow \text{result object}
-\rightarrow \text{plots/tables/export}.
-\]
+\begin{center}
+\begin{tabular}{c}
+Tkinter canvas/templates/XML \(\rightarrow\) ModelBuilder \\
+\(\rightarrow\) StructuralModel \(\rightarrow\) DOF/K/M/F assembly \\
+\(\rightarrow\) Static or Modal solver \(\rightarrow\) result object \\
+\(\rightarrow\) plots/tables/export
+\end{tabular}
+\end{center}
 
 Explain that \texttt{StructuralModel} stores model data, \texttt{StructuralValidator} checks model validity, assembly modules build matrices and vectors, solvers operate on assembled systems, and UI code only coordinates input and display. Emphasize that the solver does not branch by structure family; frames, trusses, shear frames, cantilevers, and benchmarks are ordinary models.
 
@@ -99,7 +98,9 @@ State the final stable test baseline:
 \begin{verbatim}
 pytest tests/ -q -> 197 passed in approximately 2 seconds
 pytest tests/test_ui_desktop_static.py -q -> 63 passed
-pytest tests/test_ui_desktop_static.py tests/test_visualizer.py tests/test_visualizer_integration.py -q -> 76 passed
+pytest tests/test_ui_desktop_static.py
+       tests/test_visualizer.py tests/test_visualizer_integration.py -q
+       -> 76 passed
 \end{verbatim}
 
 Explain that final hardening changed only \texttt{tests/test\_ui\_desktop\_static.py}; no solver math, XML schema, or core behavior changed. Summarize coverage: XML parsing/export, model building, DOF mapping, element stiffness, static assembly, reactions, member forces, N/V/M data, dynamic assembly, modal eigenvalues/frequencies/periods, mass normalization, participation factors, effective modal mass, visualization adapters, SAP2000/reference validation, and result export helpers.

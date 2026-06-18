@@ -15,6 +15,8 @@ Folder contents:
 - main_report/main_report.tex: final project report entry point
 - main_report/sections/: report sections 01 through 10
 - main_report/references.bib: report bibliography database
+- diagrams/plantuml/: PlantUML source diagrams for architecture, domain classes, and workflows
+- diagrams/rendered/: optional rendered PNG/SVG diagram outputs
 - installation_manual/installation_manual.tex: installation and troubleshooting manual
 - user_manual/user_manual.tex: end-user workflow manual with one complete example
 - verification_appendix/verification_appendix.tex: benchmark and pytest validation appendix
@@ -22,11 +24,11 @@ Folder contents:
 - video/video_link.txt: placeholder for the final unlisted YouTube link
 
 Compile notes:
-- The LaTeX files intentionally use placeholder boxes instead of direct image references so they can compile before final screenshots are inserted.
+- The LaTeX files use placeholder boxes or IfFileExists image references so they can compile before final screenshots and rendered PlantUML diagrams are inserted.
+- If PlantUML is available, render docs/final_latex/diagrams/plantuml/*.puml into docs/final_latex/diagrams/rendered/.
 - Compile each document from its own folder, for example:
   pdflatex main_report.tex
   bibtex main_report
   pdflatex main_report.tex
   pdflatex main_report.tex
 - TODO comments mark screenshots and numerical comparison tables that should be replaced before final submission.
-

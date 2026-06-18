@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.2) (preloaded format=pdflatex 2026.3.13)  18 JUN 2026 19:38
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.2) (preloaded format=pdflatex 2026.3.13)  18 JUN 2026 19:44
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**./main_report.tex
-(main_report.tex
+**./user_manual.tex
+(user_manual.tex
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
 
@@ -11,9 +11,9 @@ L3 programming layer <2026-01-19>
 ls
 Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
 
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/base\size10.cl
+(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/base\size11.cl
 o
-File: size10.clo 2025/01/22 v1.4n Standard LaTeX file (size option)
+File: size11.clo 2025/01/22 v1.4n Standard LaTeX file (size option)
 )
 \c@part=\count275
 \c@section=\count276
@@ -358,32 +358,6 @@ Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
 )
 \Hy@SectionHShift=\skip60
 )
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/caption\captio
-n.sty
-Package: caption 2023/08/05 v3.6o Customizing captions (AR)
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/caption\captio
-n3.sty
-Package: caption3 2023/07/31 v2.4d caption3 kernel (AR)
-\caption@tempdima=\dimen186
-\captionmargin=\dimen187
-\caption@leftmargin=\dimen188
-\caption@rightmargin=\dimen189
-\caption@width=\dimen190
-\caption@indent=\dimen191
-\caption@parindent=\dimen192
-\caption@hangindent=\dimen193
-Package caption Info: Standard document class detected.
-)
-\c@caption@flags=\count319
-\c@continuedfloat=\count320
-Package caption Info: hyperref package is loaded.
-Package caption Info: longtable package is loaded.
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/caption\ltcapt
-ion.sty
-Package: ltcaption 2021/01/08 v1.4c longtable captions (AR)
-))
 (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graph
 icx.sty
 Package: graphicx 2024/12/31 v1.2e Enhanced LaTeX Graphics (DPC,SPQR)
@@ -402,34 +376,34 @@ File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
 )
 Package graphics Info: Driver file: pdftex.def on input line 106.
 )
-\Gin@req@height=\dimen194
-\Gin@req@width=\dimen195
+\Gin@req@height=\dimen186
+\Gin@req@width=\dimen187
 )
 (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3ba
 ckend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
-\l__color_backend_stack_int=\count321
-) (main_report.aux)
-\openout1 = `main_report.aux'.
+\l__color_backend_stack_int=\count319
+) (user_manual.aux)
+\openout1 = `user_manual.aux'.
 
-LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 73.
-LaTeX Font Info:    ... okay on input line 73.
-LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 73.
-LaTeX Font Info:    ... okay on input line 73.
-LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 73.
-LaTeX Font Info:    ... okay on input line 73.
-LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 73.
-LaTeX Font Info:    ... okay on input line 73.
-LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 73.
-LaTeX Font Info:    ... okay on input line 73.
-LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 73.
-LaTeX Font Info:    ... okay on input line 73.
-LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 73.
-LaTeX Font Info:    ... okay on input line 73.
-LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 73.
-LaTeX Font Info:    ... okay on input line 73.
-LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 73.
-LaTeX Font Info:    ... okay on input line 73.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 69.
+LaTeX Font Info:    ... okay on input line 69.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 69.
+LaTeX Font Info:    ... okay on input line 69.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 69.
+LaTeX Font Info:    ... okay on input line 69.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 69.
+LaTeX Font Info:    ... okay on input line 69.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 69.
+LaTeX Font Info:    ... okay on input line 69.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 69.
+LaTeX Font Info:    ... okay on input line 69.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 69.
+LaTeX Font Info:    ... okay on input line 69.
+LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 69.
+LaTeX Font Info:    ... okay on input line 69.
+LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 69.
+LaTeX Font Info:    ... okay on input line 69.
 
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
@@ -439,23 +413,23 @@ LaTeX Font Info:    ... okay on input line 73.
 * layout: <same size as paper>
 * layoutoffset:(h,v)=(0.0pt,0.0pt)
 * modes: 
-* h-part:(L,W,R)=(54.2025pt, 489.10287pt, 54.2025pt)
-* v-part:(T,H,B)=(54.2025pt, 736.64185pt, 54.2025pt)
+* h-part:(L,W,R)=(65.04256pt, 467.42276pt, 65.04256pt)
+* v-part:(T,H,B)=(65.04256pt, 714.96173pt, 65.04256pt)
 * \paperwidth=597.50787pt
 * \paperheight=845.04684pt
-* \textwidth=489.10287pt
-* \textheight=736.64185pt
-* \oddsidemargin=-18.06749pt
-* \evensidemargin=-18.06749pt
-* \topmargin=-55.06749pt
+* \textwidth=467.42276pt
+* \textheight=714.96173pt
+* \oddsidemargin=-7.22743pt
+* \evensidemargin=-7.22743pt
+* \topmargin=-44.22743pt
 * \headheight=12.0pt
 * \headsep=25.0pt
-* \topskip=10.0pt
+* \topskip=11.0pt
 * \footskip=30.0pt
-* \marginparwidth=57.0pt
-* \marginparsep=11.0pt
+* \marginparwidth=50.0pt
+* \marginparsep=10.0pt
 * \columnsep=10.0pt
-* \skip\footins=9.0pt plus 4.0pt minus 2.0pt
+* \skip\footins=10.0pt plus 4.0pt minus 2.0pt
 * \hoffset=0.0pt
 * \voffset=0.0pt
 * \mag=1000
@@ -469,16 +443,16 @@ LaTeX Font Info:    ... okay on input line 73.
 (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\su
 pp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
-\scratchcounter=\count322
-\scratchdimen=\dimen196
+\scratchcounter=\count320
+\scratchdimen=\dimen188
 \scratchbox=\box62
-\nofMPsegments=\count323
-\nofMParguments=\count324
+\nofMPsegments=\count321
+\nofMParguments=\count322
 \everyMPshowfont=\toks26
-\MPscratchCnt=\count325
-\MPscratchDim=\dimen197
-\MPnumerator=\count326
-\makeMPintoPDFobject=\count327
+\MPscratchCnt=\count323
+\MPscratchDim=\dimen189
+\MPnumerator=\count324
+\makeMPintoPDFobject=\count325
 \everyMPtoPDFconversion=\toks27
 )
 (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\e
@@ -491,89 +465,196 @@ Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
 pdf-sys.cfg
 File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
 ))
-Package hyperref Info: Link coloring OFF on input line 73.
- (main_report.out) (main_report.out)
+Package hyperref Info: Link coloring OFF on input line 69.
+ (user_manual.out) (user_manual.out)
 \@outlinefile=\write3
-\openout3 = `main_report.out'.
+\openout3 = `user_manual.out'.
 
-Package caption Info: Begin \AtBeginDocument code.
-Package caption Info: End \AtBeginDocument code.
- (main_report.toc)
-\tf@toc=\write4
-\openout4 = `main_report.toc'.
-
+<../diagrams/rendered/desktop_workflow.png, id=103, 762.85pt x 1056.94875pt>
+File: ../diagrams/rendered/desktop_workflow.png Graphic file (type png)
+<use ../diagrams/rendered/desktop_workflow.png>
+Package pdftex.def Info: ../diagrams/rendered/desktop_workflow.png  used on inp
+ut line 80.
+(pdftex.def)             Requested size: 216.72774pt x 300.28198pt.
+<../main_report/figures/quick_start.png, id=104, 1443.14156pt x 773.13844pt>
+File: ../main_report/figures/quick_start.png Graphic file (type png)
+<use ../main_report/figures/quick_start.png>
+Package pdftex.def Info: ../main_report/figures/quick_start.png  used on input 
+line 82.
+(pdftex.def)             Requested size: 430.01707pt x 230.3743pt.
  [1
 
-{C:/Users/MOHAMMAD UMAIR/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}]
-(sections/01_introduction.tex
-<figures/main_ui.png, id=75, 1443.89438pt x 773.89125pt>
-File: figures/main_ui.png Graphic file (type png)
-<use figures/main_ui.png>
-Package pdftex.def Info: figures/main_ui.png  used on input line 7.
-(pdftex.def)             Requested size: 449.96005pt x 241.16733pt.
-) (sections/02_scope.tex) (sections/03_theory.tex
-[2 <./figures/main_ui.png>]) (sections/04_architecture.tex
-<../diagrams/rendered/architecture_pipeline.png, id=85, 1554.80875pt x 597.2312
+{C:/Users/MOHAMMAD UMAIR/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map} <../
+diagrams/rendered/desktop_workflow.png (PNG copy)>]
+<../main_report/figures/shear_frame_template.png, id=116, 1439.3775pt x 776.902
 5pt>
-File: ../diagrams/rendered/architecture_pipeline.png Graphic file (type png)
-<use ../diagrams/rendered/architecture_pipeline.png>
-Package pdftex.def Info: ../diagrams/rendered/architecture_pipeline.png  used o
-n input line 18.
-(pdftex.def)             Requested size: 464.64317pt x 178.47816pt.
-<../diagrams/rendered/domain_model_classes.png, id=86, 782.925pt x 673.51625pt>
+File: ../main_report/figures/shear_frame_template.png Graphic file (type png)
+<use ../main_report/figures/shear_frame_template.png>
+Package pdftex.def Info: ../main_report/figures/shear_frame_template.png  used 
+on input line 96.
+(pdftex.def)             Requested size: 430.01561pt x 232.10046pt.
+<../main_report/figures/main_ui.png, id=117, 1443.89438pt x 773.89125pt>
+File: ../main_report/figures/main_ui.png Graphic file (type png)
+<use ../main_report/figures/main_ui.png>
+Package pdftex.def Info: ../main_report/figures/main_ui.png  used on input line
+ 104.
+(pdftex.def)             Requested size: 430.02107pt x 230.48053pt.
+ [2 <../main_report/figures/quick_start.png>] [3 <../main_report/figures/shear_
+frame_template.png> <../main_report/figures/main_ui.png>]
+<../main_report/figures/property_panel.png, id=135, 1443.89438pt x 776.9025pt>
+File: ../main_report/figures/property_panel.png Graphic file (type png)
+<use ../main_report/figures/property_panel.png>
+Package pdftex.def Info: ../main_report/figures/property_panel.png  used on inp
+ut line 110.
+(pdftex.def)             Requested size: 430.02107pt x 231.37733pt.
+File: ../main_report/figures/property_panel.png Graphic file (type png)
+<use ../main_report/figures/property_panel.png>
+Package pdftex.def Info: ../main_report/figures/property_panel.png  used on inp
+ut line 116.
+(pdftex.def)             Requested size: 430.02107pt x 231.37733pt.
+ [4 <../main_report/figures/property_panel.png>]
+<../main_report/figures/support_assignment.png, id=143, 1443.14156pt x 773.1384
+4pt>
+File: ../main_report/figures/support_assignment.png Graphic file (type png)
+<use ../main_report/figures/support_assignment.png>
+Package pdftex.def Info: ../main_report/figures/support_assignment.png  used on
+ input line 122.
+(pdftex.def)             Requested size: 430.01707pt x 230.3743pt.
+<../main_report/figures/member_load_assignment.png, id=144, 1443.14156pt x 773.
+89125pt>
+File: ../main_report/figures/member_load_assignment.png Graphic file (type png)
 
-File: ../diagrams/rendered/domain_model_classes.png Graphic file (type png)
-<use ../diagrams/rendered/domain_model_classes.png>
-Package pdftex.def Info: ../diagrams/rendered/domain_model_classes.png  used on
- input line 20.
-(pdftex.def)             Requested size: 256.89664pt x 220.99698pt.
-)
-(sections/05_input_output.tex [3 <../diagrams/rendered/architecture_pipeline.pn
-g (PNG copy)>]) (sections/06_analysis_workflow.tex)
-(sections/07_visualization.tex [4 <../diagrams/rendered/domain_model_classes.pn
-g (PNG copy)>]
-<figures/static_frame_deformed.png, id=101, 1441.63594pt x 773.13844pt>
-File: figures/static_frame_deformed.png Graphic file (type png)
-<use figures/static_frame_deformed.png>
-Package pdftex.def Info: figures/static_frame_deformed.png  used on input line 
-5.
-(pdftex.def)             Requested size: 449.96019pt x 241.31024pt.
-) (sections/08_validation_summary.tex)
-(sections/09_limitations.tex [5 <./figures/static_frame_deformed.png>])
-(sections/10_conclusion.tex) [6] (main_report.bbl) [7] (main_report.aux)
+<use ../main_report/figures/member_load_assignment.png>
+Package pdftex.def Info: ../main_report/figures/member_load_assignment.png  use
+d on input line 124.
+(pdftex.def)             Requested size: 430.01707pt x 230.59862pt.
+<../main_report/figures/mass_assignments.png, id=145, 1443.89438pt x 773.89125p
+t>
+File: ../main_report/figures/mass_assignments.png Graphic file (type png)
+<use ../main_report/figures/mass_assignments.png>
+Package pdftex.def Info: ../main_report/figures/mass_assignments.png  used on i
+nput line 126.
+(pdftex.def)             Requested size: 430.02107pt x 230.48053pt.
+<../main_report/figures/succesful_model_validation.png, id=146, 1443.14156pt x 
+772.38562pt>
+File: ../main_report/figures/succesful_model_validation.png Graphic file (type 
+png)
+<use ../main_report/figures/succesful_model_validation.png>
+Package pdftex.def Info: ../main_report/figures/succesful_model_validation.png 
+ used on input line 132.
+(pdftex.def)             Requested size: 430.01707pt x 230.14998pt.
+ [5 <../main_report/figures/support_assignment.png> <../main_report/figures/mem
+ber_load_assignment.png>]
+[6 <../main_report/figures/mass_assignments.png> <../main_report/figures/succes
+ful_model_validation.png>]
+<../diagrams/rendered/static_analysis_workflow.png, id=163, 463.7325pt x 1224.5
+75pt>
+File: ../diagrams/rendered/static_analysis_workflow.png Graphic file (type png)
+
+<use ../diagrams/rendered/static_analysis_workflow.png>
+Package pdftex.def Info: ../diagrams/rendered/static_analysis_workflow.png  use
+d on input line 138.
+(pdftex.def)             Requested size: 113.71097pt x 300.27576pt.
+<../main_report/figures/static_frame_result_summary.png, id=164, 1443.14156pt x
+ 775.39688pt>
+File: ../main_report/figures/static_frame_result_summary.png Graphic file (type
+ png)
+<use ../main_report/figures/static_frame_result_summary.png>
+Package pdftex.def Info: ../main_report/figures/static_frame_result_summary.png
+  used on input line 140.
+(pdftex.def)             Requested size: 430.01707pt x 231.04726pt.
+<../main_report/figures/static_dof_map.png, id=165, 1443.14156pt x 772.38562pt>
+
+File: ../main_report/figures/static_dof_map.png Graphic file (type png)
+<use ../main_report/figures/static_dof_map.png>
+Package pdftex.def Info: ../main_report/figures/static_dof_map.png  used on inp
+ut line 142.
+(pdftex.def)             Requested size: 430.01707pt x 230.14998pt.
+
+ignored: Infinite glue shrinkage found in box being split [7 <../diagrams/rendered/stati
+c_analysis_workflow.png (PNG copy)>]
+<../main_report/figures/static_frame_deformed.png, id=175, 1441.63594pt x 773.1
+3844pt>
+File: ../main_report/figures/static_frame_deformed.png Graphic file (type png)
+<use ../main_report/figures/static_frame_deformed.png>
+Package pdftex.def Info: ../main_report/figures/static_frame_deformed.png  used
+ on input line 168.
+(pdftex.def)             Requested size: 430.00839pt x 230.61024pt.
+<../main_report/figures/static_frame_moment.png, id=176, 1441.63594pt x 775.396
+88pt>
+File: ../main_report/figures/static_frame_moment.png Graphic file (type png)
+<use ../main_report/figures/static_frame_moment.png>
+Package pdftex.def Info: ../main_report/figures/static_frame_moment.png  used o
+n input line 170.
+(pdftex.def)             Requested size: 430.00839pt x 231.28389pt.
+<../diagrams/rendered/modal_analysis_workflow.png, id=177, 732.7375pt x 1303.87
+125pt>
+File: ../diagrams/rendered/modal_analysis_workflow.png Graphic file (type png)
+<use ../diagrams/rendered/modal_analysis_workflow.png>
+Package pdftex.def Info: ../diagrams/rendered/modal_analysis_workflow.png  used
+ on input line 176.
+(pdftex.def)             Requested size: 168.7497pt x 300.28198pt.
+<../main_report/figures/modal_analysis_results_summary.png, id=178, 1440.13031p
+t x 776.14969pt>
+File: ../main_report/figures/modal_analysis_results_summary.png Graphic file (t
+ype png)
+<use ../main_report/figures/modal_analysis_results_summary.png>
+Package pdftex.def Info: ../main_report/figures/modal_analysis_results_summary.
+png  used on input line 178.
+(pdftex.def)             Requested size: 430.02077pt x 231.75714pt.
+<../main_report/figures/modal_stiffness_matrix.png, id=179, 1439.3775pt x 250.6
+8657pt>
+File: ../main_report/figures/modal_stiffness_matrix.png Graphic file (type png)
+
+<use ../main_report/figures/modal_stiffness_matrix.png>
+Package pdftex.def Info: ../main_report/figures/modal_stiffness_matrix.png  use
+d on input line 180.
+(pdftex.def)             Requested size: 430.01561pt x 74.89288pt.
+<../main_report/figures/mode_shapes.png, id=180, 1443.14156pt x 772.38562pt>
+File: ../main_report/figures/mode_shapes.png Graphic file (type png)
+<use ../main_report/figures/mode_shapes.png>
+Package pdftex.def Info: ../main_report/figures/mode_shapes.png  used on input 
+line 182.
+(pdftex.def)             Requested size: 430.01707pt x 230.14998pt.
+ [8] [9 <../main_report/figures/static_frame_result_summary.png> <../main_repor
+t/figures/static_dof_map.png>] [10 <../main_report/figures/static_frame_deforme
+d.png> <../main_report/figures/static_frame_moment.png>] [11 <../diagrams/rende
+red/modal_analysis_workflow.png (PNG copy)> <../main_report/figures/modal_analy
+sis_results_summary.png> <../main_report/figures/modal_stiffness_matrix.png>] [
+12 <../main_report/figures/mode_shapes.png>] [13] [14] [15]
+(user_manual.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
-Package rerunfilecheck Info: File `main_report.out' has not changed.
-(rerunfilecheck)             Checksum: 8AF04C62609CEA8E8DEF211543B9F018;2178.
+Package rerunfilecheck Info: File `user_manual.out' has not changed.
+(rerunfilecheck)             Checksum: A153E9B34FB1FB8F03E8D7A309CB5C72;4175.
  ) 
 Here is how much of TeX's memory you used:
- 11843 strings out of 467867
- 192750 string characters out of 5413942
- 616388 words of memory out of 5000000
- 40539 multiletter control sequences out of 15000+600000
- 634186 words of font info for 63 fonts, out of 8000000 for 9000
+ 10552 strings out of 467867
+ 168146 string characters out of 5413942
+ 603917 words of memory out of 5000000
+ 39236 multiletter control sequences out of 15000+600000
+ 635120 words of font info for 66 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,10n,79p,702b,454s stack positions out of 10000i,1000n,20000p,200000b,200000s
-<C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/ams
-fonts/cm/cmbx10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/font
-s/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Pr
-ograms/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx9.pfb><C:/Users/MOHAMMAD UMAIR
-/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Us
-ers/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm
-/cmmi7.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/p
-ublic/amsfonts/cm/cmr10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiK
-TeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/MOHAMMAD UMAIR/AppData/L
-ocal/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr7.pfb><C:/Users/MOHAMMAD
- UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr9.pfb><C
+ 75i,11n,79p,501b,579s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ <C:\Users\MOHAMMAD UMAIR\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dp
+i600\tcrm1095.pk><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/t
+ype1/public/amsfonts/cm/cmbx10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Progr
+ams/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/MOHAMMAD UMAIR/A
+ppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/User
+s/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/c
+mmi8.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/pub
+lic/amsfonts/cm/cmr10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTe
+X/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Loc
+al/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Users/MOHAMMAD U
+MAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C
 :/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfont
-s/cm/cmsy10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/ty
-pe1/public/amsfonts/cm/cmsy7.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Program
-s/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on main_report.pdf (7 pages, 455230 bytes).
+s/cm/cmti10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/ty
+pe1/public/amsfonts/cm/cmtt10.pfb>
+Output written on user_manual.pdf (15 pages, 1208485 bytes).
 PDF statistics:
- 182 PDF objects out of 1000 (max. 8388607)
- 31 named destinations out of 1000 (max. 500000)
- 117 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 327 PDF objects out of 1000 (max. 8388607)
+ 90 named destinations out of 1000 (max. 500000)
+ 291 words of extra memory for PDF output out of 10000 (max. 10000000)
 

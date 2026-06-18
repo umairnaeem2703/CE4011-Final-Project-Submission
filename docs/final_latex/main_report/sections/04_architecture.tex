@@ -15,8 +15,8 @@ Tkinter canvas/tables/templates/XML \\
 
 This design keeps responsibilities separated. \codeterm{ModelBuilder} creates models from programmatic calls, templates, XML, tables, and desktop actions. \codeterm{StructuralModel} stores nodes, elements, materials, sections, supports, loads, masses, releases, and validation state; it does not solve or plot. \codeterm{StructuralValidator} centralizes validity checks. DOF and assembly modules create \(K\), \(M\), \(F\), and reduced systems. Static and Modal solvers operate on assembled matrices and return result objects. UI and controller code coordinate user actions and display results without owning solver math.
 
-\placeholderfigure{Architecture diagram}{Pipeline from Tkinter canvas, tables, templates, and XML through ModelBuilder, StructuralModel, validation, assembly, solvers, result objects, visualization, and export.}
+\diagramfigure{Architecture pipeline}{../diagrams/rendered/architecture_pipeline.png}{Pipeline from Tkinter canvas, tables, templates, and XML through ModelBuilder, StructuralModel, validation, assembly, Static and Modal solvers, result objects, visualization, and export.}
 
-\placeholderfigure{Static class diagram}{Final class diagram showing ModelBuilder, StructuralModel, StructuralValidator, DOF and assembly modules, StaticResults, ModalResults, PostProcessor, Visualizer, Controller, ModelCanvas, PropertyPanel, and result-window relationships.}
+\diagramfigure{Domain model classes}{../diagrams/rendered/domain_model_classes.png}{Compact class diagram for StructuralModel, Node, Element, Material, Section, Support, LoadCase, load classes, LumpedMass, StaticResults, and ModalResults.}
 
 Frames, trusses, shear frames, cantilevers, and benchmark problems all become ordinary model instances before assembly. This avoids duplicate solver logic by model family and makes validation stronger because each model type exercises the same Static and Modal computational path.
