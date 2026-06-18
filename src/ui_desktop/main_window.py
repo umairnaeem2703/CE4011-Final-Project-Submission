@@ -154,6 +154,8 @@ class MainWindow:
         self.result_viewer_dynamic_mode_normalization_selector = None
         self.result_viewer_dynamic_reference_dof_var = None
         self.result_viewer_dynamic_reference_dof_selector = None
+        self.result_viewer_dynamic_mode_precision_var = None
+        self.result_viewer_dynamic_mode_precision_selector = None
         self.result_viewer_dynamic_matrix_selector = None
         self.result_viewer_dynamic_matrix_tree = None
         self.result_viewer_dynamic_mode_info_frame = None
@@ -186,6 +188,8 @@ class MainWindow:
         self.result_viewer_member_cursor_scale = None
         self.result_viewer_member_display_mode_var = None
         self.result_viewer_member_display_mode_selector = None
+        self.result_viewer_member_precision_var = None
+        self.result_viewer_member_precision_selector = None
         self.result_viewer_member_scroll_var = None
         self.result_viewer_member_show_max_var = None
         self.result_viewer_member_profile = None
@@ -745,6 +749,8 @@ class MainWindow:
         self.result_viewer_dynamic_matrices_tab = None
         self.result_viewer_dynamic_view_var = None
         self.result_viewer_dynamic_view_selector = None
+        self.result_viewer_dynamic_mode_precision_var = None
+        self.result_viewer_dynamic_mode_precision_selector = None
         self.result_viewer_dynamic_summary_tree = None
         self.result_viewer_dynamic_mode_selector = None
         self.result_viewer_dynamic_matrix_selector = None
@@ -784,6 +790,8 @@ class MainWindow:
         self.result_viewer_member_cursor_scale = None
         self.result_viewer_member_display_mode_var = None
         self.result_viewer_member_display_mode_selector = None
+        self.result_viewer_member_precision_var = None
+        self.result_viewer_member_precision_selector = None
         self.result_viewer_member_scroll_var = None
         self.result_viewer_member_show_max_var = None
         self.result_viewer_member_profile = None
@@ -914,6 +922,15 @@ class MainWindow:
         )
         self.result_viewer_dynamic_reference_dof_selector.grid(row=0, column=3, padx=(8, 0), sticky="w")
         self.result_viewer_dynamic_reference_dof_selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_modal_mode_shape_view())
+        ttk.Label(normalization_controls, text="Precision").grid(row=0, column=4, sticky="w")
+        self.result_viewer_dynamic_mode_precision_var = self._make_string_var(parent, "1e-3")
+        self.result_viewer_dynamic_mode_precision_selector = ttk.Entry(
+            normalization_controls,
+            textvariable=self.result_viewer_dynamic_mode_precision_var,
+            width=10,
+        )
+        self.result_viewer_dynamic_mode_precision_selector.grid(row=0, column=5, padx=(8, 0), sticky="w")
+        self.result_viewer_dynamic_mode_precision_selector.bind("<Return>", lambda _event: self._refresh_modal_mode_shape_view())
         ttk.Label(self.result_viewer_dynamic_top_controls, text="View").grid(row=0, column=3, sticky="w", padx=(12, 0))
         self.result_viewer_dynamic_view_var = self._make_string_var(parent, "Modal Summary")
         self.result_viewer_dynamic_view_selector = ttk.Combobox(
@@ -1081,20 +1098,25 @@ class MainWindow:
         )
         self.result_viewer_member_display_mode_selector.grid(row=0, column=4, sticky="ew", padx=(8, 4))
         self.result_viewer_member_display_mode_selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_individual_member_viewer())
+        ttk.Label(controls, text="Precision").grid(row=0, column=5, sticky="w")
+        self.result_viewer_member_precision_var = self._make_string_var(parent, "1e-3")
+        self.result_viewer_member_precision_selector = ttk.Entry(controls, textvariable=self.result_viewer_member_precision_var, width=10)
+        self.result_viewer_member_precision_selector.grid(row=0, column=6, sticky="w", padx=(8, 4))
+        self.result_viewer_member_precision_selector.bind("<Return>", lambda _event: self._refresh_individual_member_viewer())
         self.result_viewer_member_scroll_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
             controls,
             text="Scroll for Values",
             variable=self.result_viewer_member_scroll_var,
             command=self._update_member_review_cursor_only,
-        ).grid(row=0, column=5, sticky="w", padx=(0, 10))
+        ).grid(row=0, column=7, sticky="w", padx=(0, 10))
         self.result_viewer_member_show_max_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
             controls,
             text="Show Max",
             variable=self.result_viewer_member_show_max_var,
             command=self._refresh_individual_member_viewer,
-        ).grid(row=0, column=6, sticky="w")
+        ).grid(row=0, column=8, sticky="w")
 
         self.result_viewer_member_message = tk.StringVar(value="Select a member to review static results.")
         ttk.Label(parent, textvariable=self.result_viewer_member_message).grid(row=1, column=0, sticky="w", pady=(0, 6))
@@ -1839,7 +1861,7 @@ class MainWindow:
                     px = x0 + (float(extrema.get("x", 0.0)) / length) * (x1 - x0)
                     py = row_center - float(extrema.get("value", 0.0)) * y_scale
                     canvas.create_oval(px - 4, py - 4, px + 4, py + 4, fill="#222222", outline="")
-                    canvas.create_text(px + 6, py - 8, text=self._format_number(extrema.get("value", 0.0)), anchor="w", fill="#222222", font=("Segoe UI", 8))
+                    canvas.create_text(px + 6, py - 8, text=self._format_member_review_number(extrema.get("value", 0.0)), anchor="w", fill="#222222", font=("Segoe UI", 8))
 
         self.result_viewer_member_canvas_geometry = {
             "x0": x0,
@@ -1966,7 +1988,7 @@ class MainWindow:
         canvas.create_line(x, y, x + dx, y + dy, fill=color, width=2, arrow=tk.LAST)
         text_x = x + 38.0 if text_side == "right" else x - 38.0
         anchor = "w" if text_side == "right" else "e"
-        canvas.create_text(text_x, y, text=f"{label}={self._format_number(numeric_value)}", anchor=anchor, fill=color, font=("Segoe UI", 8))
+        canvas.create_text(text_x, y, text=f"{label}={self._format_member_review_number(numeric_value)}", anchor=anchor, fill=color, font=("Segoe UI", 8))
 
     def _draw_labeled_moment_arrow(self, canvas: tk.Canvas, x: float, y: float, value: object, *, text_side: str, label: str = "M") -> None:
         try:
@@ -1982,7 +2004,7 @@ class MainWindow:
         canvas.create_line(*points, fill=color, width=2, smooth=True, arrow=tk.LAST)
         text_x = x + 38.0 if text_side == "right" else x - 38.0
         anchor = "w" if text_side == "right" else "e"
-        canvas.create_text(text_x, y, text=f"{label}={self._format_number(numeric_value)}", anchor=anchor, fill=color, font=("Segoe UI", 8))
+        canvas.create_text(text_x, y, text=f"{label}={self._format_member_review_number(numeric_value)}", anchor=anchor, fill=color, font=("Segoe UI", 8))
 
     def _update_member_review_cursor_only(self) -> None:
         if not getattr(self, "result_viewer_member_profile", None):
@@ -2028,7 +2050,7 @@ class MainWindow:
             y_scale = ((geometry["bottom"] - geometry["top"]) / 5 * 0.32) / max_abs
             py = row_center - float(y_value) * y_scale
             canvas.create_oval(px - 3, py - 3, px + 3, py + 3, fill="#1f6feb", outline="", tags="member_cursor_value")
-            canvas.create_text(px + 6, py - 6, text=self._format_number(y_value), anchor="w", fill="#1f6feb", font=("Segoe UI", 8), tags="member_cursor_value")
+            canvas.create_text(px + 6, py - 6, text=self._format_member_review_number(y_value), anchor="w", fill="#1f6feb", font=("Segoe UI", 8), tags="member_cursor_value")
 
     def _render_member_review_summary(self, review_state: Mapping[str, object] | None) -> None:
         review_state = review_state or {}
@@ -2043,7 +2065,7 @@ class MainWindow:
 
         if getattr(self, "result_viewer_member_current_location_var", None) is not None:
             self.result_viewer_member_current_location_var.set(
-                f"x = {self._format_number(cursor_x)} / {self._format_number(profile.get('length', 0.0))} {length_unit}"
+                f"x = {self._format_member_review_number(cursor_x)} / {self._format_member_review_number(profile.get('length', 0.0))} {length_unit}"
             )
         if getattr(self, "result_viewer_member_current_n_var", None) is not None:
             self.result_viewer_member_current_n_var.set(self._member_review_value_label(current.get("N"), force_unit))
@@ -2062,13 +2084,13 @@ class MainWindow:
     def _member_review_value_label(self, value: object, unit: str) -> str:
         if value is None:
             return "-"
-        return f"{self._format_number(value)} {unit}"
+        return f"{self._format_member_review_number(value)} {unit}"
 
     def _set_member_review_extremum_vars(self, key: str, value: Mapping[str, object] | None, unit: str) -> None:
         label = "-"
         if value:
-            x_value = self._format_number(value.get("x", 0.0))
-            y_value = self._format_number(value.get("value", 0.0))
+            x_value = self._format_member_review_number(value.get("x", 0.0))
+            y_value = self._format_member_review_number(value.get("value", 0.0))
             label = f"x = {x_value}, {y_value} {unit}"
         if key == "N" and getattr(self, "result_viewer_member_max_n_var", None) is not None:
             self.result_viewer_member_max_n_var.set(label)
@@ -2589,7 +2611,7 @@ class MainWindow:
         return (
             ("DOF", "Phi"),
             [
-                (f"DOF{index + 1}", self._format_number(value))
+                (f"DOF{index + 1}", self._format_modal_phi_number(value))
                 for index, value in enumerate(mode_shape)
             ],
         )
@@ -2795,6 +2817,27 @@ class MainWindow:
 
     def _format_number(self, value: object) -> str:
         return format_scalar(value, tolerance=self._display_tolerance())
+
+    def _precision_value(self, var: object, default: float = 1.0e-3) -> float:
+        if var is None or not hasattr(var, "get"):
+            return default
+        try:
+            precision = float(var.get())
+        except (TypeError, ValueError):
+            return default
+        return precision if precision > 0.0 else default
+
+    def _member_review_precision(self) -> float:
+        return self._precision_value(getattr(self, "result_viewer_member_precision_var", None), default=1.0e-3)
+
+    def _modal_phi_precision(self) -> float:
+        return self._precision_value(getattr(self, "result_viewer_dynamic_mode_precision_var", None), default=1.0e-3)
+
+    def _format_member_review_number(self, value: object) -> str:
+        return format_scalar(value, tolerance=self._member_review_precision())
+
+    def _format_modal_phi_number(self, value: object) -> str:
+        return format_scalar(value, tolerance=self._modal_phi_precision())
 
     def _new_model(self) -> None:
         builder = ask_new_model(self.root)

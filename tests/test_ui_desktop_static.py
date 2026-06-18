@@ -209,6 +209,8 @@ def _window_with_model(model=object()):
     window.result_viewer_member_cursor_scale = None
     window.result_viewer_member_display_mode_var = DummyVar("Absolute")
     window.result_viewer_member_display_mode_selector = None
+    window.result_viewer_member_precision_var = DummyVar("1e-3")
+    window.result_viewer_member_precision_selector = None
     window.result_viewer_member_scroll_var = DummyVar(True)
     window.result_viewer_member_show_max_var = DummyVar(True)
     window.result_viewer_member_profile = None
@@ -237,6 +239,8 @@ def _window_with_model(model=object()):
     window.result_viewer_dynamic_mode_normalization_selector = None
     window.result_viewer_dynamic_reference_dof_var = DummyVar("1")
     window.result_viewer_dynamic_reference_dof_selector = None
+    window.result_viewer_dynamic_mode_precision_var = DummyVar("1e-3")
+    window.result_viewer_dynamic_mode_precision_selector = None
     window.result_viewer_dynamic_matrix_selector = None
     window.result_viewer_dynamic_matrix_tree = None
     window.result_viewer_dynamic_mode_info_frame = None
@@ -474,6 +478,7 @@ def test_desktop_modal_results_builds_dropdown_layout(monkeypatch):
     parent = DummyFrame()
     monkeypatch.setattr(main_window.tk, "StringVar", DummyVar)
     monkeypatch.setattr(main_window.ttk, "Frame", DummyFrame)
+    monkeypatch.setattr(main_window.ttk, "Entry", DummyWidget)
     monkeypatch.setattr(main_window.ttk, "Label", DummyLabel)
     monkeypatch.setattr(main_window.ttk, "Button", DummyButton)
     monkeypatch.setattr(main_window.ttk, "Combobox", DummyCombobox)
@@ -490,6 +495,32 @@ def test_desktop_modal_results_builds_dropdown_layout(monkeypatch):
     assert window.result_viewer_dynamic_mode_selector.configured["state"] == "disabled"
     assert window.result_viewer_dynamic_matrix_selector.configured["state"] == "disabled"
     assert window.result_viewer_dynamic_reference_dof_selector.configured["state"] == "disabled"
+    assert window.result_viewer_dynamic_mode_precision_var.get() == "1e-3"
+
+
+def test_desktop_member_precision_defaults_to_1e_minus3():
+    window = _window_with_model()
+    assert window.result_viewer_member_precision_var.get() == "1e-3"
+    assert window._member_review_precision() == 0.001
+
+
+def test_desktop_member_precision_controls_static_labels():
+    window = _window_with_model()
+    window.result_viewer_member_precision_var = DummyVar("1e-1")
+
+    assert window._member_review_value_label(0.04, "kN") == "0 kN"
+    assert window._member_review_value_label(0.12, "kN") == "0.1 kN"
+
+
+def test_desktop_modal_precision_controls_phi_values():
+    window = _window_with_model()
+    window.result_viewer_dynamic_mode_precision_var = DummyVar("1e-1")
+
+    columns, rows = window._modal_phi_table_data([0.04, 0.12])
+
+    assert columns == ("DOF", "Phi")
+    assert rows[0] == ("DOF1", "0")
+    assert rows[1] == ("DOF2", "0.1")
 
 
 def test_desktop_static_viewer_builds_dropdown_selector(monkeypatch):
