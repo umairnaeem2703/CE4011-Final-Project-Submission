@@ -65,6 +65,7 @@ COMMAND_TABS = (
         "Edit",
         (
             ("command", "Select / Inspect"),
+            ("command", "Move Selection"),
             ("command", "Delete"),
             ("command", "Replicate"),
         ),
@@ -202,11 +203,13 @@ class MainWindow:
         self.selected_member_id = None
         self.result_display_tolerance = DEFAULT_DISPLAY_TOLERANCE
         self.result_tolerance_var = None
+        self.workspace_panedwindow = None
+        self.workspace_left_frame = None
+        self.workspace_canvas_frame = None
 
         self._configure_grid()
         self._build_command_area()
-        self._build_left_panel()
-        self._build_model_canvas()
+        self._build_workspace_area()
         self._build_right_panel()
         self._build_status_panel()
         self._refresh_object_tree()
@@ -328,16 +331,40 @@ class MainWindow:
         ttk.Button(group, text="Apply", command=self._apply_grid_spacing).grid(row=0, column=3, padx=(4, 0), sticky="w")
         return group
 
-    def _build_left_panel(self) -> None:
-        panel = ttk.Frame(self.root, padding=(8, 4))
-        panel.grid(row=1, column=0, sticky="nsw")
-        panel.columnconfigure(0, weight=1)
+    def _build_workspace_area(self) -> None:
+        workspace = ttk.Panedwindow(self.root, orient=tk.HORIZONTAL)
+        workspace.grid(row=1, column=0, columnspan=2, sticky="nsew")
+        self.workspace_panedwindow = workspace
 
-        self.object_tree = ObjectTreePanel(panel, selection_callback=self._select_from_tree)
+        left_frame = ttk.Frame(workspace, padding=(8, 4))
+        left_frame.columnconfigure(0, weight=1)
+        left_frame.rowconfigure(0, weight=1)
+        self.workspace_left_frame = left_frame
+        self.object_tree = ObjectTreePanel(left_frame, selection_callback=self._select_from_tree)
         self.object_tree.grid(row=0, column=0, sticky="nsew")
-        panel.rowconfigure(0, weight=1)
+        workspace.add(left_frame, weight=0)
+
+        canvas_frame = ttk.Frame(workspace, padding=4)
+        canvas_frame.columnconfigure(0, weight=1)
+        canvas_frame.rowconfigure(0, weight=1)
+        self.workspace_canvas_frame = canvas_frame
+        self.model_canvas = ModelCanvas(
+            canvas_frame,
+            status_callback=self._write_status,
+            selection_callback=self._show_selection,
+            change_callback=self._refresh_object_tree,
+        )
+        self.model_canvas.grid(row=0, column=0, sticky="nsew")
+        self.canvas = self.model_canvas.canvas
+        workspace.add(canvas_frame, weight=1)
 
     def _build_model_canvas(self) -> None:
+        return
+
+    def _build_left_panel(self) -> None:
+        return
+
+    def _build_workspace_area_old(self) -> None:
         self.model_canvas = ModelCanvas(
             self.root,
             status_callback=self._write_status,

@@ -605,6 +605,36 @@ class ModelCanvas(ttk.Frame):
         )
         return len(new_node_ids), len(new_element_ids)
 
+    def move_selection(self, dx: float, dy: float) -> tuple[int, int] | None:
+        if self._selection_count() == 0:
+            self.status_callback("Move Selection: select nodes or members first.")
+            return None
+
+        node_ids_to_move = {node_id for node_id in self.selected_node_ids if node_id in self.builder.model.nodes}
+        element_ids_to_move = {
+            element_id for element_id in self.selected_element_ids if element_id in self.builder.model.elements
+        }
+        for element_id in element_ids_to_move:
+            element = self.builder.model.elements[element_id]
+            node_ids_to_move.add(element.node_i.id)
+            node_ids_to_move.add(element.node_j.id)
+
+        moved_nodes = 0
+        for node_id in sorted(node_ids_to_move):
+            node = self.builder.model.nodes.get(node_id)
+            if node is None:
+                continue
+            node.x += dx
+            node.y += dy
+            moved_nodes += 1
+
+        self._mark_model_dirty()
+        self.redraw_model()
+        self.change_callback()
+        self._set_multi_selection(node_ids_to_move, element_ids_to_move)
+        self.status_callback(f"Moved {moved_nodes} node(s) by dx={dx:.6g}, dy={dy:.6g}.")
+        return moved_nodes, len(element_ids_to_move)
+
     def _toggle_node_selection(self, node_id: int) -> None:
         if node_id in self.selected_node_ids:
             self.selected_node_ids.remove(node_id)

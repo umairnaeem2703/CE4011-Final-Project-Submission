@@ -101,6 +101,15 @@ class DummyNotebook(DummyWidget):
         self.selected = frame
 
 
+class DummyPanedwindow(DummyWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.added = []
+
+    def add(self, child, **kwargs):
+        self.added.append((child, kwargs))
+
+
 class DummyMenu(DummyWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -523,6 +532,53 @@ def test_desktop_command_area_builds_dropdown_menus(monkeypatch):
     assert window.configured_menu is created[0]
     assert len(created) == len(main_window.COMMAND_TABS) + 1
     assert [entry[1]["label"] for entry in created[0].entries if entry[0] == "cascade"] == [name for name, _items in main_window.COMMAND_TABS]
+    edit_entries = next(entry[1]["menu"].entries for entry in created[0].entries if entry[0] == "cascade" and entry[1]["label"] == "Edit")
+    assert any(item[1].get("label") == "Move Selection" for item in edit_entries if item[0] == "command")
+
+
+def test_desktop_workspace_uses_horizontal_panedwindow(monkeypatch):
+    window = _window_with_model()
+    window.root = DummyFrame()
+    window._refresh_object_tree = lambda: None
+    window._select_from_tree = lambda *_args: None
+    window._show_selection = lambda *_args: None
+    window._write_status = lambda *_args: None
+    monkeypatch.setattr(main_window.ttk, "Panedwindow", DummyPanedwindow)
+    monkeypatch.setattr(main_window.ttk, "Frame", DummyFrame)
+    monkeypatch.setattr(main_window, "ObjectTreePanel", lambda parent, selection_callback=None: SimpleNamespace(grid=lambda **_kw: None))
+    monkeypatch.setattr(main_window, "ModelCanvas", lambda *args, **kwargs: SimpleNamespace(grid=lambda **_kw: None, canvas=object()))
+
+    window._build_workspace_area()
+
+    assert window.workspace_panedwindow.kwargs["orient"] == main_window.tk.HORIZONTAL
+    assert len(window.workspace_panedwindow.added) == 2
+
+
+def test_desktop_move_selection_translates_selected_objects_and_elements():
+    builder = ModelBuilder(name="Move Model")
+    builder.add_material("m1", E=200000.0)
+    builder.add_section("s1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+    canvas = main_window.ModelCanvas.__new__(main_window.ModelCanvas)
+    canvas.builder = builder
+    canvas.selected_node_ids = {1}
+    canvas.selected_element_ids = {"e1"}
+    canvas._selection_count = lambda: 2
+    canvas._mark_model_dirty = lambda: None
+    canvas.redraw_model = lambda *args, **kwargs: None
+    canvas.change_callback = lambda: None
+    canvas.status_callback = lambda *_args: None
+    canvas._set_multi_selection = lambda node_ids, element_ids: setattr(canvas, "selection_snapshot", (set(node_ids), set(element_ids)))
+
+    result = canvas.move_selection(1.5, -0.5)
+
+    assert result == (2, 1)
+    assert builder.model.nodes[1].x == 1.5
+    assert builder.model.nodes[1].y == -0.5
+    assert builder.model.nodes[2].x == 4.5
+    assert builder.model.nodes[2].y == -0.5
 
 
 def test_desktop_modal_summary_shows_one_row_per_mode():

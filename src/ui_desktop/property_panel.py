@@ -88,6 +88,8 @@ class PropertyPanel(ttk.LabelFrame):
         self.replicate_copies_var = tk.StringVar(value="1")
         self.replicate_dx_var = tk.StringVar(value="0.0")
         self.replicate_dy_var = tk.StringVar(value="0.0")
+        self.move_dx_var = tk.StringVar(value="0.0")
+        self.move_dy_var = tk.StringVar(value="0.0")
         self._section_geometric_widgets = []
         self._section_direct_widgets = []
 
@@ -117,6 +119,8 @@ class PropertyPanel(ttk.LabelFrame):
             self._delete_panel()
         elif command == "Replicate":
             self._replicate_panel()
+        elif command == "Move Selection":
+            self._move_panel()
         else:
             self._placeholder_panel(command, "No settings for this command yet.")
 
@@ -127,6 +131,8 @@ class PropertyPanel(ttk.LabelFrame):
             self.show_command(self.current_command)
         elif self.current_command == "Assign Diaphragm":
             self.show_command("Assign Diaphragm")
+        elif self.current_command == "Move Selection":
+            self.show_command("Move Selection")
 
     def sync_from_canvas(self) -> None:
         self.material_var.set(self.model_canvas.active_material_id)
@@ -313,6 +319,33 @@ class PropertyPanel(ttk.LabelFrame):
             pady=(6, 0),
         )
 
+    def _move_panel(self) -> None:
+        self._title("Move Selection")
+        form = ttk.Frame(self)
+        form.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        form.columnconfigure(1, weight=1)
+        ttk.Label(form, text="dx").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.move_dx_var, width=10).grid(row=0, column=1, sticky="ew", pady=2)
+        ttk.Label(form, text="dy").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Entry(form, textvariable=self.move_dy_var, width=10).grid(row=1, column=1, sticky="ew", pady=2)
+        ttk.Label(
+            self,
+            text=f"{self.model_canvas.selection_count()} selected object(s).",
+            wraplength=220,
+        ).grid(row=2, column=0, sticky="nw", pady=(8, 0))
+        ttk.Button(self, text="Apply Move", command=self._apply_move_selection).grid(
+            row=3,
+            column=0,
+            sticky="ew",
+            pady=(8, 0),
+        )
+        ttk.Button(self, text="Cancel", command=self._cancel_replicate).grid(
+            row=4,
+            column=0,
+            sticky="ew",
+            pady=(6, 0),
+        )
+
     def _materials_sections_panel(self) -> None:
         self._title("Materials / Sections")
 
@@ -352,20 +385,6 @@ class PropertyPanel(ttk.LabelFrame):
         self._combo(section, 2, "Assign existing", self.assign_section_var, self._section_ids(), lambda: None)
         ttk.Button(section, text="Assign Section to Selected Members", command=self._assign_section_to_selected_members).grid(
             row=3,
-            column=0,
-            columnspan=2,
-            sticky="ew",
-            pady=(6, 0),
-        )
-        ttk.Button(section, text="Assign Material + Section to Selected Members", command=self._assign_material_section_to_selected_members).grid(
-            row=4,
-            column=0,
-            columnspan=2,
-            sticky="ew",
-            pady=(6, 0),
-        )
-        ttk.Button(section, text="Reset to Default", command=self._reset_current_command).grid(
-            row=5,
             column=0,
             columnspan=2,
             sticky="ew",
@@ -956,6 +975,17 @@ class PropertyPanel(ttk.LabelFrame):
         result = self.model_canvas.replicate_selection(copies, dx, dy)
         if result is not None:
             self.show_command("Replicate")
+
+    def _apply_move_selection(self) -> None:
+        try:
+            dx = float(self.move_dx_var.get())
+            dy = float(self.move_dy_var.get())
+        except ValueError:
+            self.status_callback("Move Selection: dx and dy must be numeric.")
+            return
+        result = self.model_canvas.move_selection(dx, dy)
+        if result is not None:
+            self.show_command("Move Selection")
 
     def _cancel_replicate(self) -> None:
         if self.command_callback is not None:
