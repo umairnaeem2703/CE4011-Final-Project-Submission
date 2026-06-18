@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.2) (preloaded format=pdflatex 2026.3.13)  18 JUN 2026 20:31
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.2) (preloaded format=pdflatex 2026.3.13)  18 JUN 2026 20:53
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -367,128 +367,171 @@ Package hyperref Info: Link coloring OFF on input line 69.
 \@outlinefile=\write3
 \openout3 = `user_manual.out'.
 
-<../diagrams/rendered/desktop_workflow.png, id=103, 762.85pt x 1056.94875pt>
+<../diagrams/rendered/desktop_workflow.png, id=91, 762.85pt x 1056.94875pt>
 File: ../diagrams/rendered/desktop_workflow.png Graphic file (type png)
 <use ../diagrams/rendered/desktop_workflow.png>
 Package pdftex.def Info: ../diagrams/rendered/desktop_workflow.png  used on input line 80.
 (pdftex.def)             Requested size: 216.72774pt x 300.28198pt.
-<../main_report/figures/quick_start.png, id=104, 1443.14156pt x 773.13844pt>
+<../main_report/figures/quick_start.png, id=92, 1443.14156pt x 773.13844pt>
 File: ../main_report/figures/quick_start.png Graphic file (type png)
 <use ../main_report/figures/quick_start.png>
 Package pdftex.def Info: ../main_report/figures/quick_start.png  used on input line 82.
 (pdftex.def)             Requested size: 430.01707pt x 230.3743pt.
- [1
-
-{C:/Users/MOHAMMAD UMAIR/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map} <../diagrams/rendered/desktop_workflow.png (PNG copy)>]
-<../main_report/figures/shear_frame_template.png, id=116, 1439.3775pt x 776.9025pt>
+<figures/blank_model_workflow1.png, id=94, 1443.89438pt x 766.36313pt>
+File: figures/blank_model_workflow1.png Graphic file (type png)
+<use figures/blank_model_workflow1.png>
+Package pdftex.def Info: figures/blank_model_workflow1.png  used on input line 92.
+(pdftex.def)             Requested size: 430.02808pt x 228.23851pt.
+<figures/blank_model_workflow2.png, id=95, 377.91188pt x 287.57437pt>
+File: figures/blank_model_workflow2.png Graphic file (type png)
+<use figures/blank_model_workflow2.png>
+Package pdftex.def Info: figures/blank_model_workflow2.png  used on input line 98.
+(pdftex.def)             Requested size: 430.02808pt x 327.23264pt.
+<figures/blank_model_workflow3.png, id=96, 1443.14156pt x 767.86874pt>
+File: figures/blank_model_workflow3.png Graphic file (type png)
+<use figures/blank_model_workflow3.png>
+Package pdftex.def Info: figures/blank_model_workflow3.png  used on input line 104.
+(pdftex.def)             Requested size: 430.02808pt x 228.80408pt.
+<../main_report/figures/shear_frame_template.png, id=97, 1439.3775pt x 776.9025pt>
 File: ../main_report/figures/shear_frame_template.png Graphic file (type png)
 <use ../main_report/figures/shear_frame_template.png>
-Package pdftex.def Info: ../main_report/figures/shear_frame_template.png  used on input line 96.
+Package pdftex.def Info: ../main_report/figures/shear_frame_template.png  used on input line 112.
 (pdftex.def)             Requested size: 430.01561pt x 232.10046pt.
-<../main_report/figures/main_ui.png, id=117, 1443.89438pt x 773.89125pt>
+<../main_report/figures/main_ui.png, id=98, 1443.89438pt x 773.89125pt>
 File: ../main_report/figures/main_ui.png Graphic file (type png)
 <use ../main_report/figures/main_ui.png>
-Package pdftex.def Info: ../main_report/figures/main_ui.png  used on input line 104.
+Package pdftex.def Info: ../main_report/figures/main_ui.png  used on input line 120.
 (pdftex.def)             Requested size: 430.02107pt x 230.48053pt.
- [2 <../main_report/figures/quick_start.png>] [3 <../main_report/figures/shear_frame_template.png> <../main_report/figures/main_ui.png>]
-<../main_report/figures/property_panel.png, id=135, 1443.89438pt x 776.9025pt>
+ [1
+
+{C:/Users/MOHAMMAD UMAIR/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] [2 <../diagrams/rendered/desktop_workflow.png (PNG copy)> <../main_report/figures/quick_start.png>] [3 <./figures/blank_model_workflow1.png> <./figures/blank_model_workflow2.png>] [4 <./figures/blank_model_workflow3.png> <../main_report/figures/shear_frame_template.png>]
+<../main_report/figures/property_panel.png, id=131, 1443.89438pt x 776.9025pt>
 File: ../main_report/figures/property_panel.png Graphic file (type png)
 <use ../main_report/figures/property_panel.png>
-Package pdftex.def Info: ../main_report/figures/property_panel.png  used on input line 110.
+Package pdftex.def Info: ../main_report/figures/property_panel.png  used on input line 126.
 (pdftex.def)             Requested size: 430.02107pt x 231.37733pt.
 File: ../main_report/figures/property_panel.png Graphic file (type png)
 <use ../main_report/figures/property_panel.png>
-Package pdftex.def Info: ../main_report/figures/property_panel.png  used on input line 116.
+Package pdftex.def Info: ../main_report/figures/property_panel.png  used on input line 132.
 (pdftex.def)             Requested size: 430.02107pt x 231.37733pt.
- [4 <../main_report/figures/property_panel.png>]
-<../main_report/figures/support_assignment.png, id=143, 1443.14156pt x 773.13844pt>
+ [5 <../main_report/figures/main_ui.png> <../main_report/figures/property_panel.png>]
+<../main_report/figures/support_assignment.png, id=140, 1443.14156pt x 773.13844pt>
 File: ../main_report/figures/support_assignment.png Graphic file (type png)
 <use ../main_report/figures/support_assignment.png>
-Package pdftex.def Info: ../main_report/figures/support_assignment.png  used on input line 122.
+Package pdftex.def Info: ../main_report/figures/support_assignment.png  used on input line 138.
 (pdftex.def)             Requested size: 430.01707pt x 230.3743pt.
-<../main_report/figures/member_load_assignment.png, id=144, 1443.14156pt x 773.89125pt>
+<../main_report/figures/member_load_assignment.png, id=141, 1443.14156pt x 773.89125pt>
 File: ../main_report/figures/member_load_assignment.png Graphic file (type png)
 <use ../main_report/figures/member_load_assignment.png>
-Package pdftex.def Info: ../main_report/figures/member_load_assignment.png  used on input line 124.
+Package pdftex.def Info: ../main_report/figures/member_load_assignment.png  used on input line 140.
 (pdftex.def)             Requested size: 430.01707pt x 230.59862pt.
-<../main_report/figures/mass_assignments.png, id=145, 1443.89438pt x 773.89125pt>
+<../main_report/figures/mass_assignments.png, id=142, 1443.89438pt x 773.89125pt>
 File: ../main_report/figures/mass_assignments.png Graphic file (type png)
 <use ../main_report/figures/mass_assignments.png>
-Package pdftex.def Info: ../main_report/figures/mass_assignments.png  used on input line 126.
+Package pdftex.def Info: ../main_report/figures/mass_assignments.png  used on input line 142.
 (pdftex.def)             Requested size: 430.02107pt x 230.48053pt.
-<../main_report/figures/succesful_model_validation.png, id=146, 1443.14156pt x 772.38562pt>
+<../main_report/figures/succesful_model_validation.png, id=143, 1443.14156pt x 772.38562pt>
 File: ../main_report/figures/succesful_model_validation.png Graphic file (type png)
 <use ../main_report/figures/succesful_model_validation.png>
-Package pdftex.def Info: ../main_report/figures/succesful_model_validation.png  used on input line 132.
+Package pdftex.def Info: ../main_report/figures/succesful_model_validation.png  used on input line 148.
 (pdftex.def)             Requested size: 430.01707pt x 230.14998pt.
- [5 <../main_report/figures/support_assignment.png> <../main_report/figures/member_load_assignment.png>] [6 <../main_report/figures/mass_assignments.png> <../main_report/figures/succesful_model_validation.png>]
-<../diagrams/rendered/static_analysis_workflow.png, id=163, 463.7325pt x 1224.575pt>
+ [6 <../main_report/figures/support_assignment.png>] [7 <../main_report/figures/member_load_assignment.png> <../main_report/figures/mass_assignments.png>]
+<../diagrams/rendered/static_analysis_workflow.png, id=160, 463.7325pt x 1224.575pt>
 File: ../diagrams/rendered/static_analysis_workflow.png Graphic file (type png)
 <use ../diagrams/rendered/static_analysis_workflow.png>
-Package pdftex.def Info: ../diagrams/rendered/static_analysis_workflow.png  used on input line 138.
+Package pdftex.def Info: ../diagrams/rendered/static_analysis_workflow.png  used on input line 154.
 (pdftex.def)             Requested size: 113.71097pt x 300.27576pt.
-<../main_report/figures/static_frame_result_summary.png, id=164, 1443.14156pt x 775.39688pt>
+<../main_report/figures/static_frame_result_summary.png, id=161, 1443.14156pt x 775.39688pt>
 File: ../main_report/figures/static_frame_result_summary.png Graphic file (type png)
 <use ../main_report/figures/static_frame_result_summary.png>
-Package pdftex.def Info: ../main_report/figures/static_frame_result_summary.png  used on input line 140.
+Package pdftex.def Info: ../main_report/figures/static_frame_result_summary.png  used on input line 156.
 (pdftex.def)             Requested size: 430.01707pt x 231.04726pt.
-<../main_report/figures/static_dof_map.png, id=165, 1443.14156pt x 772.38562pt>
+<../main_report/figures/static_dof_map.png, id=162, 1443.14156pt x 772.38562pt>
 File: ../main_report/figures/static_dof_map.png Graphic file (type png)
 <use ../main_report/figures/static_dof_map.png>
-Package pdftex.def Info: ../main_report/figures/static_dof_map.png  used on input line 142.
+Package pdftex.def Info: ../main_report/figures/static_dof_map.png  used on input line 158.
 (pdftex.def)             Requested size: 430.01707pt x 230.14998pt.
-
-ignored: Infinite glue shrinkage found in box being split [7 <../diagrams/rendered/static_analysis_workflow.png (PNG copy)>]
-<../main_report/figures/static_frame_deformed.png, id=175, 1441.63594pt x 773.13844pt>
+<../main_report/figures/static_frame_deformed.png, id=163, 1441.63594pt x 773.13844pt>
 File: ../main_report/figures/static_frame_deformed.png Graphic file (type png)
 <use ../main_report/figures/static_frame_deformed.png>
-Package pdftex.def Info: ../main_report/figures/static_frame_deformed.png  used on input line 168.
+Package pdftex.def Info: ../main_report/figures/static_frame_deformed.png  used on input line 184.
 (pdftex.def)             Requested size: 430.00839pt x 230.61024pt.
-<../main_report/figures/static_frame_moment.png, id=176, 1441.63594pt x 775.39688pt>
-File: ../main_report/figures/static_frame_moment.png Graphic file (type png)
-<use ../main_report/figures/static_frame_moment.png>
-Package pdftex.def Info: ../main_report/figures/static_frame_moment.png  used on input line 170.
-(pdftex.def)             Requested size: 430.00839pt x 231.28389pt.
-<../diagrams/rendered/modal_analysis_workflow.png, id=177, 732.7375pt x 1303.87125pt>
+<figures/static_frame_axial.png, id=164, 1443.14156pt x 773.89125pt>
+File: figures/static_frame_axial.png Graphic file (type png)
+<use figures/static_frame_axial.png>
+Package pdftex.def Info: figures/static_frame_axial.png  used on input line 188.
+(pdftex.def)             Requested size: 430.02808pt x 230.59862pt.
+<figures/static_frame_shear.png, id=165, 1443.14156pt x 776.14969pt>
+File: figures/static_frame_shear.png Graphic file (type png)
+<use figures/static_frame_shear.png>
+Package pdftex.def Info: figures/static_frame_shear.png  used on input line 194.
+(pdftex.def)             Requested size: 430.02808pt x 231.27158pt.
+<figures/static_frame_moment.png, id=166, 1441.63594pt x 775.39688pt>
+File: figures/static_frame_moment.png Graphic file (type png)
+<use figures/static_frame_moment.png>
+Package pdftex.def Info: figures/static_frame_moment.png  used on input line 200.
+(pdftex.def)             Requested size: 430.02808pt x 231.28389pt.
+<figures/static_k.png, id=167, 1443.89438pt x 773.13844pt>
+File: figures/static_k.png Graphic file (type png)
+<use figures/static_k.png>
+Package pdftex.def Info: figures/static_k.png  used on input line 206.
+(pdftex.def)             Requested size: 430.02808pt x 230.25633pt.
+<figures/static_frame_individual_member.png, id=168, 1443.14156pt x 775.39688pt>
+File: figures/static_frame_individual_member.png Graphic file (type png)
+<use figures/static_frame_individual_member.png>
+Package pdftex.def Info: figures/static_frame_individual_member.png  used on input line 212.
+(pdftex.def)             Requested size: 430.02808pt x 231.04726pt.
+<../diagrams/rendered/modal_analysis_workflow.png, id=169, 732.7375pt x 1303.87125pt>
 File: ../diagrams/rendered/modal_analysis_workflow.png Graphic file (type png)
 <use ../diagrams/rendered/modal_analysis_workflow.png>
-Package pdftex.def Info: ../diagrams/rendered/modal_analysis_workflow.png  used on input line 176.
+Package pdftex.def Info: ../diagrams/rendered/modal_analysis_workflow.png  used on input line 220.
 (pdftex.def)             Requested size: 168.7497pt x 300.28198pt.
-<../main_report/figures/modal_analysis_results_summary.png, id=178, 1440.13031pt x 776.14969pt>
+<../main_report/figures/modal_analysis_settings.png, id=170, 1443.89438pt x 776.14969pt>
+File: ../main_report/figures/modal_analysis_settings.png Graphic file (type png)
+<use ../main_report/figures/modal_analysis_settings.png>
+Package pdftex.def Info: ../main_report/figures/modal_analysis_settings.png  used on input line 224.
+(pdftex.def)             Requested size: 430.02808pt x 231.15314pt.
+<../main_report/figures/modal_analysis_results_summary.png, id=171, 1440.13031pt x 776.14969pt>
 File: ../main_report/figures/modal_analysis_results_summary.png Graphic file (type png)
 <use ../main_report/figures/modal_analysis_results_summary.png>
-Package pdftex.def Info: ../main_report/figures/modal_analysis_results_summary.png  used on input line 178.
-(pdftex.def)             Requested size: 430.02077pt x 231.75714pt.
-<../main_report/figures/modal_stiffness_matrix.png, id=179, 1439.3775pt x 250.68657pt>
+Package pdftex.def Info: ../main_report/figures/modal_analysis_results_summary.png  used on input line 230.
+(pdftex.def)             Requested size: 430.02808pt x 231.75714pt.
+<figures/modal_mass_matrix.png, id=172, 1443.89438pt x 336.50719pt>
+File: figures/modal_mass_matrix.png Graphic file (type png)
+<use figures/modal_mass_matrix.png>
+Package pdftex.def Info: figures/modal_mass_matrix.png  used on input line 236.
+(pdftex.def)             Requested size: 430.02808pt x 100.21866pt.
+<../main_report/figures/modal_stiffness_matrix.png, id=173, 1439.3775pt x 250.68657pt>
 File: ../main_report/figures/modal_stiffness_matrix.png Graphic file (type png)
 <use ../main_report/figures/modal_stiffness_matrix.png>
-Package pdftex.def Info: ../main_report/figures/modal_stiffness_matrix.png  used on input line 180.
-(pdftex.def)             Requested size: 430.01561pt x 74.89288pt.
-<../main_report/figures/mode_shapes.png, id=180, 1443.14156pt x 772.38562pt>
+Package pdftex.def Info: ../main_report/figures/modal_stiffness_matrix.png  used on input line 242.
+(pdftex.def)             Requested size: 430.02808pt x 74.89288pt.
+<../main_report/figures/mode_shapes.png, id=174, 1443.14156pt x 772.38562pt>
 File: ../main_report/figures/mode_shapes.png Graphic file (type png)
 <use ../main_report/figures/mode_shapes.png>
-Package pdftex.def Info: ../main_report/figures/mode_shapes.png  used on input line 182.
+Package pdftex.def Info: ../main_report/figures/mode_shapes.png  used on input line 246.
 (pdftex.def)             Requested size: 430.01707pt x 230.14998pt.
- [8] [9 <../main_report/figures/static_frame_result_summary.png> <../main_report/figures/static_dof_map.png>] [10 <../main_report/figures/static_frame_deformed.png> <../main_report/figures/static_frame_moment.png>] [11 <../diagrams/rendered/modal_analysis_workflow.png (PNG copy)> <../main_report/figures/modal_analysis_results_summary.png> <../main_report/figures/modal_stiffness_matrix.png>] [12 <../main_report/figures/mode_shapes.png>] [13] [14] [15] (user_manual.aux)
+
+ignored: Infinite glue shrinkage found in box being split [8 <../main_report/figures/succesful_model_validation.png>] [9] [10 <../diagrams/rendered/static_analysis_workflow.png (PNG copy)> <../main_report/figures/static_frame_result_summary.png>] [11 <../main_report/figures/static_dof_map.png> <../main_report/figures/static_frame_deformed.png>] [12 <./figures/static_frame_axial.png> <./figures/static_frame_shear.png>] [13 <./figures/static_frame_moment.png> <./figures/static_k.png>] [14 <./figures/static_frame_individual_member.png> <../diagrams/rendered/modal_analysis_workflow.png (PNG copy)>] [15 <../main_report/figures/modal_analysis_settings.png> <../main_report/figures/modal_analysis_results_summary.png> <./figures/modal_mass_matrix.png>] [16 <../main_report/figures/modal_stiffness_matrix.png> <../main_report/figures/mode_shapes.png>] [17] [18] (user_manual.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `user_manual.out' has not changed.
-(rerunfilecheck)             Checksum: A153E9B34FB1FB8F03E8D7A309CB5C72;4175.
+(rerunfilecheck)             Checksum: 5DD2EBDCFCC7E8C8631B46DE17AB9A4B;3580.
  ) 
 Here is how much of TeX's memory you used:
- 10554 strings out of 467867
- 168432 string characters out of 5413942
- 603917 words of memory out of 5000000
- 39236 multiletter control sequences out of 15000+600000
- 635120 words of font info for 66 fonts, out of 8000000 for 9000
+ 10619 strings out of 467867
+ 170835 string characters out of 5413942
+ 603958 words of memory out of 5000000
+ 39295 multiletter control sequences out of 15000+600000
+ 634952 words of font info for 65 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,11n,79p,595b,579s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 75i,11n,79p,595b,583s stack positions out of 10000i,1000n,20000p,200000b,200000s
  <C:\Users\MOHAMMAD UMAIR\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dpi600\tcrm1095.pk><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on user_manual.pdf (15 pages, 1215219 bytes).
+Output written on user_manual.pdf (18 pages, 1839477 bytes).
 PDF statistics:
- 327 PDF objects out of 1000 (max. 8388607)
- 90 named destinations out of 1000 (max. 500000)
- 291 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 352 PDF objects out of 1000 (max. 8388607)
+ 96 named destinations out of 1000 (max. 500000)
+ 312 words of extra memory for PDF output out of 10000 (max. 10000000)
 

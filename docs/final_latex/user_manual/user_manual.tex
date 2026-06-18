@@ -63,7 +63,7 @@
 }
 
 \title{\textbf{CE 4011 Static + Modal Desktop MVP User Manual}}
-\author{Final Documentation Package}
+\author{Final Documentation Package\\[0.5em]Mohammad Umair Naeem\\2416055}
 \date{Spring Semester 2025--2026}
 
 \begin{document}
@@ -87,7 +87,23 @@ The normal desktop workflow is to start from a blank model, the 2D shear-frame t
 
 Choose a blank model when entering a custom topology. Define nodes by coordinates, then connect them with elements. This workflow is appropriate for verification examples, trusses, frames, cantilevers, and small teaching models.
 
-\placeholderfigure{Blank model workflow}{Screenshot placeholder for creating a blank model.}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/blank_model_workflow1.png}
+\caption{New model selection menu for starting a blank model workflow.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/blank_model_workflow2.png}
+\caption{Assign dropdown contents used to define model entities during blank-model setup.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/blank_model_workflow3.png}
+\caption{Random node and member plot on the canvas for a blank model.}
+\end{figure}
 
 \subsection{2D Shear Frame Template}
 
@@ -167,7 +183,35 @@ N/V/M diagrams & Axial force, shear force, and bending moment data along each me
 
 \manualfigure{Static deformed shape}{../main_report/figures/static_frame_deformed.png}{Static deformed shape plot.}
 
-\manualfigure{N/V/M diagram}{../main_report/figures/static_frame_moment.png}{Representative axial, shear, and moment diagram evidence.}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/static_frame_axial.png}
+\caption{Static frame axial force diagram.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/static_frame_shear.png}
+\caption{Static frame shear force diagram.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/static_frame_moment.png}
+\caption{Static frame bending moment diagram.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/static_k.png}
+\caption{Static frame stiffness matrix \(K\).}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/static_frame_individual_member.png}
+\caption{Static frame individual member result plot.}
+\end{figure}
 
 \section{Running Modal Analysis}
 
@@ -175,9 +219,29 @@ Run Modal Analysis after defining geometry, stiffness properties, boundary condi
 
 \diagramfigure{Modal analysis workflow}{../diagrams/rendered/modal_analysis_workflow.png}{Workflow from validation through stiffness/mass assembly, active dynamic DOF selection, massless-DOF condensation, eigenvalue solution, normalization, modal properties, mode-shape visualization, and export.}
 
-\manualfigure{Modal result summary}{../main_report/figures/modal_analysis_results_summary.png}{Modal eigenvalues, frequencies, periods, and participation tables.}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{../main_report/figures/modal_analysis_settings.png}
+\caption{Modal analysis settings dialog.}
+\end{figure}
 
-\manualfigure{Modal K/M/reduced matrix view}{../main_report/figures/modal_stiffness_matrix.png}{Modal stiffness, mass, and reduced or condensed matrix views.}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{../main_report/figures/modal_analysis_results_summary.png}
+\caption{Modal analysis results summary.}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/modal_mass_matrix.png}
+\caption{Modal mass matrix \(M\).}
+\end{figure}
+
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{../main_report/figures/modal_stiffness_matrix.png}
+\caption{Modal stiffness matrix \(K\) and reduced matrix view.}
+\end{figure}
 
 \manualfigure{Mode shape plot}{../main_report/figures/mode_shapes.png}{Plotted modal mode shape.}
 
@@ -264,12 +328,6 @@ Analysis use & Static Analysis example and static benchmark documentation eviden
 \item Use \texttt{Model -> Export XML} only when a copy of the reproducible model file is needed.
 \end{enumerate}
 
-\subsection{Static Screenshots Still To Insert}
-
-Insert screenshots after the final desktop run for the loaded canvas geometry, successful validation message, Static Results summary, DOF map and matrix views, displacement/reaction/member-force tables, deformed shape plot, N/V/M plots, and any TXT/CSV/PNG export evidence used in the report.
-
-\placeholderfigure{Static fixture output}{TODO screenshot placeholder for \texttt{data/test-frame.xml}: loaded geometry, validation, Static Results summary, DOF/matrix tables, displacements/reactions/member forces, deformed shape, and N/V/M plots.}
-
 \section{Complete Modal Analysis Example}
 
 This example uses \texttt{data/test-modal-flex-beam.xml}, the retained modal flexible-beam/shear-frame benchmark fixture. It is a three-story, two-column frame with floor beams, fixed base supports at nodes 1 and 2, floor diaphragm groups, and horizontal lumped masses at the elevated floor nodes. The file has stiffness and mass data for Modal Analysis and no static load case, so use it for Modal Analysis.
@@ -322,14 +380,6 @@ Mode & \(\lambda\) & \(\omega\) & \(f\) & \(T\) & \(M_n\) & \(\Gamma_n\) & Mass 
 \item In the modal result views, inspect eigenvalues, frequencies, periods, mode-shape components, modal mass, participation factors, effective modal mass, and mass participation ratios.
 \item Export visible modal tables as TXT or CSV and export selected mode-shape plots as PNG where needed for the report or appendix.
 \end{enumerate}
-
-\subsection{Modal Screenshots Still To Insert}
-
-Insert screenshots after the final desktop run for the loaded modal geometry, mass or diaphragm evidence, successful validation message, modal settings dialog, Modal Results summary, matrix view, Modal Table, selected Mode Shapes plot, and any TXT/CSV/PNG export evidence used in the report.
-
-\placeholderfigure{Modal fixture output}{TODO screenshot placeholder for \texttt{data/test-modal-flex-beam.xml}: loaded geometry, validation, modal settings, Modal Results summary, matrices, Modal Table, Mode Shapes, and export evidence.}
-
-\section{User Checklist}
 
 Before final submission or classroom demonstration, confirm:
 \begin{itemize}
