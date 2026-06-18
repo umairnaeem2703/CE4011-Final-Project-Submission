@@ -149,6 +149,8 @@ class MainWindow:
         self.result_viewer_dynamic_view_var = None
         self.result_viewer_dynamic_view_selector = None
         self.result_viewer_dynamic_summary_vars = {}
+        self.result_viewer_dynamic_summary_precision_var = None
+        self.result_viewer_dynamic_summary_precision_selector = None
         self.result_viewer_dynamic_notebook = None
         self.result_viewer_dynamic_top_controls = None
         self.result_viewer_dynamic_summary_tab = None
@@ -302,29 +304,43 @@ class MainWindow:
         ttk.Button(actions, text="Cancel", command=dialog.destroy).grid(row=0, column=1)
 
     def _open_modal_settings_dialog(self) -> None:
+        self._ask_modal_analysis_settings(run_button_text="Close")
+
+    def _ask_modal_analysis_settings(self, *, run_button_text: str = "Run Modal Analysis") -> bool:
+        if not hasattr(self, "root"):
+            return True
         dialog = tk.Toplevel(self.root)
         dialog.title("Modal Analysis Settings")
         dialog.resizable(False, False)
         dialog.transient(self.root)
         dialog.grab_set()
+        accepted = tk.BooleanVar(value=False)
         frame = ttk.Frame(dialog, padding=10)
         frame.grid(row=0, column=0, sticky="nsew")
         ttk.Label(frame, text="Number of Modes").grid(row=0, column=0, sticky="w")
         ttk.Spinbox(frame, from_=1, to=20, width=6, textvariable=self.modal_num_modes_var).grid(row=0, column=1, padx=(8, 0), sticky="w")
         damping = ttk.LabelFrame(frame, text="Rayleigh Damping", padding=(8, 6))
         damping.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(8, 0))
-        ttk.Label(damping, text="Mode i").grid(row=0, column=0, sticky="w")
-        ttk.Entry(damping, width=6, textvariable=self.modal_rayleigh_mode_i_var).grid(row=0, column=1, padx=(6, 12), sticky="w")
-        ttk.Label(damping, text="ζi").grid(row=0, column=2, sticky="w")
-        ttk.Entry(damping, width=8, textvariable=self.modal_rayleigh_zeta_i_var).grid(row=0, column=3, padx=(6, 12), sticky="w")
-        ttk.Label(damping, text="Mode j").grid(row=0, column=4, sticky="w")
-        ttk.Entry(damping, width=6, textvariable=self.modal_rayleigh_mode_j_var).grid(row=0, column=5, padx=(6, 12), sticky="w")
-        ttk.Label(damping, text="ζj").grid(row=0, column=6, sticky="w")
-        ttk.Entry(damping, width=8, textvariable=self.modal_rayleigh_zeta_j_var).grid(row=0, column=7, padx=(6, 0), sticky="w")
+        ttk.Label(damping, text="Modal damping ratio").grid(row=0, column=0, sticky="w")
+        ttk.Entry(damping, width=8, textvariable=self.modal_rayleigh_zeta_i_var).grid(row=0, column=1, padx=(6, 12), sticky="w")
+        ttk.Label(damping, text="Rayleigh mode i").grid(row=0, column=2, sticky="w")
+        ttk.Entry(damping, width=6, textvariable=self.modal_rayleigh_mode_i_var).grid(row=0, column=3, padx=(6, 12), sticky="w")
+        ttk.Label(damping, text="Rayleigh mode j").grid(row=0, column=4, sticky="w")
+        ttk.Entry(damping, width=6, textvariable=self.modal_rayleigh_mode_j_var).grid(row=0, column=5, padx=(6, 0), sticky="w")
         ttk.Label(frame, text="Modal analysis uses the current stiffness and mass model. Static analysis is not required.", wraplength=480).grid(row=2, column=0, columnspan=2, sticky="w", pady=(8, 0))
         actions = ttk.Frame(frame)
         actions.grid(row=3, column=0, columnspan=2, pady=(10, 0), sticky="e")
-        ttk.Button(actions, text="Close", command=dialog.destroy).grid(row=0, column=0)
+        def accept() -> None:
+            self.modal_rayleigh_zeta_j_var.set(self.modal_rayleigh_zeta_i_var.get())
+            accepted.set(True)
+            dialog.destroy()
+
+        ttk.Button(actions, text=run_button_text, command=accept).grid(row=0, column=0, padx=(0, 6))
+        if run_button_text != "Close":
+            ttk.Button(actions, text="Cancel", command=dialog.destroy).grid(row=0, column=1)
+        dialog.bind("<Return>", lambda _event: accept())
+        dialog.wait_window()
+        return bool(accepted.get())
 
     def _build_grid_controls(self, parent: ttk.Frame) -> ttk.Frame:
         group = ttk.Frame(parent)
@@ -460,7 +476,8 @@ class MainWindow:
             self._run_static_analysis()
             return
         if name == "Run Modal Analysis":
-            self._run_modal_analysis()
+            if self._ask_modal_analysis_settings():
+                self._run_modal_analysis()
             return
         if name == "Static Results":
             self._show_static_results()
@@ -780,6 +797,8 @@ class MainWindow:
         self.result_viewer_dynamic_trees = {}
         self.result_viewer_dynamic_view_var = None
         self.result_viewer_dynamic_view_selector = None
+        self.result_viewer_dynamic_summary_precision_var = None
+        self.result_viewer_dynamic_summary_precision_selector = None
         self.result_viewer_dynamic_mode_precision_var = None
         self.result_viewer_dynamic_mode_precision_selector = None
         self.result_viewer_dynamic_summary_tree = None
@@ -1015,8 +1034,24 @@ class MainWindow:
             "Modal Table": table_tab,
             "Mode Shapes": mode_tab,
         }
+        summary_tab.columnconfigure(0, weight=1)
+        summary_tab.rowconfigure(1, weight=1)
+        summary_controls = ttk.Frame(summary_tab)
+        summary_controls.grid(row=0, column=0, sticky="ew", pady=(0, 6))
+        ttk.Label(summary_controls, text="Precision").grid(row=0, column=0, sticky="w")
+        self.result_viewer_dynamic_summary_precision_var = self._make_string_var(summary_tab, "1e-3")
+        self.result_viewer_dynamic_summary_precision_selector = ttk.Entry(
+            summary_controls,
+            textvariable=self.result_viewer_dynamic_summary_precision_var,
+            width=10,
+        )
+        self.result_viewer_dynamic_summary_precision_selector.grid(row=0, column=1, sticky="w", padx=(8, 4))
+        self.result_viewer_dynamic_summary_precision_selector.bind("<Return>", lambda _event: self._refresh_modal_summary())
+        ttk.Button(summary_controls, text="Apply", command=self._refresh_modal_summary).grid(row=0, column=2, sticky="w")
+        summary_table = ttk.Frame(summary_tab)
+        summary_table.grid(row=1, column=0, sticky="nsew")
         self.result_viewer_dynamic_summary_tree = self._build_simple_table_tab(
-            summary_tab,
+            summary_table,
             "Modal Summary",
             *self._modal_summary_table_data(),
             height=8,
@@ -1395,13 +1430,14 @@ class MainWindow:
     def _modal_format_value(self, value: object | None, *, as_percent: bool = False) -> str:
         if value is None:
             return "—"
+        precision = self._modal_summary_precision()
         if as_percent:
             try:
                 value = float(value) * 100.0
             except (TypeError, ValueError):
                 return str(value)
-            return f"{format_scalar(value, tolerance=self._display_tolerance())}%"
-        formatted = format_scalar(value, tolerance=self._display_tolerance())
+            return f"{format_scalar(value, tolerance=precision)}%"
+        formatted = format_scalar(value, tolerance=precision)
         return "—" if formatted == "-" else formatted
 
     def _modal_derived_omega(self, eigenvalue: object | None) -> object | None:
@@ -3159,6 +3195,12 @@ class MainWindow:
 
     def _modal_phi_precision(self) -> float:
         return self._precision_value(getattr(self, "result_viewer_dynamic_mode_precision_var", None), default=1.0e-3)
+
+    def _modal_summary_precision(self) -> float:
+        return self._precision_value(
+            getattr(self, "result_viewer_dynamic_summary_precision_var", None),
+            default=1.0e-3,
+        )
 
     def _format_member_review_number(self, value: object) -> str:
         return format_scalar(value, tolerance=self._member_review_precision())
