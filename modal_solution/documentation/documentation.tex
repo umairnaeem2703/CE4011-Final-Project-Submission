@@ -36,9 +36,9 @@
 \begin{titlepage}
   \centering
   \vspace*{2cm}
-  {\LARGE\bfseries Modal Analysis: Flexible-Beam Case\par}
+  {\LARGE\bfseries Modal Analysis\par}
   \vspace{1cm}
-  {\large Solution (Q1: Beams with Flexural Stiffness)\par}
+  {\large Solution (2D Shear frame with Flexible Beams)\par}
   \vfill
   {\large Mohammad Umair Naeem \\
   Student ID: 2416055\par}
@@ -211,22 +211,6 @@ and the stiffness-proportional term
 Adding both terms yields the Rayleigh damping matrix reported earlier:
 \begin{equation}
   \mat{C}_{\text{flex}} = \alpha\mat{M} + \beta\,\mat{K}_{\text{flex}} = \begin{bmatrix}60.9479 & -28.0345 & 5.0587\\-28.0345 & 37.4966 & -13.0160\\5.0587 & -13.0160 & 14.1410\end{bmatrix}~(\text{kN\,s/m}).
-\end{equation}
-
-\subsection{Rayleigh Damping for Flexible-Beam Case}
-Using the first two modes and target damping $\zeta=0.05$, the Rayleigh coefficients obtained are
-\begin{align}
-  \alpha &= 0.34644~\text{s}^{-1},\\
-  \beta  &= 0.0052539~\text{s}.
-\end{align}
-
-Forming the damping matrix
-\begin{equation}
-  \mat{C}_{\text{flex}} = \alpha\,\mat{M} + \beta\,\mat{K}_{\text{flex}},
-\end{equation}
-yields (kN\,s/m):
-\begin{equation}
-  \mat{C}_{\text{flex}} = \begin{bmatrix}60.9479 & -28.0345 & 5.0587\\-28.0345 & 37.4966 & -13.0160\\5.0587 & -13.0160 & 14.1410\end{bmatrix}.
 \end{equation}
 
 \subsection{Equation of Motion (Flexible-Beam Case)}

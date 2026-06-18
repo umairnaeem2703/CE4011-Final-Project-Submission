@@ -4,5 +4,4 @@
 \contentsline {subsection}{\numberline {2.2}Coupling and Rotational Sub-blocks}{3}{subsection.2.2}%
 \contentsline {subsection}{\numberline {2.3}Static Condensation}{4}{subsection.2.3}%
 \contentsline {subsection}{\numberline {2.4}Undamped Eigenvalue Analysis (CASE 2: FLEXIBLE BEAMS)}{4}{subsection.2.4}%
-\contentsline {subsection}{\numberline {2.5}Rayleigh Damping for Flexible-Beam Case}{5}{subsection.2.5}%
-\contentsline {subsection}{\numberline {2.6}Equation of Motion (Flexible-Beam Case)}{6}{subsection.2.6}%
+\contentsline {subsection}{\numberline {2.5}Equation of Motion (Flexible-Beam Case)}{5}{subsection.2.5}%
