@@ -1858,6 +1858,43 @@ def test_desktop_open_xml_replaces_builder_refreshes_ui_and_clears_results(tmp_p
     assert window.status_summary_var.get().startswith("Model: Imported Desktop Model | Nodes: 2 | Members: 1")
 
 
+def test_desktop_save_and_export_xml_write_parseable_current_model(tmp_path, monkeypatch):
+    builder = ModelBuilder(name="Desktop Save Export Model")
+    builder.add_material("m1", E=200000.0, density=7.85)
+    builder.add_section("s1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0, is_hinged=True)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1", release_end=True)
+    builder.add_support(1, restrain_ux=True, restrain_uy=True, restrain_rz=True)
+    builder.add_nodal_load("LC1", 2, fy=-10.0)
+    builder.add_lumped_mass(2, mass_ux=4.0, mass_uy=5.0, inertia_rz=0.5)
+
+    window = _window_with_model(model=builder.model)
+    window.root = object()
+    window.model_canvas.builder = builder
+
+    save_path = tmp_path / "saved_model.xml"
+    export_path = tmp_path / "exported_model.xml"
+    paths = iter((str(save_path), str(export_path)))
+    monkeypatch.setattr(main_window.filedialog, "asksaveasfilename", lambda **_kwargs: next(paths))
+
+    window._save_xml()
+    window._export_xml()
+
+    saved = XMLParser(str(save_path)).parse()
+    exported = XMLParser(str(export_path)).parse()
+
+    for parsed in (saved, exported):
+        assert parsed.name == "Desktop Save Export Model"
+        assert parsed.nodes[2].is_hinged is True
+        assert parsed.elements["e1"].release_end is True
+        assert parsed.supports[1].restrain_rz is True
+        assert parsed.load_cases["LC1"].loads[0].fy == -10.0
+        assert parsed.lumped_masses[2].mass_uy == 5.0
+
+    assert window.messages == [f"Saved XML: {save_path}", f"Exported XML: {export_path}"]
+
+
 def test_desktop_canvas_mouse_wheel_and_middle_pan_update_view():
     canvas = main_window.ModelCanvas.__new__(main_window.ModelCanvas)
     canvas._pan_last = None
@@ -1911,6 +1948,56 @@ def test_desktop_static_table_export_writes_csv(tmp_path, monkeypatch):
     window._export_current_results_table_csv()
 
     assert output.read_text().splitlines()[0] == "Node,UX [m],UY [m],RZ [rad]"
+
+
+def test_desktop_result_exports_write_static_txt_modal_csv_and_plot_png(tmp_path, monkeypatch):
+    window = _window_with_model()
+    window.root = object()
+    window.result_viewer_mode = "static"
+    window.latest_static_result = SimpleNamespace(displacements={1: [0.001, 0.0, 0.0]})
+
+    static_txt = tmp_path / "static_table.txt"
+    modal_csv = tmp_path / "modal_table.csv"
+    plot_png = tmp_path / "static_plot.png"
+    paths = iter((str(static_txt), str(modal_csv), str(plot_png)))
+    monkeypatch.setattr(main_window.filedialog, "asksaveasfilename", lambda **_kwargs: next(paths))
+
+    window._export_current_results_table_txt()
+
+    window.result_viewer_mode = "modal"
+    window.latest_modal_result = SimpleNamespace(
+        eigenvalues=[4.0],
+        frequencies=[1.0],
+        periods=[1.0],
+        modal_masses=[1.0],
+        participation_factors=[0.5],
+        effective_masses=[0.25],
+        mass_participation_ratios=[0.25],
+        num_modes_extracted=1,
+    )
+    window._export_current_results_table_csv()
+
+    fig, ax = plt.subplots()
+    ax.plot([0.0, 1.0], [0.0, 1.0])
+    try:
+        window.result_viewer_mode = "static"
+        window.result_viewer_static_notebook = None
+        window.result_viewer_plot_canvases = {object(): SimpleNamespace(figure=fig)}
+        window._current_static_plot_canvas = lambda: next(iter(window.result_viewer_plot_canvases.values()))
+
+        window._export_current_results_plot_png()
+    finally:
+        plt.close(fig)
+
+    assert static_txt.read_text(encoding="utf-8").splitlines()[0] == "Node\tUX [m]\tUY [m]\tRZ [rad]"
+    assert modal_csv.read_text(encoding="utf-8").splitlines()[0].startswith("Mode,Eigenvalue")
+    assert plot_png.exists()
+    assert plot_png.stat().st_size > 0
+    assert window.messages[-3:] == [
+        f"Exported results table: {static_txt}",
+        f"Exported results table: {modal_csv}",
+        f"Exported plot PNG: {plot_png}",
+    ]
 
 
 def test_desktop_open_xml_reports_failure_and_keeps_current_model(monkeypatch):
