@@ -39,6 +39,7 @@ from .result_formatting import (
     labeled_matrix_columns,
     labeled_matrix_rows,
     unit_labels,
+    unwrap_scalar,
 )
 from .template_dialog import ask_new_model
 
@@ -1545,6 +1546,7 @@ class MainWindow:
             "cursor_x": self._member_review_cursor_value(),
             "current": {},
             "end_forces": profile.get("end_forces", {}) or {},
+            "member_end_forces": profile.get("member_end_forces", {}) or {},
             "maxima": {},
             "series": self._member_review_display_series(profile),
         }
@@ -1661,7 +1663,7 @@ class MainWindow:
             canvas.create_line(x0, row_center, x1, row_center, fill="#666666")
 
             if key == "end":
-                end_forces = profile.get("end_forces", {}) or {}
+                end_forces = profile.get("member_end_forces", {}) or profile.get("end_forces", {}) or {}
                 self._draw_member_end_force_arrows(canvas, x0, x1, row_top, row_bottom, end_forces)
                 continue
 
@@ -1782,12 +1784,12 @@ class MainWindow:
         y_m = row_top + available_height * 0.80
         canvas.create_text(left_x - 54, row_top + 16, text="I-End", anchor="w", font=("Segoe UI", 8, "bold"))
         canvas.create_text(right_x + 54, row_top + 16, text="J-End", anchor="e", font=("Segoe UI", 8, "bold"))
-        self._draw_labeled_force_arrow(canvas, left_x, y_n, end_forces.get("Ni", 0.0), "N", "horizontal", text_side="right")
-        self._draw_labeled_force_arrow(canvas, left_x, y_v, end_forces.get("Vi", 0.0), "V", "vertical", text_side="right")
-        self._draw_labeled_moment_arrow(canvas, left_x, y_m, end_forces.get("Mi", 0.0), text_side="right")
-        self._draw_labeled_force_arrow(canvas, right_x, y_n, end_forces.get("Nj", 0.0), "N", "horizontal", text_side="left")
-        self._draw_labeled_force_arrow(canvas, right_x, y_v, end_forces.get("Vj", 0.0), "V", "vertical", text_side="left")
-        self._draw_labeled_moment_arrow(canvas, right_x, y_m, end_forces.get("Mj", 0.0), text_side="left")
+        self._draw_labeled_force_arrow(canvas, left_x, y_n, end_forces.get("FXi", end_forces.get("Ni", 0.0)), "FX", "horizontal", text_side="right")
+        self._draw_labeled_force_arrow(canvas, left_x, y_v, end_forces.get("FYi", end_forces.get("Vi", 0.0)), "FY", "vertical", text_side="right")
+        self._draw_labeled_moment_arrow(canvas, left_x, y_m, end_forces.get("MZi", end_forces.get("Mi", 0.0)), label="MZ", text_side="right")
+        self._draw_labeled_force_arrow(canvas, right_x, y_n, end_forces.get("FXj", end_forces.get("Nj", 0.0)), "FX", "horizontal", text_side="left")
+        self._draw_labeled_force_arrow(canvas, right_x, y_v, end_forces.get("FYj", end_forces.get("Vj", 0.0)), "FY", "vertical", text_side="left")
+        self._draw_labeled_moment_arrow(canvas, right_x, y_m, end_forces.get("MZj", end_forces.get("Mj", 0.0)), label="MZ", text_side="left")
 
     def _draw_labeled_force_arrow(
         self,
@@ -1799,6 +1801,7 @@ class MainWindow:
         orientation: str,
         *,
         text_side: str,
+        positive_vertical_down: bool = False,
     ) -> None:
         try:
             numeric_value = float(value)
@@ -1808,6 +1811,8 @@ class MainWindow:
         color = self._member_review_value_color(numeric_value)
         if orientation == "horizontal":
             dx, dy = sign * 30.0, 0.0
+        elif positive_vertical_down:
+            dx, dy = 0.0, sign * 22.0
         else:
             dx, dy = 0.0, -sign * 22.0
         canvas.create_line(x, y, x + dx, y + dy, fill=color, width=2, arrow=tk.LAST)
@@ -1815,7 +1820,7 @@ class MainWindow:
         anchor = "w" if text_side == "right" else "e"
         canvas.create_text(text_x, y, text=f"{label}={self._format_number(numeric_value)}", anchor=anchor, fill=color, font=("Segoe UI", 8))
 
-    def _draw_labeled_moment_arrow(self, canvas: tk.Canvas, x: float, y: float, value: object, *, text_side: str) -> None:
+    def _draw_labeled_moment_arrow(self, canvas: tk.Canvas, x: float, y: float, value: object, *, text_side: str, label: str = "M") -> None:
         try:
             numeric_value = float(value)
         except (TypeError, ValueError):
@@ -1829,7 +1834,7 @@ class MainWindow:
         canvas.create_line(*points, fill=color, width=2, smooth=True, arrow=tk.LAST)
         text_x = x + 38.0 if text_side == "right" else x - 38.0
         anchor = "w" if text_side == "right" else "e"
-        canvas.create_text(text_x, y, text=f"M={self._format_number(numeric_value)}", anchor=anchor, fill=color, font=("Segoe UI", 8))
+        canvas.create_text(text_x, y, text=f"{label}={self._format_number(numeric_value)}", anchor=anchor, fill=color, font=("Segoe UI", 8))
 
     def _update_member_review_cursor_only(self) -> None:
         if not getattr(self, "result_viewer_member_profile", None):
@@ -2136,7 +2141,10 @@ class MainWindow:
                 self._vector_rows(getattr(results, "reactions", None)),
             )
         if category == "Member End Forces":
-            return self._member_force_rows(getattr(results, "element_forces", None), units)
+            member_end_forces = getattr(results, "member_end_forces", None)
+            if member_end_forces is None:
+                member_end_forces = getattr(results, "element_forces", None)
+            return self._member_force_rows(member_end_forces, units)
         if category == "DOF Map":
             return self._mapping_rows(getattr(results, "dof_map", None))
         if category == "Global Stiffness Matrix K":
@@ -2435,9 +2443,9 @@ class MainWindow:
         columns = (
             "Element",
             "End",
-            f"N [{units['force']}]",
-            f"V [{units['force']}]",
-            f"M [{units['moment']}]",
+            f"FX [{units['force']}]",
+            f"FY [{units['force']}]",
+            f"MZ [{units['moment']}]",
         )
         if not element_forces:
             return (columns, [("Unavailable", "-", "-", "-", "-")])

@@ -1,0 +1,33 @@
+
+Q1: Stiffness Matrices (kN/m)
+Case 2 (Flexible Beams - Condensed):
+   1.0e+04 *
+
+    1.0282   -0.5336    0.0963
+   -0.5336    0.6148   -0.2477
+    0.0963   -0.2477    0.1702
+
+
+Q2: MODAL PROPERTIES & DAMPING MATRICES (TOP Story NORMALIZATION)
+
+>>> CASE 2: FLEXIBLE BEAMS <<<
+Mode | lambda (rad^2/s^2) | omega (rad/s) | T (s)
+  1  |        20.739      |      4.554    | 1.380
+  2  |       209.658      |     14.480    | 0.434
+  3  |       807.044      |     28.409    | 0.221
+
+Mode Shapes (Phi_flex):
+    0.2610   -1.0137    2.9459
+    0.6630   -0.9762   -3.0543
+    1.0000    1.0000    1.0000
+
+Rayleigh Damping Coefficients:
+  alpha = 0.34644 s^-1
+  beta  = 0.0052539 s
+
+Rayleigh Damping Matrix C_flex (kN.s/m):
+   60.9479  -28.0345    5.0587
+  -28.0345   37.4966  -13.0160
+    5.0587  -13.0160   14.1410
+
+>> 

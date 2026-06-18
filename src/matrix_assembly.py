@@ -144,46 +144,6 @@ class MatrixAssembler:
                 if node.dofs[1] >= 0: F_global[node.dofs[1]][0] += nodal_forces[1]
                 if len(node.dofs) > 2 and node.dofs[2] >= 0: F_global[node.dofs[2]][0] += nodal_forces[2]
 
-        # Stage 3: Apply settlement constraint forces via FULL un-condensed stiffness
-        for element_id, element in self.model.elements.items():
-            if element.type == 'truss':
-                element_dofs = element.node_i.dofs[0:2] + element.node_j.dofs[0:2]
-                num_dofs = 4
-            else:
-                element_dofs = element.node_i.dofs + element.node_j.dofs
-                num_dofs = 6
-            
-            u_prescribed = math_utils.zeros(num_dofs, 1)
-            has_settlement = False
-            
-            node_i_support = self.model.supports.get(element.node_i.id)
-            if node_i_support is not None:
-                if node_i_support.restrain_ux: u_prescribed[0][0] = node_i_support.settlement_ux; has_settlement = True
-                if node_i_support.restrain_uy: u_prescribed[1][0] = node_i_support.settlement_uy; has_settlement = True
-                if node_i_support.restrain_rz: u_prescribed[2][0] = node_i_support.settlement_rz; has_settlement = True
-            
-            node_j_offset = 2 if element.type == 'truss' else 3
-            node_j_support = self.model.supports.get(element.node_j.id)
-            if node_j_support is not None:
-                if node_j_support.restrain_ux: u_prescribed[node_j_offset + 0][0] = node_j_support.settlement_ux; has_settlement = True
-                if node_j_support.restrain_uy: u_prescribed[node_j_offset + 1][0] = node_j_support.settlement_uy; has_settlement = True
-                if node_j_support.restrain_rz and node_j_offset + 2 < num_dofs: u_prescribed[node_j_offset + 2][0] = node_j_support.settlement_rz; has_settlement = True
-            
-            if not has_settlement:
-                continue
-            
-            physics = ElementPhysics(element)
-            k_local = physics.get_local_k()
-            fef_dummy = math_utils.zeros(num_dofs, 1)
-            k_global_full, _ = physics.transform_to_global(k_local, fef_dummy)
-            
-            f_unbalanced = math_utils.matmul(k_global_full, u_prescribed)
-            
-            for dof_idx in range(len(element_dofs)):
-                dof = element_dofs[dof_idx]
-                if dof >= 0:
-                    F_global[dof][0] -= f_unbalanced[dof_idx][0]
-
         K_full = self.banded_to_full(K_banded)
         Kff, Ff = self.reduce_free_system(K_full, F_global)
         self.model.cached_K = K_full

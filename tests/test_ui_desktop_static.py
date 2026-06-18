@@ -11,6 +11,8 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../src")))
 
 from model_builder import ModelBuilder
+from parser import XMLParser
+from ui.static_analysis import run_static_analysis
 from ui_desktop import main_window
 from ui_desktop.property_panel import PropertyPanel
 from ui_desktop.result_formatting import dof_equation_labels, format_matrix, format_scalar
@@ -210,6 +212,28 @@ def _window_with_model(model=object()):
     window.result_viewer_dynamic_plot_canvas = None
     window.result_viewer_dynamic_phi_tree = None
     return window
+
+
+def _sap_element_joint_forces(filepath):
+    forces = {}
+    in_table = False
+    for line in Path(filepath).read_text().splitlines():
+        stripped = line.strip()
+        if stripped == "Table:  Element Joint Forces - Frames":
+            in_table = True
+            continue
+        if in_table and stripped.startswith("Table:"):
+            break
+        if not in_table or not stripped or stripped.startswith("Frame") or stripped.startswith("KN"):
+            continue
+        parts = stripped.split()
+        if len(parts) < 11:
+            continue
+        try:
+            forces.setdefault(parts[0], []).append((float(parts[4]), float(parts[6]), -float(parts[8])))
+        except ValueError:
+            continue
+    return forces
 
 
 def _property_panel_for_builder(builder, selected_element_ids=None):
@@ -763,6 +787,7 @@ def test_desktop_static_result_tables_use_cached_result_fields():
         displacements={1: [0.001, 0.0, 0.0]},
         reactions={1: [10.0, -2.5, 1.0e-12]},
         element_forces={"e1": {"i": [[10.0], [0.0], [0.0]], "j": [[-10.0], [0.0], [0.0]]}},
+        member_end_forces={"e1": {"i": [[-10.0], [0.0], [0.0]], "j": [[10.0], [0.0], [0.0]]}},
         dof_map={1: [0, 1, 2]},
         K=[[1.0, 0.0], [0.0, 1.0]],
         Kff=[[1.0]],
@@ -783,8 +808,8 @@ def test_desktop_static_result_tables_use_cached_result_fields():
     assert rows == [("1", "10", "-2.5", "0")]
 
     columns, rows = window._static_result_table_data("Member End Forces")
-    assert columns == ("Element", "End", "N [kN]", "V [kN]", "M [kN-m]")
-    assert ("e1", "i", "10", "0", "0") in rows
+    assert columns == ("Element", "End", "FX [kN]", "FY [kN]", "MZ [kN-m]")
+    assert ("e1", "i", "-10", "0", "0") in rows
 
     columns, rows = window._static_result_table_data("DOF Map")
     assert columns == ("Node", "UX", "UY", "RZ")
@@ -797,6 +822,32 @@ def test_desktop_static_result_tables_use_cached_result_fields():
     columns, rows = window._static_result_table_data("Global Force Vector F")
     assert columns == ("DOF", "N1 UX")
     assert rows == [("N1 UX", "10"), ("N1 UY", "0")]
+
+
+def test_desktop_static_displacements_are_visible_at_default_tolerance():
+    results = SimpleNamespace(
+        displacements={
+            1: [0.0, 0.0, -6.607477511e-4],
+            2: [3.590705577e-6, -1.993742507e-3, -1.738113785e-4],
+        },
+        reactions={},
+        element_forces={},
+        dof_map={},
+        K=None,
+        Kff=None,
+        F=None,
+        Ff=None,
+    )
+    window = _window_with_model()
+    window.result_display_tolerance = main_window.DEFAULT_DISPLAY_TOLERANCE
+    window.latest_static_result = results
+    window.latest_static_results = results
+
+    columns, rows = window._static_result_table_data("Nodal Displacements")
+
+    assert columns == ("Node", "UX [m]", "UY [m]", "RZ [rad]")
+    assert rows[0] == ("1", "0", "0", "-0.000660748")
+    assert rows[1] == ("2", "0.000003591", "-0.001993743", "-0.000173811")
 
 
 def test_desktop_matrix_labels_use_node_dof_names_from_dof_map():
@@ -861,9 +912,55 @@ def test_desktop_member_force_rows_unwrap_nested_scalar_lists():
 
     columns, rows = window._member_force_rows({"e2": [[3.2], [0.0004], [-1.2], [-3.2], [0.0], [1.2]]}, {"force": "kN", "moment": "kN-m"})
 
-    assert columns == ("Element", "End", "N [kN]", "V [kN]", "M [kN-m]")
+    assert columns == ("Element", "End", "FX [kN]", "FY [kN]", "MZ [kN-m]")
     assert ("e2", "i", "3.2", "0", "-1.2") in rows
     assert ("e2", "j", "-3.2", "0", "1.2") in rows
+
+
+def test_desktop_member_force_rows_do_not_use_diagram_endpoint_signs():
+    model = SimpleNamespace(unit_system="kN_m_tonne")
+    window = _window_with_model(model=model)
+    element_forces = {"F2": [[1.667], [-2.222], [17.779], [1.667], [-2.222], [0.0]]}
+    nvm_data = {"F2": {"N": [1.667, 1.667], "V": [2.222, 2.222], "M": [17.779, 0.0]}}
+
+    columns, rows = window._member_force_rows(element_forces, {"force": "kN", "moment": "kN-m"})
+
+    assert columns == ("Element", "End", "FX [kN]", "FY [kN]", "MZ [kN-m]")
+    assert ("F2", "i", "1.667", "-2.222", "17.779") in rows
+    assert ("F2", "j", "1.667", "-2.222", "0") in rows
+    assert nvm_data["F2"]["V"][0] == 2.222
+
+
+def test_settlement_member_end_forces_match_sap2000_sign_convention():
+    repo_root = Path(__file__).resolve().parents[1]
+    model = XMLParser(str(repo_root / "data" / "test-settlement.xml")).parse()
+    result = run_static_analysis(model)
+    assert result.ok
+
+    expected = _sap_element_joint_forces(repo_root / "sap2000" / "test-settlement-results.txt")
+    for element_id in ("F1", "F2", "F4", "T1"):
+        computed = result.results.member_end_forces[element_id]
+        for end_label, joint_index in (("i", 0), ("j", 1)):
+            sap_fx, sap_fy, sap_mz = expected[element_id][joint_index]
+            for computed_value, expected_value in zip(computed[end_label], (sap_fx, sap_fy, sap_mz)):
+                assert abs(computed_value - expected_value) <= max(0.15, 0.03 * abs(expected_value))
+
+
+def test_cantilever_member_end_forces_match_support_equilibrium():
+    builder = ModelBuilder(name="cantilever")
+    builder.add_material("m", E=200000000.0)
+    builder.add_section("s", A=1.0, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m", "s")
+    builder.add_support(1, restrain_ux=True, restrain_uy=True, restrain_rz=True)
+    builder.add_nodal_load("LC1", 2, fy=-10.0, load_case_name="tip")
+
+    result = run_static_analysis(builder.model, "LC1")
+
+    assert result.ok
+    assert all(abs(actual - expected) < 1.0e-9 for actual, expected in zip(result.results.member_end_forces["e1"]["i"], [0.0, 10.0, 30.0]))
+    assert abs(result.results.member_end_forces["e1"]["j"][1] - (-10.0)) < 1.0e-9
 
 
 def test_desktop_static_result_table_empty_state():
@@ -1296,6 +1393,7 @@ def test_desktop_member_review_viewer_renders_cursor_summary(monkeypatch):
         load_case_id="LC1",
         displacements={1: [0.0, 0.0, 0.0], 2: [0.01, 0.02, 0.03]},
         element_forces={"e1": {"i": [1.0, 2.0, 3.0], "j": [4.0, 5.0, 6.0]}},
+        member_end_forces={"e1": {"i": [-1.0, 2.0, -3.0], "j": [4.0, -5.0, 6.0]}},
         nvm_data={"e1": {"x": [0.0, 1.5, 3.0], "N": [5.0, -8.0, 2.0], "V": [1.0, -3.0, 4.0], "M": [0.5, 2.5, -1.0]}},
     )
     window.selected_member_id = "e1"
@@ -1340,9 +1438,12 @@ def test_desktop_member_review_viewer_renders_cursor_summary(monkeypatch):
     assert any(style.get("fill") == "#2e7d32" for style in polygon_styles)
     assert any(style.get("fill") == "#c62828" for style in polygon_styles)
     assert any(style.get("arrow") == main_window.tk.LAST for style in line_styles)
-    assert any(label and label.startswith("N=") for label in text_labels)
-    assert any(label and label.startswith("V=") for label in text_labels)
-    assert any(label and label.startswith("M=") for label in text_labels)
+    assert "FX=-1" in text_labels
+    assert "FY=2" in text_labels
+    assert "MZ=-3" in text_labels
+    assert "FX=4" in text_labels
+    assert "FY=-5" in text_labels
+    assert "MZ=6" in text_labels
     redraw_deletes = [operation for operation in first_canvas.operations if operation == ("delete", ("all",))]
     window._on_member_review_cursor_changed("0.75")
 
@@ -1410,13 +1511,19 @@ def test_member_review_profile_and_panel_labels():
         load_case_id="LC1",
         displacements={1: [0.0, 0.0, 0.0], 2: [0.01, 0.02, 0.03]},
         element_forces={"e1": {"i": [1.0, 2.0, 3.0], "j": [4.0, 5.0, 6.0]}},
+        member_end_forces={"e1": {"i": [-1.0, 2.0, -3.0], "j": [4.0, -5.0, 6.0]}},
         nvm_data={"e1": {"x": [0.0, 1.5, 3.0], "N": [5.0, -8.0, 2.0], "V": [1.0, -3.0, 4.0], "M": [0.5, 2.5, -1.0]}},
     )
 
     profile = build_member_review_profile(builder.model, results, "e1")
     assert profile is not None
     assert profile["member_id"] == "e1"
-    assert profile["end_forces"]["Ni"] == 1.0
+    assert profile["end_forces"]["Ni"] == 5.0
+    assert profile["end_forces"]["Vi"] == 1.0
+    assert profile["end_forces"]["Mj"] == -1.0
+    assert profile["member_end_forces"]["FXi"] == -1.0
+    assert profile["member_end_forces"]["FYi"] == 2.0
+    assert profile["member_end_forces"]["MZj"] == 6.0
 
     fig, axes, state = plot_member_review_panel(profile, 1.5, show_max=True)
     assert state["current"]["N"] == -8.0

@@ -1,0 +1,238 @@
+\documentclass[12pt,a4paper]{article}
+
+% Packages
+\usepackage[a4paper, top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm, headheight=15pt]{geometry}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{bm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{caption}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{float}
+
+\hypersetup{colorlinks=true, linkcolor=black, urlcolor=blue, citecolor=black}
+
+% Header/Footer
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small Mohammad Umair Naeem --- 2416055}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% Section formatting
+\titleformat{\section}{\large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{1em}{}
+
+% Math shortcuts
+\newcommand{\mat}[1]{\mathbf{#1}}
+\newcommand{\vect}[1]{\mathbf{#1}}
+\newcommand{\T}{^{\mathrm{T}}}
+
+\begin{document}
+
+% Cover
+\begin{titlepage}
+  \centering
+  \vspace*{2cm}
+  {\LARGE\bfseries Modal Analysis: Flexible-Beam Case\par}
+  \vspace{1cm}
+  {\large Solution (Q1: Beams with Flexural Stiffness)\par}
+  \vfill
+  {\large Mohammad Umair Naeem \\
+  Student ID: 2416055\par}
+  \vspace{1cm}
+  {\large \today\par}
+\end{titlepage}
+
+
+\tableofcontents
+\thispagestyle{fancy}
+\newpage
+
+\section{Introduction}
+This document focuses exclusively on the ``Beams with Flexural Stiffness'' idealization for the three-storey frame. The model retains translational DOFs at each floor and symmetric joint rotations at each floor (six total DOFs). The aim is to assemble the coupled stiffness, statically condense rotational DOFs, present the condensed stiffness, and report the undamped modal results and Rayleigh damping for the flexible-beam case.
+
+The problem was given in CE586 - Earthquake Engineering course. It was solved using MATLAB, and the results are presented in this document along with hand calculations.
+
+\begin{figure}[H]
+    \centering
+    \IfFileExists{problem_statement.png}{%
+      \includegraphics[width=0.9\linewidth]{problem_statement.png}%
+    }{%
+        \fbox{\parbox[b][0.4\textheight][c]{0.9\linewidth}{\centering Missing image:\\\texttt{problem statement.png}}}%
+    }
+    \caption{Problem Statement.}
+    \label{fig:problem_statement}
+\end{figure}
+
+Given (used throughout):
+\begin{equation}
+  EI = 3600~\text{kN\,m}^2, \quad h = 3~\text{m}, \quad L_b = 4~\text{m},
+\end{equation}
+floor masses
+\begin{equation}
+  m_1 = 20~\text{t},\quad m_2 = 15~\text{t},\quad m_3 = 15~\text{t},
+\end{equation}
+so
+\begin{equation}
+  \mat{M} = \mathrm{diag}(20,15,15)~\text{t}, \qquad \bm{\iota} = [1,1,1]\T.
+\end{equation}
+
+\section{Q1: Beams with Flexural Stiffness}
+We include symmetric joint rotations $\theta_i$ at each floor in addition to lateral translations $u_i$. The full partitioned stiffness is
+\begin{equation}
+  \mat{K}_{\mathrm{structure}} = \begin{bmatrix}\mat{K}_{tt} & \mat{K}_{t\theta} \\ \mat{K}_{\theta t} & \mat{K}_{\theta\theta}\end{bmatrix},
+\end{equation}
+with $\mat{K}_{tt}$ equal to the shear-frame translational stiffness (as in the rigid-beam shear resistance).
+
+\subsection{Beam Rotational Stiffness}
+For equal end rotations of a beam span $L_b$, the contribution at a floor (two beams per floor symmetry) is
+\begin{equation}
+  K_b = 2\cdot\frac{6EI}{L_b} = \frac{12EI}{L_b} = \frac{12\times3600}{4} = 10800~\text{kN\,m/rad}.
+\end{equation}
+
+\subsubsection*{Step 2: Unit Displacement Method --- $6\times6$ Stiffness Matrix}
+We form the full $6\times6$ stiffness by applying unit translations and unit rotations to obtain coupling and rotational entries. The translational block $\mat{K}_{tt}$ (shear-frame) is the same shear stiffness used earlier:
+\begin{equation}
+  \mat{K}_{tt} = \begin{bmatrix}12800 & -6400 & 0\\-6400 & 9600 & -3200\\0 & -3200 & 3200\end{bmatrix}~(\text{kN/m}).
+\end{equation}
+
+The coupling block $\mat{K}_{t\theta}$ is obtained by applying a unit rotation at each floor and computing the equivalent lateral forces produced by column end-moments (using $M=6EI_c/h^2$ for the near-end contribution). For example, applying $\theta_1=1$ gives a moment contribution from story~1 columns of $6(4EI)/h^2=9600~\text{kN\,m}$ and an associated shear of $9600~\text{kN}$ distributed to the translational DOFs, producing the numerical coupling matrix below.
+
+The rotational stiffness block includes column end-rotation stiffness contributions (near/far end factors $4EI_c/h$ and $2EI_c/h$) plus the beam contribution $K_b$ on the diagonal. The full assembled $6\times6$ stiffness (translational DOFs first, then rotational DOFs) is therefore:
+\begin{equation}
+  \mat{K}_{\text{structure}} = \begin{bmatrix}
+    12800 & -6400 & 0 & \vline & 0 & 9600 & 0 \\
+    -6400 & 9600 & -3200 & \vline & -9600 & -4800 & 4800 \\
+    0 & -3200 & 3200 & \vline & 0 & -4800 & -4800 \\
+    \hline
+    0 & -9600 & 0 & \vline & 49200 & 9600 & 0 \\
+    9600 & -4800 & -4800 & \vline & 9600 & 39600 & 4800 \\
+    0 & 4800 & -4800 & \vline & 0 & 4800 & 20400
+  \end{bmatrix}.
+\end{equation}
+
+\subsection{Coupling and Rotational Sub-blocks}
+Using column end-moment formulas ($M\sim 6EI_c/h^2$ for near curvature terms) and the column stiffness distribution (stories 1--2: $\Sigma EI_c=4EI$; story 3: $\Sigma EI_c=2EI$) the coupling and rotational blocks (units shown) are:
+\begin{equation}
+  \mat{K}_{t\theta} = \begin{bmatrix}0 & 9600 & 0\\-9600 & -4800 & 4800\\0 & -4800 & -4800\end{bmatrix}\quad(\text{kN/m}\cdot\text{rad}),
+\end{equation}
+\begin{equation}
+  \mat{K}_{\theta\theta} = \begin{bmatrix}49200 & 9600 & 0\\9600 & 39600 & 4800\\0 & 4800 & 20400\end{bmatrix}\quad(\text{kN\,m/rad}).
+\end{equation}
+
+The translational translational sub-block (shear contributions) is
+\begin{equation}
+  \mat{K}_{tt} = \begin{bmatrix}12800 & -6400 & 0\\-6400 & 9600 & -3200\\0 & -3200 & 3200\end{bmatrix}\quad(\text{kN/m}).
+\end{equation}
+
+\subsection{Static Condensation}
+Eliminate rotational DOFs by static condensation:
+\begin{equation}
+  \mat{K}^* = \mat{K}_{tt} - \mat{K}_{t\theta}\,\mat{K}_{\theta\theta}^{-1}\,\mat{K}_{\theta t}.
+\end{equation}
+
+The computed correction (units kN/m) is
+\begin{equation}
+  \Delta\mat{K} = \mat{K}_{t\theta}\,\mat{K}_{\theta\theta}^{-1}\,\mat{K}_{\theta t} =
+  \begin{bmatrix}2518.23 & -1064.01 & -962.84\\-1064.01 & 3452.15 & -722.59\\-962.84 & -722.59 & 1497.56\end{bmatrix}.
+\end{equation}
+
+Subtracting from $\mat{K}_{tt}$ gives the condensed translational stiffness for the flexible-beam model:
+\begin{equation}
+  \mat{K}_{\text{flex}} = \begin{bmatrix}10281.77 & -5335.99 & 962.84\\-5335.99 & 6147.85 & -2477.41\\962.84 & -2477.41 & 1702.44\end{bmatrix}\quad(\text{kN/m}).
+\end{equation}
+
+\subsection{Undamped Eigenvalue Analysis (CASE 2: FLEXIBLE BEAMS)}
+Solve the generalized eigenproblem
+\begin{equation}
+  (\mat{K}_{\text{flex}} - \lambda\,\mat{M})\,\Phi = 0, \qquad \lambda=\omega^2.
+\end{equation}
+
+The computed modal results (condensed flexible-beam model) are:
+\begin{table}[H]
+  \centering
+  \begin{tabular}{cccc}
+    	oprule
+    Mode & $\lambda$ (rad$^2$/s$^2$) & $\omega$ (rad/s) & $T$ (s) \\
+    \midrule
+    1 & 20.739  & 4.554  & 1.380 \\
+    2 & 209.658 & 14.480 & 0.434 \\
+    3 & 807.044 & 28.409 & 0.221 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Mode shapes (roof-normalized, columns are modes):
+\begin{equation}
+  \Phi_{\text{flex}} = \begin{bmatrix}0.2610 & -1.0137 & 2.9459\\0.6630 & -0.9762 & -3.0543\\1.0000 & 1.0000 & 1.0000\end{bmatrix}.
+\end{equation}
+
+\subsubsection*{Modal Calculation Details}
+To obtain each mode shape column $\phi_n$ we solve the homogeneous linear system
+\begin{equation}
+  (\mat{K}_{\text{flex}} - \lambda_n\mat{M})\,\phi_n = \mathbf{0}.
+\end{equation}
+For each provided eigenvalue $\lambda_n$ the system is singular; we pick the roof normalization $\phi_{3n}=1$ and solve the remaining two linear equations for $\phi_{1n},\phi_{2n}$. The MATLAB solution (roof-normalized) is reported above as $\Phi_{\text{flex}}$.
+
+As an example, for Mode~1 ($\lambda_1=20.739$) the first two equations reduce to a 2x2 linear system in $\phi_{11},\phi_{21}$ after substituting $\phi_{31}=1$; solving yields $\phi_{11}\approx0.2610$, $\phi_{21}\approx0.6630$ (consistent with the column shown).
+
+The modal matrix is therefore (columns = modes):
+\begin{equation}
+  \Phi_{\text{flex}} = \begin{bmatrix}0.2610 & -1.0137 & 2.9459\\0.6630 & -0.9762 & -3.0543\\1.0000 & 1.0000 & 1.0000\end{bmatrix}.
+\end{equation}
+
+\subsubsection*{Rayleigh Damping Construction (Detailed)}
+Target modal damping is $\zeta=0.05$ applied to modes 1 and 2. The Rayleigh coefficients satisfy
+\begin{equation}
+  \begin{bmatrix}\dfrac{1}{2\omega_1} & \dfrac{\omega_1}{2}\\[4pt]\dfrac{1}{2\omega_2} & \dfrac{\omega_2}{2}\end{bmatrix}\begin{bmatrix}\alpha\\\beta\end{bmatrix}=\begin{bmatrix}\zeta\\\zeta\end{bmatrix}.
+\end{equation}
+With $\omega_1=4.554$, $\omega_2=14.480$ and equal $\zeta$, the closed-form solution gives
+\begin{align}
+  \alpha &= \zeta\frac{2\omega_1\omega_2}{\omega_1+\omega_2} = 0.34644~\text{s}^{-1},\\
+  \beta  &= \zeta\frac{2}{\omega_1+\omega_2} = 0.0052539~\text{s}.
+\end{align}
+
+The mass-proportional and stiffness-proportional contributions are computed separately. Using
+\begin{equation}
+  \mat{M}=\mathrm{diag}(20,15,15),\qquad \alpha=0.34644,\qquad \beta=0.0052539,
+\end{equation}
+we get the mass-proportional term
+\begin{equation}
+  \alpha\mat{M} = \begin{bmatrix}6.9288 & 0 & 0\\0 & 5.1966 & 0\\0 & 0 & 5.1966\end{bmatrix}~(\text{kN\,s/m})
+\end{equation}
+and the stiffness-proportional term
+\begin{equation}
+  \beta\,\mat{K}_{\text{flex}} = \begin{bmatrix}54.0191 & -28.0345 & 5.0587\\-28.0345 & 32.3000 & -13.0160\\5.0587 & -13.0160 & 8.9444\end{bmatrix}~(\text{kN\,s/m}).
+\end{equation}
+
+Adding both terms yields the Rayleigh damping matrix reported earlier:
+\begin{equation}
+  \mat{C}_{\text{flex}} = \alpha\mat{M} + \beta\,\mat{K}_{\text{flex}} = \begin{bmatrix}60.9479 & -28.0345 & 5.0587\\-28.0345 & 37.4966 & -13.0160\\5.0587 & -13.0160 & 14.1410\end{bmatrix}~(\text{kN\,s/m}).
+\end{equation}
+
+\subsection{Rayleigh Damping for Flexible-Beam Case}
+Using the first two modes and target damping $\zeta=0.05$, the Rayleigh coefficients obtained are
+\begin{align}
+  \alpha &= 0.34644~\text{s}^{-1},\\
+  \beta  &= 0.0052539~\text{s}.
+\end{align}
+
+Forming the damping matrix
+\begin{equation}
+  \mat{C}_{\text{flex}} = \alpha\,\mat{M} + \beta\,\mat{K}_{\text{flex}},
+\end{equation}
+yields (kN\,s/m):
+\begin{equation}
+  \mat{C}_{\text{flex}} = \begin{bmatrix}60.9479 & -28.0345 & 5.0587\\-28.0345 & 37.4966 & -13.0160\\5.0587 & -13.0160 & 14.1410\end{bmatrix}.
+\end{equation}
+
+\subsection{Equation of Motion (Flexible-Beam Case)}
+The full translational equation for the condensed flexible-beam model is therefore
+\begin{equation}
+  \mat{M}\ddot{\vect{u}} + \mat{C}_{\text{flex}}\dot{\vect{u}} + \mat{K}_{\text{flex}}\vect{u} = -\mat{M}\,\bm{\iota}\,\ddot{u}_g(t).
+\end{equation}
+
+\end{document}

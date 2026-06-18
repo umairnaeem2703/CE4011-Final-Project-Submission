@@ -34,8 +34,15 @@ class ModelBuilder:
             self.model.unit_system = unit_system
             self._mark_dirty()
 
-    def add_material(self, id: str, E: float, alpha: float = 0.0, density: float = 0.0) -> Material:
-        material = Material(id=id, E=E, alpha=alpha, density=density)
+    def add_material(
+        self,
+        id: str,
+        E: float,
+        alpha: float = 0.0,
+        density: float = 0.0,
+        type: str = "Generic",
+    ) -> Material:
+        material = Material(id=id, E=E, alpha=alpha, density=density, type=type)
         self.model.materials[id] = material
         self._mark_dirty()
         return material
@@ -48,8 +55,27 @@ class ModelBuilder:
         d: float = 0.0,
         EA: float | None = None,
         EI: float | None = None,
+        shape: str = "Generic",
+        material_id: str = "",
+        depth: float | None = None,
+        width: float | None = None,
+        outside_diameter: float | None = None,
+        wall_thickness: float | None = None,
     ) -> Section:
-        section = Section(id=id, A=A, I=I, d=d, EA=EA, EI=EI)
+        section = Section(
+            id=id,
+            A=A,
+            I=I,
+            d=d,
+            EA=EA,
+            EI=EI,
+            shape=shape,
+            material_id=material_id,
+            depth=depth,
+            width=width,
+            outside_diameter=outside_diameter,
+            wall_thickness=wall_thickness,
+        )
         self.model.sections[id] = section
         self._mark_dirty()
         return section
@@ -209,6 +235,55 @@ class ModelBuilder:
         self._mark_dirty()
         return group
 
+    def rename_node(self, old_id: int, new_id: int) -> Node:
+        if not isinstance(new_id, int) or isinstance(new_id, bool):
+            raise ValueError("Node id must be an integer.")
+        if old_id not in self.model.nodes:
+            raise KeyError(f"Unknown node id {old_id!r}.")
+        if old_id == new_id:
+            return self.model.nodes[old_id]
+        if new_id in self.model.nodes:
+            raise ValueError(f"Node id {new_id!r} already exists.")
+
+        node = self.model.nodes.pop(old_id)
+        node.id = new_id
+        self.model.nodes[new_id] = node
+
+        support = self.model.supports.pop(old_id, None)
+        if support is not None:
+            self.model.supports[new_id] = support
+
+        mass = self.model.lumped_masses.pop(old_id, None)
+        if mass is not None:
+            if hasattr(mass, "node"):
+                mass.node = node
+            self.model.lumped_masses[new_id] = mass
+
+        for group_id, node_ids in list(self.model.diaphragm_ux_groups.items()):
+            self.model.diaphragm_ux_groups[group_id] = [
+                new_id if node_id == old_id else node_id for node_id in node_ids
+            ]
+
+        self._mark_dirty()
+        return node
+
+    def rename_element(self, old_id: str, new_id: str) -> Element:
+        new_id = str(new_id).strip()
+        if not new_id:
+            raise ValueError("Member id is required.")
+        if old_id not in self.model.elements:
+            raise KeyError(f"Unknown element id {old_id!r}.")
+        if old_id == new_id:
+            return self.model.elements[old_id]
+        if new_id in self.model.elements:
+            raise ValueError(f"Member id {new_id!r} already exists.")
+
+        element = self.model.elements.pop(old_id)
+        element.id = new_id
+        self.model.elements[new_id] = element
+        self._mark_dirty()
+        return element
+
     def build(self, validate: bool = False) -> StructuralModel:
         if validate:
             StructuralValidator(self.model).validate()
@@ -275,12 +350,24 @@ def export_model_to_xml(model: StructuralModel, filepath: str) -> None:
                 "E": _fmt(material.E),
                 "alpha": _fmt(material.alpha),
                 "density": _fmt(material.density),
+                "type": getattr(material, "type", "Generic"),
             },
         )
 
     sections_el = ET.SubElement(root, "sections")
     for section in sorted(model.sections.values(), key=lambda item: item.id):
         attrs = {"id": section.id, "A": _fmt(section.A), "I": _fmt(section.I), "d": _fmt(section.d)}
+        for attr_name in (
+            "shape",
+            "material_id",
+            "depth",
+            "width",
+            "outside_diameter",
+            "wall_thickness",
+        ):
+            value = getattr(section, attr_name, None)
+            if value not in (None, ""):
+                attrs[attr_name] = _fmt(value) if isinstance(value, (int, float)) else str(value)
         if section.EA is not None:
             attrs["EA"] = _fmt(section.EA)
         if section.EI is not None:

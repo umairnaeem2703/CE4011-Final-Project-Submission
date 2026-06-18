@@ -652,6 +652,24 @@ def build_member_review_profile(model: StructuralModel, results: StaticResults, 
         disp_values = [_hermite_transverse_displacement(x, L, v1, th1, v2, th2) if L else 0.0 for x in stations]
         disp_label = "Transverse displacement"
 
+    member_end_forces = getattr(results, "member_end_forces", None) or {}
+    raw_member_end_forces = member_end_forces.get(element_key) or member_end_forces.get(str(element_key)) or {}
+    if isinstance(raw_member_end_forces, Mapping):
+        member_i_forces = _coerce_float_sequence(raw_member_end_forces.get("i"))
+        member_j_forces = _coerce_float_sequence(raw_member_end_forces.get("j"))
+    else:
+        member_force_values = _coerce_float_sequence(raw_member_end_forces)
+        if len(member_force_values) >= 6:
+            member_i_forces = member_force_values[:3]
+            member_j_forces = member_force_values[3:6]
+        else:
+            member_i_forces = member_force_values[:3] + [0.0] * max(0, 3 - len(member_force_values))
+            member_j_forces = [0.0, 0.0, 0.0]
+    if len(member_i_forces) < 3:
+        member_i_forces += [0.0] * (3 - len(member_i_forces))
+    if len(member_j_forces) < 3:
+        member_j_forces += [0.0] * (3 - len(member_j_forces))
+
     forces = getattr(results, "element_forces", None) or {}
     raw_forces = forces.get(element_key) or forces.get(str(element_key)) or {}
     if isinstance(raw_forces, Mapping):
@@ -674,12 +692,20 @@ def build_member_review_profile(model: StructuralModel, results: StaticResults, 
     if len(j_forces) < 3:
         j_forces += [0.0] * (3 - len(j_forces))
     end_forces = {
-        "Ni": i_forces[0],
-        "Vi": i_forces[1],
-        "Mi": i_forces[2],
-        "Nj": j_forces[0],
-        "Vj": j_forces[1],
-        "Mj": j_forces[2],
+        "Ni": n_values[0] if n_values else i_forces[0],
+        "Vi": v_values[0] if v_values else i_forces[1],
+        "Mi": m_values[0] if m_values else i_forces[2],
+        "Nj": n_values[-1] if n_values else j_forces[0],
+        "Vj": v_values[-1] if v_values else j_forces[1],
+        "Mj": m_values[-1] if m_values else j_forces[2],
+    }
+    global_end_forces = {
+        "FXi": member_i_forces[0],
+        "FYi": member_i_forces[1],
+        "MZi": member_i_forces[2],
+        "FXj": member_j_forces[0],
+        "FYj": member_j_forces[1],
+        "MZj": member_j_forces[2],
     }
 
     return {
@@ -693,6 +719,7 @@ def build_member_review_profile(model: StructuralModel, results: StaticResults, 
         "disp": disp_values,
         "disp_label": disp_label,
         "end_forces": end_forces,
+        "member_end_forces": global_end_forces,
         "load_case_id": getattr(results, "load_case_id", None),
     }
 

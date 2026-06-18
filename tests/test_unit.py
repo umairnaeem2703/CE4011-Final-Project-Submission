@@ -3,11 +3,14 @@
 import sys
 import os
 import unittest
+import tempfile
+import math
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../src')))
 
-from parser import Node, Material, Section, Element, Support, TemperatureL, UniformlyDL
+from parser import Node, Material, Section, Element, Support, TemperatureL, UniformlyDL, XMLParser
 from element_physics import ElementPhysics
+from model_builder import ModelBuilder
 import math_utils
 
 
@@ -44,8 +47,8 @@ class TestElementPhysics(unittest.TestCase):
         self.assertAlmostEqual(k_local[0][0], self.mat.E * self.sec.A / 5.0, places=6)
         self.assertAlmostEqual(k_local[1][1], 12 * self.mat.E * self.sec.I / (5.0**3), places=6)
 
-    def test_local_stiffness_uses_direct_effective_ea_ei_when_provided(self):
-        """Verify direct EA/EI overrides material E times section A/I."""
+    def test_local_stiffness_uses_a_i_before_direct_ea_ei_when_provided(self):
+        """Verify explicit A/I now take precedence over direct EA/EI."""
         section = Section(id="override", A=999.0, I=999.0, d=0.3, EA=1000.0, EI=500.0)
         frame = Element(id="F1", type="frame", node_i=self.node_i, node_j=self.node_j,
                        material=self.mat, section=section)
@@ -54,9 +57,72 @@ class TestElementPhysics(unittest.TestCase):
         k_local = ElementPhysics(frame).get_local_k()
         k_truss = ElementPhysics(truss).get_local_k()
 
+        self.assertAlmostEqual(k_local[0][0], self.mat.E * 999.0 / 5.0, places=6)
+        self.assertAlmostEqual(k_local[1][1], 12 * self.mat.E * 999.0 / (5.0**3), places=6)
+        self.assertAlmostEqual(k_truss[0][0], self.mat.E * 999.0 / 5.0, places=6)
+
+    def test_local_stiffness_uses_direct_ea_ei_when_a_i_are_absent(self):
+        """Verify direct EA/EI remain a fallback when no A/I are available."""
+        section = Section(id="direct", A=0.0, I=0.0, d=0.3, EA=1000.0, EI=500.0)
+        frame = Element(id="F1", type="frame", node_i=self.node_i, node_j=self.node_j,
+                       material=self.mat, section=section)
+        k_local = ElementPhysics(frame).get_local_k()
+
         self.assertAlmostEqual(k_local[0][0], 1000.0 / 5.0, places=6)
         self.assertAlmostEqual(k_local[1][1], 12 * 500.0 / (5.0**3), places=6)
-        self.assertAlmostEqual(k_truss[0][0], 1000.0 / 5.0, places=6)
+
+    def test_rectangular_dimensions_take_precedence_over_a_i_and_direct_stiffness(self):
+        """Verify rectangular dimensions compute A/I before explicit A/I and EA/EI."""
+        section = Section(
+            id="rect",
+            A=999.0,
+            I=999.0,
+            EA=1000.0,
+            EI=500.0,
+            shape="Rectangular",
+            depth=0.5,
+            width=0.3,
+        )
+        expected_a = 0.3 * 0.5
+        expected_i = 0.3 * 0.5**3 / 12.0
+
+        self.assertAlmostEqual(section.effective_EA(self.mat), self.mat.E * expected_a, places=6)
+        self.assertAlmostEqual(section.effective_EI(self.mat), self.mat.E * expected_i, places=6)
+
+    def test_pipe_dimensions_compute_area_and_inertia(self):
+        """Verify pipe dimensions compute textbook A and I."""
+        section = Section(id="pipe", A=0.0, I=0.0, shape="Pipe", outside_diameter=0.3, wall_thickness=0.01)
+        inner = 0.3 - 2.0 * 0.01
+        expected_a = math.pi * (0.3**2 - inner**2) / 4.0
+        expected_i = math.pi * (0.3**4 - inner**4) / 64.0
+
+        self.assertAlmostEqual(section.effective_EA(self.mat), self.mat.E * expected_a, places=6)
+        self.assertAlmostEqual(section.effective_EI(self.mat), self.mat.E * expected_i, places=6)
+
+    def test_section_shape_metadata_round_trips_xml(self):
+        """Verify XML preserves material type and dimensional section metadata."""
+        builder = ModelBuilder(name="shape_round_trip")
+        builder.add_material("steel", E=2.0e8, alpha=1.2e-5, density=7.85, type="Steel")
+        builder.add_section(
+            "pipe",
+            A=0.0,
+            I=0.0,
+            shape="Pipe",
+            material_id="steel",
+            outside_diameter=0.3,
+            wall_thickness=0.01,
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = os.path.join(tmpdir, "model.xml")
+            builder.export_xml(path)
+            parsed = XMLParser(path).parse()
+
+        section = parsed.sections["pipe"]
+        self.assertEqual(parsed.materials["steel"].type, "Steel")
+        self.assertEqual(section.shape, "Pipe")
+        self.assertEqual(section.material_id, "steel")
+        self.assertAlmostEqual(section.outside_diameter, 0.3, places=12)
+        self.assertAlmostEqual(section.wall_thickness, 0.01, places=12)
 
     def test_element_transformation_inclined(self):
         """Verify coordinate transformation for inclined element (3-4-5 triangle)."""
@@ -93,7 +159,7 @@ class TestThermalLoading(unittest.TestCase):
         
         Verifies axial thermal force only (no bending).
         Formula: F_T = alpha * T_uniform * E * A
-        Expected: [-F_T, 0, 0, F_T, 0, 0]^T
+        Expected: [F_T, 0, 0, -F_T, 0, 0]^T
         """
         mat_truss = Material(id="steel", E=2.0e8, alpha=1.2e-5)
         sec_truss = Section(id="truss_sec", A=0.01, I=0.0, d=0.0)
@@ -111,8 +177,8 @@ class TestThermalLoading(unittest.TestCase):
         F_T = alpha * T_uniform * E * A
         
         # Verify axial forces
-        self.assertAlmostEqual(fef[0][0], -F_T, places=6)
-        self.assertAlmostEqual(fef[3][0], F_T, places=6)
+        self.assertAlmostEqual(fef[0][0], F_T, places=6)
+        self.assertAlmostEqual(fef[3][0], -F_T, places=6)
         # Verify no transverse/moment effects
         self.assertAlmostEqual(fef[1][0], 0.0, places=10)
         self.assertAlmostEqual(fef[2][0], 0.0, places=10)
@@ -143,11 +209,11 @@ class TestThermalLoading(unittest.TestCase):
         F_T = alpha * T_uniform * E * A
         M_T = (alpha * delta_T / d) * E * I
         
-        # Verify: [-F_T, 0, -M_T, F_T, 0, M_T]^T
-        self.assertAlmostEqual(fef[0][0], -F_T, places=4)
-        self.assertAlmostEqual(fef[2][0], -M_T, places=4)
-        self.assertAlmostEqual(fef[3][0], F_T, places=4)
-        self.assertAlmostEqual(fef[5][0], M_T, places=4)
+        # Verify: [F_T, 0, M_T, -F_T, 0, -M_T]^T
+        self.assertAlmostEqual(fef[0][0], F_T, places=4)
+        self.assertAlmostEqual(fef[2][0], M_T, places=4)
+        self.assertAlmostEqual(fef[3][0], -F_T, places=4)
+        self.assertAlmostEqual(fef[5][0], -M_T, places=4)
 
 
 class TestSupportSettlement(unittest.TestCase):

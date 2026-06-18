@@ -1007,6 +1007,45 @@ class ModelCanvas(ttk.Frame):
         self.status_callback(f"Node {node_id} set to {state}.")
         return node
 
+    def rename_selected_node(self, new_node_id: int):
+        if self.selected_kind != "node" or self.selected_id not in self.builder.model.nodes:
+            self.status_callback("Node ID: select one node first.")
+            return None
+
+        old_node_id = int(self.selected_id)
+        try:
+            node = self.builder.rename_node(old_node_id, new_node_id)
+        except (KeyError, ValueError) as exc:
+            self.status_callback(f"Node ID: {exc}")
+            return None
+
+        self.next_node_id = max(self.builder.model.nodes, default=0) + 1
+        self.redraw_model()
+        self.select_node(node.id)
+        self.change_callback()
+        self.status_callback(f"Renamed node {old_node_id} to {node.id}.")
+        return node
+
+    def rename_selected_member(self, new_element_id: str):
+        if self.selected_kind != "element" or self.selected_id not in self.builder.model.elements:
+            self.status_callback("Member ID: select one member first.")
+            return None
+
+        old_element_id = str(self.selected_id)
+        try:
+            element = self.builder.rename_element(old_element_id, new_element_id)
+        except (KeyError, ValueError) as exc:
+            self.status_callback(f"Member ID: {exc}")
+            return None
+
+        element_numbers = [_element_number(element_id) for element_id in self.builder.model.elements]
+        self.next_element_number = max(element_numbers, default=0) + 1
+        self.redraw_model()
+        self.select_element(element.id)
+        self.change_callback()
+        self.status_callback(f"Renamed member {old_element_id} to {element.id}.")
+        return element
+
     def _remove_loads(self, load_case_id: str, matches) -> int:
         load_case = self.builder.model.load_cases.get(load_case_id)
         if load_case is None:

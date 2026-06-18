@@ -176,7 +176,7 @@ class ElementPhysics:
             
         else:
             EI = self.element.section.effective_EI(self.element.material)
-            d = self.element.section.d
+            d = self.element.section.thermal_depth()
             M_T = (alpha * delta_T / d) * EI if d != 0 else 0.0
             return [[F_T], [0.0], [M_T], [-F_T], [0.0], [-M_T]]
 

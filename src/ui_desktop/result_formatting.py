@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping, Sequence
 
 
-DEFAULT_DISPLAY_TOLERANCE = 1.0e-3
+DEFAULT_DISPLAY_TOLERANCE = 1.0e-9
 
 _UNIT_LABELS = {
     "kN_m_tonne": {"length": "m", "rotation": "rad", "force": "kN", "moment": "kN-m"},

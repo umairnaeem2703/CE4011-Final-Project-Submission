@@ -15,6 +15,7 @@ class StaticResults:
     nvm_data: dict
     dof_map: dict
     load_case_id: str
+    member_end_forces: dict | None = None
 
 
 @dataclass

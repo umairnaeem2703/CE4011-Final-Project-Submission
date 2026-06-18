@@ -1,0 +1,34 @@
+<?xml version='1.0' encoding='utf-8'?>
+<model name="New Model" unit_system="kN_m_tonne">
+  <materials>
+    <material id="Concrete" E="30000000" alpha="0" density="0" type="Concrete" />
+    <material id="Steel" E="200000000" alpha="0" density="0" type="Steel" />
+  </materials>
+  <sections>
+    <section id="FRAME" A="0.25" I="0.00520833333333" d="0.5" shape="Rectangular" material_id="Concrete" depth="0.5" width="0.5" />
+    <section id="TRUSS" A="9.11061869541e-05" I="9.58892617692e-09" d="0.03" shape="Pipe" material_id="Steel" outside_diameter="0.03" wall_thickness="0.001" />
+  </sections>
+  <nodes>
+    <node id="1" x="0" y="4" />
+    <node id="2" x="4" y="4" />
+    <node id="3" x="12" y="4" />
+    <node id="4" x="15" y="4" />
+    <node id="5" x="4" y="0" />
+    <node id="6" x="9" y="0" />
+  </nodes>
+  <elements>
+    <frame id="F1" node_i="1" node_j="2" material="Concrete" section="FRAME" />
+    <frame id="F2" node_i="2" node_j="3" material="Concrete" section="FRAME" />
+    <frame id="F3" node_i="3" node_j="4" material="Concrete" section="FRAME" />
+    <frame id="F4" node_i="5" node_j="2" material="Concrete" section="FRAME" />
+    <truss id="T1" node_i="6" node_j="3" material="Steel" section="TRUSS" />
+  </elements>
+  <boundary_conditions>
+    <support node="1" ux="1" uy="1" rz="0" />
+    <support node="5" ux="1" uy="1" rz="0" settlement_uy="-0.002" />
+    <support node="6" ux="1" uy="1" rz="0" />
+  </boundary_conditions>
+  <load_cases>
+    <load_case id="LC1" name="Settlement" />
+  </load_cases>
+</model>

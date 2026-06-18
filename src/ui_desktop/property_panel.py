@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import math
 import tkinter as tk
-from tkinter import ttk
+from tkinter import messagebox, ttk
 
 from .canvas import ModelCanvas
 from .dialogs import LoadSettings, SupportSettings
@@ -31,6 +32,8 @@ class PropertyPanel(ttk.LabelFrame):
         self.member_material_var = tk.StringVar(value="")
         self.member_section_var = tk.StringVar(value="")
         self.member_type_var = tk.StringVar(value="frame")
+        self.selected_node_id_var = tk.StringVar(value="")
+        self.selected_member_id_var = tk.StringVar(value="")
         self.selected_node_x_var = tk.StringVar(value="")
         self.selected_node_y_var = tk.StringVar(value="")
         self.new_node_hinge_var = tk.BooleanVar(value=False)
@@ -207,6 +210,7 @@ class PropertyPanel(ttk.LabelFrame):
         self._title("Select / Inspect")
         if self.selected_kind == "node" and self.selected_object is not None:
             node = self.selected_object
+            self.selected_node_id_var.set(str(node.id))
             self.selected_node_x_var.set(f"{node.x:.6g}")
             self.selected_node_y_var.set(f"{node.y:.6g}")
             support = self.model_canvas.builder.model.supports.get(node.id)
@@ -224,6 +228,7 @@ class PropertyPanel(ttk.LabelFrame):
         elif self.selected_kind == "element" and self.selected_object is not None:
             element = self.selected_object
             loads_text = _member_load_summary(self.model_canvas.builder.model, element.id)
+            self.selected_member_id_var.set(element.id)
             self.member_material_var.set(element.material.id)
             self.member_section_var.set(element.section.id)
             self.member_type_var.set(element.type)
@@ -255,9 +260,11 @@ class PropertyPanel(ttk.LabelFrame):
             ttk.Label(info, text=label).grid(row=row, column=0, sticky="w", pady=2)
             ttk.Label(info, text=str(value)).grid(row=row, column=1, sticky="w", pady=2)
         if self.selected_kind == "node" and self.selected_object is not None:
-            self._node_coordinate_editor(start_row=2)
+            self._node_id_editor(start_row=2)
+            self._node_coordinate_editor(start_row=3)
         if self.selected_kind == "element" and self.selected_object is not None:
-            self._member_properties_editor(start_row=2)
+            self._member_id_editor(start_row=2)
+            self._member_properties_editor(start_row=3)
 
     def _placeholder_panel(self, title: str, text: str) -> None:
         self._title(title)
@@ -312,32 +319,18 @@ class PropertyPanel(ttk.LabelFrame):
         material = ttk.LabelFrame(self, text="Material", padding=6)
         material.grid(row=1, column=0, sticky="ew", pady=(8, 0))
         material.columnconfigure(1, weight=1)
-        ttk.Label(material, text="id/name").grid(row=0, column=0, sticky="w", pady=2)
-        ttk.Entry(material, textvariable=self.material_id_var, width=12).grid(row=0, column=1, sticky="ew", pady=2)
-        self._combo(material, 1, "Type", self.material_type_var, ("Generic", "Steel", "Concrete"), lambda: None)
-        ttk.Label(material, text="E").grid(row=2, column=0, sticky="w", pady=2)
-        ttk.Entry(material, textvariable=self.material_e_var, width=12).grid(row=2, column=1, sticky="ew", pady=2)
-        ttk.Label(material, text="alpha").grid(row=3, column=0, sticky="w", pady=2)
-        ttk.Entry(material, textvariable=self.material_alpha_var, width=12).grid(row=3, column=1, sticky="ew", pady=2)
-        ttk.Label(material, text="density").grid(row=4, column=0, sticky="w", pady=2)
-        ttk.Entry(material, textvariable=self.material_density_var, width=12).grid(row=4, column=1, sticky="ew", pady=2)
-        ttk.Button(material, text="Add / Update Material", command=self._add_material).grid(
-            row=5,
+        ttk.Label(material, text="Current").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Label(material, text=self.assign_material_var.get() or "none").grid(row=0, column=1, sticky="w", pady=2)
+        ttk.Button(material, text="Define Materials...", command=self._open_materials_dialog).grid(
+            row=1,
             column=0,
             columnspan=2,
             sticky="ew",
             pady=(6, 0),
         )
-        self._combo(material, 6, "Assign existing", self.assign_material_var, self._material_ids(), lambda: None)
+        self._combo(material, 2, "Assign existing", self.assign_material_var, self._material_ids(), lambda: None)
         ttk.Button(material, text="Assign Material to Selected Members", command=self._assign_material_to_selected_members).grid(
-            row=7,
-            column=0,
-            columnspan=2,
-            sticky="ew",
-            pady=(6, 0),
-        )
-        ttk.Button(material, text="Delete Material", command=self._delete_material).grid(
-            row=8,
+            row=3,
             column=0,
             columnspan=2,
             sticky="ew",
@@ -347,81 +340,37 @@ class PropertyPanel(ttk.LabelFrame):
         section = ttk.LabelFrame(self, text="Section", padding=6)
         section.grid(row=2, column=0, sticky="ew", pady=(8, 0))
         section.columnconfigure(1, weight=1)
-        ttk.Label(section, text="id/name").grid(row=0, column=0, sticky="w", pady=2)
-        ttk.Entry(section, textvariable=self.section_id_var, width=12).grid(row=0, column=1, sticky="ew", pady=2)
-        self._combo(
-            section,
-            1,
-            "Input mode",
-            self.section_input_mode_var,
-            ("Geometric", "Direct Stiffness"),
-            self._sync_section_input_mode,
-        )
-        a_label = ttk.Label(section, text="A")
-        a_entry = ttk.Entry(section, textvariable=self.section_a_var, width=12)
-        i_label = ttk.Label(section, text="I")
-        i_entry = ttk.Entry(section, textvariable=self.section_i_var, width=12)
-        d_label = ttk.Label(section, text="d/depth")
-        d_entry = ttk.Entry(section, textvariable=self.section_d_var, width=12)
-        ea_label = ttk.Label(section, text="EA direct stiffness")
-        ea_entry = ttk.Entry(section, textvariable=self.section_ea_var, width=12)
-        ei_label = ttk.Label(section, text="EI direct stiffness")
-        ei_entry = ttk.Entry(section, textvariable=self.section_ei_var, width=12)
-        thermal_d_label = ttk.Label(section, text="Thermal depth d")
-        thermal_d_entry = ttk.Entry(section, textvariable=self.section_d_var, width=12)
-        direct_note = ttk.Label(
-            section,
-            text="Material E is ignored for stiffness; material may still provide alpha/density.",
-            wraplength=210,
-        )
-        for row, (label, entry) in enumerate(
-            ((a_label, a_entry), (i_label, i_entry), (d_label, d_entry), (ea_label, ea_entry), (ei_label, ei_entry)),
-            start=2,
-        ):
-            label.grid(row=row, column=0, sticky="w", pady=2)
-            entry.grid(row=row, column=1, sticky="ew", pady=2)
-        thermal_d_label.grid(row=7, column=0, sticky="w", pady=2)
-        thermal_d_entry.grid(row=7, column=1, sticky="ew", pady=2)
-        direct_note.grid(row=8, column=0, columnspan=2, sticky="w", pady=(4, 2))
-        self._section_geometric_widgets = [a_label, a_entry, i_label, i_entry, d_label, d_entry]
-        self._section_direct_widgets = [ea_label, ea_entry, ei_label, ei_entry, thermal_d_label, thermal_d_entry, direct_note]
-        ttk.Button(section, text="Add / Update Section", command=self._add_section).grid(
-            row=9,
+        ttk.Label(section, text="Current").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Label(section, text=self.assign_section_var.get() or "none").grid(row=0, column=1, sticky="w", pady=2)
+        ttk.Button(section, text="Define Frame Properties...", command=self._open_sections_dialog).grid(
+            row=1,
             column=0,
             columnspan=2,
             sticky="ew",
             pady=(6, 0),
         )
-        self._combo(section, 10, "Assign existing", self.assign_section_var, self._section_ids(), lambda: None)
+        self._combo(section, 2, "Assign existing", self.assign_section_var, self._section_ids(), lambda: None)
         ttk.Button(section, text="Assign Section to Selected Members", command=self._assign_section_to_selected_members).grid(
-            row=11,
+            row=3,
             column=0,
             columnspan=2,
             sticky="ew",
             pady=(6, 0),
         )
         ttk.Button(section, text="Assign Material + Section to Selected Members", command=self._assign_material_section_to_selected_members).grid(
-            row=12,
-            column=0,
-            columnspan=2,
-            sticky="ew",
-            pady=(6, 0),
-        )
-        ttk.Button(section, text="Delete Section", command=self._delete_section).grid(
-            row=13,
+            row=4,
             column=0,
             columnspan=2,
             sticky="ew",
             pady=(6, 0),
         )
         ttk.Button(section, text="Reset to Default", command=self._reset_current_command).grid(
-            row=14,
+            row=5,
             column=0,
             columnspan=2,
             sticky="ew",
             pady=(6, 0),
         )
-        self._sync_section_input_mode()
 
     def _support_panel(self) -> None:
         self._title("Assign Support")
@@ -624,6 +573,44 @@ class PropertyPanel(ttk.LabelFrame):
         ).grid(row=5, column=0, columnspan=2, sticky="w", pady=2)
         ttk.Button(editor, text="Apply Member Properties", command=self._apply_member_properties).grid(
             row=6,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(8, 0),
+        )
+
+    def _member_id_editor(self, start_row: int) -> None:
+        editor = ttk.LabelFrame(self, text="Member ID", padding=6)
+        editor.grid(row=start_row, column=0, sticky="ew", pady=(8, 0))
+        editor.columnconfigure(1, weight=1)
+        ttk.Label(editor, text="id").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Entry(editor, textvariable=self.selected_member_id_var, width=12).grid(
+            row=0,
+            column=1,
+            sticky="ew",
+            pady=2,
+        )
+        ttk.Button(editor, text="Apply Member ID", command=self._apply_member_id).grid(
+            row=1,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(8, 0),
+        )
+
+    def _node_id_editor(self, start_row: int) -> None:
+        editor = ttk.LabelFrame(self, text="Node ID", padding=6)
+        editor.grid(row=start_row, column=0, sticky="ew", pady=(8, 0))
+        editor.columnconfigure(1, weight=1)
+        ttk.Label(editor, text="id").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Entry(editor, textvariable=self.selected_node_id_var, width=12).grid(
+            row=0,
+            column=1,
+            sticky="ew",
+            pady=2,
+        )
+        ttk.Button(editor, text="Apply Node ID", command=self._apply_node_id).grid(
+            row=1,
             column=0,
             columnspan=2,
             sticky="ew",
@@ -900,6 +887,37 @@ class PropertyPanel(ttk.LabelFrame):
             self.selected_object = updated
             self.show_command("Select / Inspect")
 
+    def _apply_member_id(self) -> None:
+        if self.selected_kind != "element" or self.selected_object is None:
+            self.status_callback("Member ID: select one member first.")
+            return
+        new_id = self.selected_member_id_var.get().strip()
+        if not new_id:
+            self.status_callback("Member ID: id is required.")
+            return
+        updated = self.model_canvas.rename_selected_member(new_id)
+        if updated is not None:
+            self.selected_object = updated
+            self.show_command("Select / Inspect")
+
+    def _apply_node_id(self) -> None:
+        if self.selected_kind != "node" or self.selected_object is None:
+            self.status_callback("Node ID: select one node first.")
+            return
+        raw_id = self.selected_node_id_var.get().strip()
+        if not raw_id:
+            self.status_callback("Node ID: id is required.")
+            return
+        try:
+            new_id = int(raw_id)
+        except ValueError:
+            self.status_callback("Node ID: id must be an integer.")
+            return
+        updated = self.model_canvas.rename_selected_node(new_id)
+        if updated is not None:
+            self.selected_object = updated
+            self.show_command("Select / Inspect")
+
     def _apply_node_coordinates(self) -> None:
         if self.selected_kind != "node" or self.selected_object is None:
             self.status_callback("Node Coordinates: select one node first.")
@@ -947,6 +965,17 @@ class PropertyPanel(ttk.LabelFrame):
             self.show_command("Select / Inspect")
         self.status_callback("Replicate canceled.")
 
+    def _open_materials_dialog(self) -> None:
+        MaterialListDialog(self, self.model_canvas.builder, self._refresh_after_material_section_change)
+
+    def _open_sections_dialog(self) -> None:
+        SectionListDialog(
+            self,
+            self.model_canvas.builder,
+            self._refresh_after_material_section_change,
+            self._open_materials_dialog,
+        )
+
     def _add_material(self) -> None:
         material_id = self.material_id_var.get().strip()
         if not material_id:
@@ -959,7 +988,7 @@ class PropertyPanel(ttk.LabelFrame):
         except ValueError:
             self.status_callback("Material: E, alpha, and density must be numeric.")
             return
-        self.model_canvas.builder.add_material(material_id, E=E, alpha=alpha, density=density)
+        self.model_canvas.builder.add_material(material_id, E=E, alpha=alpha, density=density, type=self.material_type_var.get())
         self.material_var.set(material_id)
         self.assign_material_var.set(material_id)
         self.model_canvas.set_active_material(material_id)
@@ -1197,6 +1226,413 @@ class PropertyPanel(ttk.LabelFrame):
     def _clear(self) -> None:
         for child in self.winfo_children():
             child.destroy()
+
+
+class MaterialListDialog(tk.Toplevel):
+    def __init__(self, parent, builder, refresh_callback) -> None:
+        super().__init__(parent)
+        self.builder = builder
+        self.refresh_callback = refresh_callback
+        self.title("Define Materials")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        frame = ttk.Frame(self, padding=10)
+        frame.grid(row=0, column=0, sticky="nsew")
+        materials = ttk.LabelFrame(frame, text="Materials", padding=6)
+        materials.grid(row=0, column=0, sticky="nsew")
+        self.listbox = tk.Listbox(materials, height=9, width=24, exportselection=False)
+        self.listbox.grid(row=0, column=0, sticky="nsew")
+
+        actions = ttk.LabelFrame(frame, text="Click to", padding=6)
+        actions.grid(row=0, column=1, sticky="n", padx=(8, 0))
+        ttk.Button(actions, text="Add New Material...", command=self._add).grid(row=0, column=0, sticky="ew", pady=2)
+        ttk.Button(actions, text="Modify/Show Material...", command=self._modify).grid(row=1, column=0, sticky="ew", pady=2)
+        ttk.Button(actions, text="Delete Material", command=self._delete).grid(row=2, column=0, sticky="ew", pady=2)
+        ttk.Button(frame, text="OK", command=self.destroy).grid(row=1, column=0, sticky="e", pady=(8, 0))
+        ttk.Button(frame, text="Cancel", command=self.destroy).grid(row=1, column=1, sticky="w", pady=(8, 0), padx=(8, 0))
+        self._reload()
+
+    def _reload(self, selected: str | None = None) -> None:
+        self.listbox.delete(0, tk.END)
+        ids = sorted(self.builder.model.materials)
+        for material_id in ids:
+            self.listbox.insert(tk.END, material_id)
+        if ids:
+            index = ids.index(selected) if selected in ids else 0
+            self.listbox.selection_set(index)
+            self.listbox.activate(index)
+
+    def _selected_id(self) -> str | None:
+        selection = self.listbox.curselection()
+        return None if not selection else self.listbox.get(selection[0])
+
+    def _add(self) -> None:
+        MaterialEditorDialog(self, self.builder, self._material_saved)
+
+    def _modify(self) -> None:
+        material_id = self._selected_id()
+        if material_id:
+            MaterialEditorDialog(self, self.builder, self._material_saved, material_id)
+
+    def _delete(self) -> None:
+        material_id = self._selected_id()
+        if not material_id:
+            return
+        used = [element_id for element_id, element in self.builder.model.elements.items() if element.material.id == material_id]
+        if used:
+            messagebox.showinfo("Delete Material", f"Material is used by {len(used)} member(s).")
+            return
+        del self.builder.model.materials[material_id]
+        self.builder._mark_dirty()
+        self._material_saved(None)
+
+    def _material_saved(self, material_id: str | None) -> None:
+        self._reload(material_id)
+        self.refresh_callback()
+
+
+class MaterialEditorDialog(tk.Toplevel):
+    def __init__(self, parent, builder, saved_callback, material_id: str | None = None) -> None:
+        super().__init__(parent)
+        self.builder = builder
+        self.saved_callback = saved_callback
+        self.original_id = material_id
+        material = builder.model.materials.get(material_id) if material_id else None
+        self.title("Material Property Data")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        self.id_var = tk.StringVar(value=material.id if material else _next_named_id(builder.model.materials, "M"))
+        self.type_var = tk.StringVar(value=getattr(material, "type", "Generic") if material else "Generic")
+        self.e_var = tk.StringVar(value=_format_number(material.E) if material else "1.0")
+        self.alpha_var = tk.StringVar(value=_format_number(material.alpha) if material else "0.0")
+        self.density_var = tk.StringVar(value=_format_number(material.density) if material else "0.0")
+
+        frame = ttk.Frame(self, padding=10)
+        frame.grid(row=0, column=0, sticky="nsew")
+        data = ttk.LabelFrame(frame, text="General Data", padding=8)
+        data.grid(row=0, column=0, sticky="ew")
+        data.columnconfigure(1, weight=1)
+        ttk.Label(data, text="Material Name").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Entry(data, textvariable=self.id_var, width=24).grid(row=0, column=1, sticky="ew", pady=2)
+        _readonly_combo(data, 1, "Material Type", self.type_var, ("Generic", "Steel", "Concrete"))
+
+        props = ttk.LabelFrame(frame, text="Isotropic Property Data", padding=8)
+        props.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        props.columnconfigure(1, weight=1)
+        _entry_row(props, 0, "Modulus of Elasticity, E", self.e_var)
+        _entry_row(props, 1, "Thermal Expansion, alpha", self.alpha_var)
+        _entry_row(props, 2, "Mass per Unit Volume", self.density_var)
+
+        actions = ttk.Frame(frame)
+        actions.grid(row=2, column=0, pady=(10, 0))
+        ttk.Button(actions, text="OK", command=self._save).grid(row=0, column=0, padx=6)
+        ttk.Button(actions, text="Cancel", command=self.destroy).grid(row=0, column=1, padx=6)
+
+    def _save(self) -> None:
+        material_id = self.id_var.get().strip()
+        if not material_id:
+            messagebox.showerror("Material", "Material name is required.")
+            return
+        try:
+            E = float(self.e_var.get())
+            alpha = float(self.alpha_var.get())
+            density = float(self.density_var.get())
+        except ValueError:
+            messagebox.showerror("Material", "E, alpha, and density must be numeric.")
+            return
+        if self.original_id and self.original_id != material_id and self.original_id in self.builder.model.materials:
+            old = self.builder.model.materials[self.original_id]
+            material = self.builder.add_material(material_id, E, alpha, density, self.type_var.get())
+            for element in self.builder.model.elements.values():
+                if element.material is old:
+                    element.material = material
+            del self.builder.model.materials[self.original_id]
+        else:
+            self.builder.add_material(material_id, E=E, alpha=alpha, density=density, type=self.type_var.get())
+        self.saved_callback(material_id)
+        self.destroy()
+
+
+class SectionListDialog(tk.Toplevel):
+    def __init__(self, parent, builder, refresh_callback, add_material_callback) -> None:
+        super().__init__(parent)
+        self.builder = builder
+        self.refresh_callback = refresh_callback
+        self.add_material_callback = add_material_callback
+        self.title("Frame Properties")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        frame = ttk.Frame(self, padding=10)
+        frame.grid(row=0, column=0, sticky="nsew")
+        props = ttk.LabelFrame(frame, text="Properties", padding=6)
+        props.grid(row=0, column=0, sticky="nsew")
+        self.listbox = tk.Listbox(props, height=9, width=26, exportselection=False)
+        self.listbox.grid(row=0, column=0, sticky="nsew")
+
+        actions = ttk.LabelFrame(frame, text="Click to", padding=6)
+        actions.grid(row=0, column=1, sticky="n", padx=(8, 0))
+        ttk.Button(actions, text="Add New Property...", command=self._add).grid(row=0, column=0, sticky="ew", pady=2)
+        ttk.Button(actions, text="Modify/Show Property...", command=self._modify).grid(row=1, column=0, sticky="ew", pady=2)
+        ttk.Button(actions, text="Delete Property", command=self._delete).grid(row=2, column=0, sticky="ew", pady=2)
+        ttk.Button(frame, text="OK", command=self.destroy).grid(row=1, column=0, sticky="e", pady=(8, 0))
+        ttk.Button(frame, text="Cancel", command=self.destroy).grid(row=1, column=1, sticky="w", pady=(8, 0), padx=(8, 0))
+        self._reload()
+
+    def _reload(self, selected: str | None = None) -> None:
+        self.listbox.delete(0, tk.END)
+        ids = sorted(self.builder.model.sections)
+        for section_id in ids:
+            self.listbox.insert(tk.END, section_id)
+        if ids:
+            index = ids.index(selected) if selected in ids else 0
+            self.listbox.selection_set(index)
+            self.listbox.activate(index)
+
+    def _selected_id(self) -> str | None:
+        selection = self.listbox.curselection()
+        return None if not selection else self.listbox.get(selection[0])
+
+    def _add(self) -> None:
+        SectionEditorDialog(self, self.builder, self._section_saved, self.add_material_callback)
+
+    def _modify(self) -> None:
+        section_id = self._selected_id()
+        if section_id:
+            SectionEditorDialog(self, self.builder, self._section_saved, self.add_material_callback, section_id)
+
+    def _delete(self) -> None:
+        section_id = self._selected_id()
+        if not section_id:
+            return
+        used = [element_id for element_id, element in self.builder.model.elements.items() if element.section.id == section_id]
+        if used:
+            messagebox.showinfo("Delete Property", f"Section is used by {len(used)} member(s).")
+            return
+        del self.builder.model.sections[section_id]
+        self.builder._mark_dirty()
+        self._section_saved(None)
+
+    def _section_saved(self, section_id: str | None) -> None:
+        self._reload(section_id)
+        self.refresh_callback()
+
+
+class SectionEditorDialog(tk.Toplevel):
+    def __init__(self, parent, builder, saved_callback, add_material_callback, section_id: str | None = None) -> None:
+        super().__init__(parent)
+        self.builder = builder
+        self.saved_callback = saved_callback
+        self.add_material_callback = add_material_callback
+        self.original_id = section_id
+        section = builder.model.sections.get(section_id) if section_id else None
+        self.title("Section Property Data")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+
+        self.id_var = tk.StringVar(value=section.id if section else _next_named_id(builder.model.sections, "S"))
+        self.shape_var = tk.StringVar(value=getattr(section, "shape", "Generic") if section else "Generic")
+        self.material_var = tk.StringVar(value=getattr(section, "material_id", "") or next(iter(builder.model.materials), ""))
+        self.depth_var = tk.StringVar(value=_format_entry_optional(getattr(section, "depth", None)))
+        self.width_var = tk.StringVar(value=_format_entry_optional(getattr(section, "width", None)))
+        self.diameter_var = tk.StringVar(value=_format_entry_optional(getattr(section, "outside_diameter", None)))
+        self.thickness_var = tk.StringVar(value=_format_entry_optional(getattr(section, "wall_thickness", None)))
+        self.a_var = tk.StringVar(value=_format_number(section.A) if section else "")
+        self.i_var = tk.StringVar(value=_format_number(section.I) if section else "")
+        self.d_var = tk.StringVar(value=_format_number(section.d) if section else "0.0")
+        self.ea_var = tk.StringVar(value=_format_entry_optional(getattr(section, "EA", None)))
+        self.ei_var = tk.StringVar(value=_format_entry_optional(getattr(section, "EI", None)))
+
+        frame = ttk.Frame(self, padding=10)
+        frame.grid(row=0, column=0, sticky="nsew")
+        general = ttk.LabelFrame(frame, text="General", padding=8)
+        general.grid(row=0, column=0, sticky="ew")
+        general.columnconfigure(1, weight=1)
+        _entry_row(general, 0, "Section Name", self.id_var)
+        _readonly_combo(general, 1, "Section Type", self.shape_var, ("Generic", "Rectangular", "Pipe"), self._sync_shape)
+
+        dims = ttk.LabelFrame(frame, text="Dimensions / Properties", padding=8)
+        dims.grid(row=1, column=0, sticky="ew", pady=(8, 0))
+        dims.columnconfigure(1, weight=1)
+        self.rect_widgets = _entry_row(dims, 0, "Depth", self.depth_var) + _entry_row(dims, 1, "Width", self.width_var)
+        self.pipe_widgets = _entry_row(dims, 2, "Outside Diameter", self.diameter_var) + _entry_row(dims, 3, "Wall Thickness", self.thickness_var)
+        self.generic_widgets = _entry_row(dims, 4, "A", self.a_var) + _entry_row(dims, 5, "I", self.i_var)
+        _entry_row(dims, 6, "Thermal depth d", self.d_var)
+        _entry_row(dims, 7, "EA direct", self.ea_var)
+        _entry_row(dims, 8, "EI direct", self.ei_var)
+        ttk.Button(dims, text="Section Properties...", command=self._show_section_properties).grid(
+            row=9,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(8, 0),
+        )
+
+        material = ttk.LabelFrame(frame, text="Material", padding=8)
+        material.grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        material.columnconfigure(1, weight=1)
+        ttk.Button(material, text="+", width=3, command=self.add_material_callback).grid(row=0, column=0, sticky="w")
+        ttk.Combobox(
+            material,
+            textvariable=self.material_var,
+            values=tuple(self.builder.model.materials.keys()),
+            state="readonly",
+            width=22,
+        ).grid(row=0, column=1, sticky="ew", padx=(6, 0))
+
+        actions = ttk.Frame(frame)
+        actions.grid(row=3, column=0, pady=(10, 0))
+        ttk.Button(actions, text="OK", command=self._save).grid(row=0, column=0, padx=6)
+        ttk.Button(actions, text="Cancel", command=self.destroy).grid(row=0, column=1, padx=6)
+        self._sync_shape()
+
+    def _sync_shape(self) -> None:
+        shape = self.shape_var.get()
+        for widget in self.rect_widgets:
+            widget.grid() if shape == "Rectangular" else widget.grid_remove()
+        for widget in self.pipe_widgets:
+            widget.grid() if shape == "Pipe" else widget.grid_remove()
+        for widget in self.generic_widgets:
+            widget.grid() if shape == "Generic" else widget.grid_remove()
+
+    def _save(self) -> None:
+        section_id = self.id_var.get().strip()
+        if not section_id:
+            messagebox.showerror("Section", "Section name is required.")
+            return
+        try:
+            values = self._section_values()
+        except ValueError as exc:
+            messagebox.showerror("Section", str(exc))
+            return
+        if self.original_id and self.original_id != section_id and self.original_id in self.builder.model.sections:
+            old = self.builder.model.sections[self.original_id]
+            del self.builder.model.sections[self.original_id]
+            section = self.builder.add_section(section_id, **values)
+            for element in self.builder.model.elements.values():
+                if element.section is old:
+                    element.section = section
+        else:
+            self.builder.add_section(section_id, **values)
+        self.saved_callback(section_id)
+        self.destroy()
+
+    def _section_values(self) -> dict:
+        shape = self.shape_var.get()
+        d = _optional_float(self.d_var.get()) or 0.0
+        EA = _optional_float(self.ea_var.get())
+        EI = _optional_float(self.ei_var.get())
+        if shape == "Rectangular":
+            depth = _required_float(self.depth_var.get(), "Depth")
+            width = _required_float(self.width_var.get(), "Width")
+            if depth <= 0.0 or width <= 0.0:
+                raise ValueError("Rectangular dimensions must be positive.")
+            A = width * depth
+            I = width * depth**3 / 12.0
+            return {
+                "A": A,
+                "I": I,
+                "d": d or depth,
+                "EA": EA,
+                "EI": EI,
+                "shape": shape,
+                "material_id": self.material_var.get(),
+                "depth": depth,
+                "width": width,
+            }
+        if shape == "Pipe":
+            outside_diameter = _required_float(self.diameter_var.get(), "Outside Diameter")
+            wall_thickness = _required_float(self.thickness_var.get(), "Wall Thickness")
+            if outside_diameter <= 0.0 or wall_thickness <= 0.0 or 2.0 * wall_thickness > outside_diameter:
+                raise ValueError("Pipe dimensions must be positive and wall thickness must fit inside diameter.")
+            inner = outside_diameter - 2.0 * wall_thickness
+            A = math.pi * (outside_diameter**2 - inner**2) / 4.0
+            I = math.pi * (outside_diameter**4 - inner**4) / 64.0
+            return {
+                "A": A,
+                "I": I,
+                "d": d or outside_diameter,
+                "EA": EA,
+                "EI": EI,
+                "shape": shape,
+                "material_id": self.material_var.get(),
+                "outside_diameter": outside_diameter,
+                "wall_thickness": wall_thickness,
+            }
+        A = _optional_float(self.a_var.get()) or 0.0
+        I = _optional_float(self.i_var.get()) or 0.0
+        return {
+            "A": A,
+            "I": I,
+            "d": d,
+            "EA": EA,
+            "EI": EI,
+            "shape": shape,
+            "material_id": self.material_var.get(),
+        }
+
+    def _show_section_properties(self) -> None:
+        try:
+            values = self._section_values()
+        except ValueError as exc:
+            messagebox.showerror("Section Properties", str(exc))
+            return
+        SectionPropertiesDialog(self, self.id_var.get().strip(), values["A"], values["I"])
+
+
+class SectionPropertiesDialog(tk.Toplevel):
+    def __init__(self, parent, section_id: str, area: float, inertia: float) -> None:
+        super().__init__(parent)
+        self.title("Property Data")
+        self.resizable(False, False)
+        self.transient(parent)
+        self.grab_set()
+        frame = ttk.Frame(self, padding=12)
+        frame.grid(row=0, column=0, sticky="nsew")
+        ttk.Label(frame, text="Section Name").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Label(frame, text=section_id).grid(row=0, column=1, sticky="w", pady=2)
+        ttk.Label(frame, text="Cross-section (axial) area").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Label(frame, text=_format_number(area)).grid(row=1, column=1, sticky="w", pady=2)
+        ttk.Label(frame, text="Moment of Inertia about 3 axis").grid(row=2, column=0, sticky="w", pady=2)
+        ttk.Label(frame, text=_format_number(inertia)).grid(row=2, column=1, sticky="w", pady=2)
+        ttk.Button(frame, text="OK", command=self.destroy).grid(row=3, column=0, columnspan=2, pady=(10, 0))
+
+
+def _entry_row(parent, row: int, label: str, variable) -> list:
+    label_widget = ttk.Label(parent, text=label)
+    entry_widget = ttk.Entry(parent, textvariable=variable, width=18)
+    label_widget.grid(row=row, column=0, sticky="w", pady=2)
+    entry_widget.grid(row=row, column=1, sticky="ew", pady=2)
+    return [label_widget, entry_widget]
+
+
+def _readonly_combo(parent, row: int, label: str, variable, values, command=None) -> None:
+    ttk.Label(parent, text=label).grid(row=row, column=0, sticky="w", pady=2)
+    combo = ttk.Combobox(parent, textvariable=variable, values=values, state="readonly", width=20)
+    combo.grid(row=row, column=1, sticky="ew", pady=2)
+    if command is not None:
+        combo.bind("<<ComboboxSelected>>", lambda _event: command())
+
+
+def _next_named_id(items, prefix: str) -> str:
+    index = 1
+    while f"{prefix}{index}" in items:
+        index += 1
+    return f"{prefix}{index}"
+
+
+def _format_number(value) -> str:
+    return f"{float(value):.6g}"
+
+
+def _format_entry_optional(value) -> str:
+    return "" if value is None else _format_number(value)
 
 
 def _support_summary(support) -> str:

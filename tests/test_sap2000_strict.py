@@ -28,7 +28,7 @@ from dof_optimizer import DOFOptimizer
 from matrix_assembly import MatrixAssembler
 from banded_solver import BandedSolver
 from post_processor import PostProcessor
-from sap2000_parser import SAP2000Parser, MemberForceTransformer
+from sap2000_parser import SAP2000Parser, MemberForceTransformer, assert_displacement_match, assert_force_match
 
 
 class StrictSAP2000TestBase(unittest.TestCase):
@@ -135,6 +135,133 @@ class StrictSAP2000TestBase(unittest.TestCase):
                                 f"Element {elem_id} Node {node_label} Fy")
         self._assert_float_equal(comp_mz, exp_mz, self.FORCE_MOM_TOL,
                                 f"Element {elem_id} Node {node_label} Mz")
+
+
+class TestSettlementBenchmark(StrictSAP2000TestBase):
+    """Validate the support-settlement benchmark against SAP2000 output."""
+
+    def test_settlement_displacements_and_reactions(self):
+        xml_path = os.path.join(os.path.dirname(__file__), "../data/test-settlement.xml")
+        sap_path = os.path.join(os.path.dirname(__file__), "../sap2000/test-settlement-results.txt")
+
+        sap_parser = SAP2000Parser(sap_path)
+        sap_disp, sap_react, _ = sap_parser.parse()
+        self.assertTrue(sap_disp, "SAP2000 displacement table was not parsed.")
+        self.assertTrue(sap_react, "SAP2000 reaction table was not parsed.")
+
+        model = XMLParser(xml_path).parse()
+        processor = self._run_full_analysis(model, load_case="LC1")
+
+        for node_id, expected_disp in sap_disp.items():
+            self.assertIn(node_id, processor.displacements)
+            match, error_msg = assert_displacement_match(
+                processor.displacements[node_id],
+                expected_disp,
+            )
+            self.assertTrue(match, f"Settlement node {node_id} displacement mismatch:\n{error_msg}")
+
+        for node_id, expected_reaction in sap_react.items():
+            self.assertIn(node_id, processor.reactions)
+            match, error_msg = assert_force_match(
+                processor.reactions[node_id],
+                expected_reaction,
+            )
+            self.assertTrue(match, f"Settlement node {node_id} reaction mismatch:\n{error_msg}")
+
+    def test_settlement_sap2000_displacement_display_mapping(self):
+        xml_path = os.path.join(os.path.dirname(__file__), "../data/test-settlement.xml")
+        model = XMLParser(xml_path).parse()
+        processor = self._run_full_analysis(model, load_case="LC1")
+
+        expected = {
+            1: (0.0, 0.0, 0.0, 0.0, 0.000656, 0.0),
+            2: (3.549e-06, 0.0, -0.001994, 0.0, 0.000173, 0.0),
+            3: (5.320e-06, 0.0, -0.000954, 0.0, -0.000280, 0.0),
+            4: (5.320e-06, 0.0, -0.000112, 0.0, -0.000280, 0.0),
+            5: (0.0, 0.0, -0.002000, 0.0, -0.000082, 0.0),
+            6: (0.0, 0.0, 0.0, 0.0, 0.0, 0.0),
+        }
+
+        sap_display = processor.sap2000_displacements()
+        for node_id, expected_row in expected.items():
+            self.assertIn(node_id, sap_display)
+            for computed, reference in zip(sap_display[node_id], expected_row):
+                self.assertLessEqual(abs(computed - reference), 5.0e-6)
+
+
+class TestTemperatureBenchmark(StrictSAP2000TestBase):
+    """Validate the corrected temperature benchmark against SAP2000 output."""
+
+    TEMP_DISP_TOL = 1.0e-5
+    TEMP_FORCE_TOL = 0.05
+    TEMP_MOMENT_TOL = 0.6
+
+    def _parse_sap_member_forces_by_joint(self, filepath):
+        forces = {}
+        in_table = False
+
+        with open(filepath, "r") as file:
+            for line in file:
+                stripped = line.strip()
+                if stripped == "Table:  Element Joint Forces - Frames":
+                    in_table = True
+                    continue
+                if in_table and stripped.startswith("Table:"):
+                    break
+                if not in_table or not stripped or stripped.startswith("Frame") or stripped.startswith("KN"):
+                    continue
+
+                parts = stripped.split()
+                if len(parts) < 11:
+                    continue
+
+                try:
+                    element_id = parts[0]
+                    joint_id = int(parts[1])
+                    fx = float(parts[4])
+                    fy = float(parts[6])
+                    mz = -float(parts[8])
+                except (ValueError, IndexError):
+                    continue
+
+                forces.setdefault(element_id, {})[joint_id] = (fx, fy, mz)
+
+        return forces
+
+    def test_temperature_displacements_reactions_and_member_end_forces(self):
+        xml_path = os.path.join(os.path.dirname(__file__), "../data/test-temperature.xml")
+        sap_path = os.path.join(os.path.dirname(__file__), "../sap2000/test-temperature-results.txt")
+
+        sap_parser = SAP2000Parser(sap_path)
+        sap_disp, sap_react, _ = sap_parser.parse()
+        sap_member_forces = self._parse_sap_member_forces_by_joint(sap_path)
+
+        model = XMLParser(xml_path).parse()
+        processor = self._run_full_analysis(model, load_case="LC1")
+
+        for node_id, expected_disp in sap_disp.items():
+            self.assertIn(node_id, processor.displacements)
+            for computed, expected in zip(processor.displacements[node_id], expected_disp):
+                self.assertLessEqual(abs(computed - expected), self.TEMP_DISP_TOL)
+
+        for node_id, expected_reaction in sap_react.items():
+            self.assertIn(node_id, processor.reactions)
+            for index, (computed, expected) in enumerate(zip(processor.reactions[node_id], expected_reaction)):
+                tolerance = self.TEMP_MOMENT_TOL if index == 2 else self.TEMP_FORCE_TOL
+                self.assertLessEqual(abs(computed - expected), tolerance)
+
+        for element_id, element in model.elements.items():
+            self.assertIn(element_id, processor.member_end_forces)
+            self.assertIn(element_id, sap_member_forces)
+
+            for end_label, joint_id in (("i", element.node_i.id), ("j", element.node_j.id)):
+                self.assertIn(joint_id, sap_member_forces[element_id])
+                computed_forces = processor.member_end_forces[element_id][end_label]
+                expected_forces = sap_member_forces[element_id][joint_id]
+
+                for index, (computed, expected) in enumerate(zip(computed_forces, expected_forces)):
+                    tolerance = self.TEMP_MOMENT_TOL if index == 2 else self.TEMP_FORCE_TOL
+                    self.assertLessEqual(abs(computed - expected), tolerance)
 
 
 class TestAssignment4Q2b(StrictSAP2000TestBase):
@@ -274,4 +401,3 @@ class TestEg1TrussThermal(StrictSAP2000TestBase):
 
 if __name__ == '__main__':
     unittest.main(verbosity=2)
-

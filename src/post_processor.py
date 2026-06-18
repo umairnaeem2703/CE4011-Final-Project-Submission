@@ -14,6 +14,7 @@ class PostProcessor:
         
         self.displacements = {}  # node_id -> [ux, uy, rz]
         self.member_forces = {}  # el_id -> list of local forces
+        self.member_end_forces = {}  # el_id -> {"i": [Fx, Fy, Mz], "j": [Fx, Fy, Mz]}
         self.nvm_data = {}       # el_id -> {"x": [...], "N": [...], "V": [...], "M": [...]}
         self.reactions = {}      # node_id -> [Fx, Fy, Mz]
         
@@ -55,6 +56,14 @@ class PostProcessor:
                         # No support at this node, restrained DOF = 0.0
                         disp.append(0.0)
             self.displacements[n_id] = disp
+
+    def sap2000_displacements(self):
+        """Return nodal displacements in SAP2000 X-Z plane display order."""
+        rows = {}
+        for node_id, disp in self.displacements.items():
+            ux, uy, rz = disp
+            rows[node_id] = [ux, 0.0, uy, 0.0, -rz, 0.0]
+        return rows
 
     def _compute_forces_and_reactions(self):
         """
@@ -129,8 +138,18 @@ class PostProcessor:
                     [N2], [V2], [M2]
                 ]
 
-            # 6. Transform raw local forces back to global for reaction calculation
+            # 6. Transform raw local forces back to global for reported end actions and reactions.
             f_global = math_utils.matmul(math_utils.transpose(T), f_local)
+            if el.type == 'truss':
+                self.member_end_forces[el_id] = {
+                    "i": [f_global[0][0], f_global[1][0], 0.0],
+                    "j": [f_global[2][0], f_global[3][0], 0.0],
+                }
+            else:
+                self.member_end_forces[el_id] = {
+                    "i": [f_global[0][0], f_global[1][0], f_global[2][0]],
+                    "j": [f_global[3][0], f_global[4][0], f_global[5][0]],
+                }
             
             if el.node_i.id in self.reactions:
                 self.reactions[el.node_i.id][0] += f_global[0][0]
@@ -232,6 +251,7 @@ class PostProcessor:
             nvm_data=self.nvm_data,
             dof_map=dof_map,
             load_case_id=load_case_id,
+            member_end_forces=self.member_end_forces,
         )
 
     def write_results(self, filepath: str):
@@ -252,35 +272,35 @@ class PostProcessor:
                 disp = self.displacements[n_id]
                 f.write(f"{n_id:<8} {disp[0]:<15.6e} {disp[1]:<15.6e} {disp[2]:<15.6e}\n")
             f.write("\n")
+
+            f.write("1b. NODAL DISPLACEMENTS (SAP2000 X-Z VIEW)\n")
+            f.write("-" * 100 + "\n")
+            f.write(
+                f"{'Node':<8} {'U1 (m)':<15} {'U2 (m)':<15} {'U3 (m)':<15} "
+                f"{'R1 (rad)':<15} {'R2 (rad)':<15} {'R3 (rad)':<15}\n"
+            )
+            sap_displacements = self.sap2000_displacements()
+            for n_id in sorted(self.displacements.keys()):
+                u1, u2, u3, r1, r2, r3 = sap_displacements[n_id]
+                f.write(
+                    f"{n_id:<8} {u1:<15.6e} {u2:<15.6e} {u3:<15.6e} "
+                    f"{r1:<15.6e} {r2:<15.6e} {r3:<15.6e}\n"
+                )
+            f.write("\n")
             
             # --- MEMBER FORCES ---
-            f.write("2. MEMBER LOCAL END FORCES\n")
+            f.write("2. MEMBER END FORCES (GLOBAL JOINT ACTIONS)\n")
             f.write("-" * 80 + "\n")
-            f.write("Element  Node  Axial (kN)       Shear (kN)       Moment (kN-m)\n")
+            f.write("Element  Node  Fx (kN)          Fy (kN)          Mz (kN-m)\n")
             f.write("-" * 80 + "\n")
-            for el_id in sorted(self.member_forces.keys()):
+            for el_id in sorted(self.member_end_forces.keys()):
                 el = self.model.elements[el_id]
-                forces = self.member_forces[el_id]
-                
-                if el.type == 'truss':
-                    # Truss stored as: [N1, V1, N2, V2]
-                    f_i_axial  = forces[0][0]  # N1
-                    f_i_shear  = forces[1][0]  # V1 (always 0 for truss)
-                    f_i_moment = 0.0
-                    f_j_axial  = forces[2][0]  # N2
-                    f_j_shear  = forces[3][0]  # V2 (always 0 for truss)
-                    f_j_moment = 0.0
-                else:
-                    # Frame stored as: [N1, V1, M1, N2, V2, M2]
-                    f_i_axial  = forces[0][0]  # N1
-                    f_i_shear  = forces[1][0]  # V1
-                    f_i_moment = forces[2][0]  # M1
-                    f_j_axial  = forces[3][0]  # N2
-                    f_j_shear  = forces[4][0]  # V2
-                    f_j_moment = forces[5][0]  # M2
-                
-                f.write(f"{el_id:<8} {el.node_i.id:<4} {f_i_axial:<16.4f} {f_i_shear:<16.4f} {f_i_moment:<16.4f}\n")
-                f.write(f"{'':<8} {el.node_j.id:<4} {f_j_axial:<16.4f} {f_j_shear:<16.4f} {f_j_moment:<16.4f}\n")
+                forces = self.member_end_forces[el_id]
+                f_i = forces["i"]
+                f_j = forces["j"]
+
+                f.write(f"{el_id:<8} {el.node_i.id:<4} {f_i[0]:<16.4f} {f_i[1]:<16.4f} {f_i[2]:<16.4f}\n")
+                f.write(f"{'':<8} {el.node_j.id:<4} {f_j[0]:<16.4f} {f_j[1]:<16.4f} {f_j[2]:<16.4f}\n")
                 f.write("-" * 80 + "\n")
             f.write("\n")
             

@@ -8,7 +8,7 @@ from dataclasses import dataclass
 from banded_solver import BandedSolver, UnstableStructureError
 from dof_optimizer import DOFOptimizer
 from matrix_assembly import MatrixAssembler
-from parser import StructuralModel
+from parser import LoadCase, StructuralModel
 from post_processor import PostProcessor
 from results import StaticResults
 
@@ -30,9 +30,13 @@ def run_static_analysis(model: StructuralModel | None, load_case_id: str | None 
     if model is None:
         return StaticAnalysisRun(None, "Build or load a model before running static analysis.")
 
+    created_settlement_load_case = False
     selected_load_case = load_case_id or _default_load_case_id(model)
     if selected_load_case is None:
-        return StaticAnalysisRun(None, "Add at least one load case before running static analysis.")
+        selected_load_case = _settlement_load_case_id(model)
+        if selected_load_case is None:
+            return StaticAnalysisRun(None, "Add at least one load case before running static analysis.")
+        created_settlement_load_case = True
 
     try:
         optimizer = DOFOptimizer(model)
@@ -53,6 +57,9 @@ def run_static_analysis(model: StructuralModel | None, load_case_id: str | None 
         return StaticAnalysisRun(results)
     except (UnstableStructureError, ValueError) as exc:
         return StaticAnalysisRun(None, f"Static analysis failed: {exc}")
+    finally:
+        if created_settlement_load_case:
+            model.load_cases.pop(selected_load_case, None)
 
 
 def run_static_analysis_into_state(
@@ -81,3 +88,24 @@ def load_case_ids(model: StructuralModel | None) -> list[str]:
 def _default_load_case_id(model: StructuralModel) -> str | None:
     load_cases = load_case_ids(model)
     return load_cases[0] if load_cases else None
+
+
+def _settlement_load_case_id(model: StructuralModel) -> str | None:
+    """Create an in-memory zero-load case for settlement-only analysis."""
+    if not _has_prescribed_settlement(model):
+        return None
+
+    load_case_id = "SETTLEMENT"
+    model.load_cases[load_case_id] = LoadCase(load_case_id, "Support Settlement")
+    return load_case_id
+
+
+def _has_prescribed_settlement(model: StructuralModel) -> bool:
+    for support in model.supports.values():
+        if support.restrain_ux and support.settlement_ux:
+            return True
+        if support.restrain_uy and support.settlement_uy:
+            return True
+        if support.restrain_rz and support.settlement_rz:
+            return True
+    return False

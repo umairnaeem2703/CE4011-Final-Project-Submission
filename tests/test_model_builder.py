@@ -257,3 +257,80 @@ def test_model_builder_xml_export_preserves_live_builder_state(tmp_path):
     assert parsed.sections["S2"].EA == pytest.approx(1234.0)
     assert parsed.lumped_masses[3].mass_uy == pytest.approx(5.5)
     assert parsed.diaphragm_ux_groups["D1"] == [2, 3]
+
+
+def test_model_builder_rename_node_preserves_references():
+    builder = ModelBuilder()
+    builder.add_material("M1", E=200000.0)
+    builder.add_section("S1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("E1", "frame", 1, 2, "M1", "S1")
+    builder.add_support(2, restrain_ux=True)
+    builder.add_lumped_mass(2, mass_ux=5.0)
+    builder.add_diaphragm_group("D1", [1, 2])
+    builder.add_nodal_load("LC1", 2, fy=-10.0)
+
+    node = builder.rename_node(2, 5)
+
+    assert builder.model.elements["E1"].node_j is node
+    assert builder.model.load_cases["LC1"].loads[0].node is node
+    assert 5 in builder.model.supports and 5 in builder.model.lumped_masses
+    assert builder.model.diaphragm_ux_groups["D1"] == [1, 5]
+
+
+def test_model_builder_rename_node_xml_export_uses_new_id(tmp_path):
+    builder = ModelBuilder()
+    builder.add_material("M1", E=200000.0)
+    builder.add_section("S1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("E1", "frame", 1, 2, "M1", "S1")
+    builder.add_support(2, restrain_ux=True)
+    builder.add_lumped_mass(2, mass_ux=5.0)
+
+    builder.rename_node(2, 5)
+    xml_path = tmp_path / "renamed_node.xml"
+    builder.export_xml(xml_path)
+    root = ET.parse(xml_path).getroot()
+
+    assert root.find("./nodes/node[@id='5']") is not None
+    assert root.find("./elements/frame[@id='E1']").attrib["node_j"] == "5"
+    assert root.find("./boundary_conditions/support").attrib["node"] == "5"
+    assert root.find("./lumped_masses/lumped_mass").attrib["node"] == "5"
+
+
+def test_model_builder_rename_member_preserves_load_reference_and_xml(tmp_path):
+    builder = ModelBuilder()
+    builder.add_material("M1", E=200000.0)
+    builder.add_section("S1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    member = builder.add_element("E1", "frame", 1, 2, "M1", "S1")
+    builder.add_member_udl("LC1", "E1", wy=-5.0)
+
+    renamed = builder.rename_element("E1", "GirderA")
+    xml_path = tmp_path / "renamed_member.xml"
+    builder.export_xml(xml_path)
+    root = ET.parse(xml_path).getroot()
+
+    assert renamed is member
+    assert builder.model.load_cases["LC1"].loads[0].element is renamed
+    assert root.find("./elements/frame[@id='GirderA']") is not None
+    assert root.find("./load_cases/load_case/member_udl").attrib["element"] == "GirderA"
+
+
+def test_model_builder_rename_rejects_invalid_duplicate_ids():
+    builder = ModelBuilder()
+    builder.add_material("M1", E=200000.0)
+    builder.add_section("S1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("E1", "frame", 1, 2, "M1", "S1")
+
+    with pytest.raises(ValueError, match="already exists"):
+        builder.rename_node(1, 2)
+    with pytest.raises(ValueError, match="integer"):
+        builder.rename_node(1, "N1")
+    with pytest.raises(ValueError, match="required"):
+        builder.rename_element("E1", " ")
