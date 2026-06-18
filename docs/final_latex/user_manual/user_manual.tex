@@ -1,0 +1,231 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=0.9in]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\newcommand{\placeholderfigure}[2]{%
+\begin{figure}[htbp]
+\centering
+\fbox{%
+\begin{minipage}[c][0.13\textheight][c]{0.88\linewidth}
+\centering
+\textbf{#1}\\[0.5em]
+\small #2\\[0.5em]
+\textit{TODO: Insert final screenshot.}
+\end{minipage}}
+\caption{#1}
+\end{figure}
+}
+
+\title{\textbf{CE 4011 Static + Modal Desktop MVP User Manual}}
+\author{Final Documentation Package}
+\date{Spring Semester 2025--2026}
+
+\begin{document}
+\maketitle
+
+\section{Final Desktop Scope}
+
+The desktop MVP supports two-dimensional Static Analysis and Modal Analysis. Use the Tkinter application to define or load a model, validate it, solve it, inspect educational tables and plots, and export visible results where implemented. RSA and THA are retained only as future-extension backend work and are not part of the submitted desktop workflow.
+
+\section{Overall Workflow}
+
+\[
+\text{Blank Model / 2D Shear Frame Template}
+\rightarrow \text{define geometry}
+\rightarrow \text{assign materials and sections}
+\rightarrow \text{assign supports, loads, settlements, masses, and diaphragms}
+\rightarrow \text{validate model}
+\rightarrow \text{run Static or Modal analysis}
+\rightarrow \text{inspect tables and plots}
+\rightarrow \text{export visible tables/plots}.
+\]
+
+\placeholderfigure{Help -> Quick Start}{Screenshot placeholder for the Help menu and Quick Start content.}
+
+\section{Starting a Model}
+
+\subsection{Blank Model}
+
+Choose a blank model when entering a custom topology. Define nodes by coordinates, then connect them with elements. This workflow is appropriate for verification examples, trusses, frames, cantilevers, and small teaching models.
+
+\placeholderfigure{Blank model workflow}{Screenshot placeholder for creating a blank model.}
+
+\subsection{2D Shear Frame Template}
+
+Choose the two-dimensional shear-frame template when the model is a regular frame with repeated bays or stories. Enter the requested geometry and property data, then review the generated nodes and elements before assigning final loads or masses.
+
+\placeholderfigure{2D shear frame template}{Screenshot placeholder for the 2D shear-frame template dialog and generated model.}
+
+\section{Model Editing}
+
+\subsection{Geometry and Canvas}
+
+Use the model canvas to inspect node and element layout. The canvas is a visual editing surface; the numerical model is still passed through \texttt{ModelBuilder} and \texttt{StructuralModel}.
+
+\placeholderfigure{Model canvas}{Screenshot placeholder for node and element layout on the canvas.}
+
+\subsection{Property Panel}
+
+Select model objects to review or edit their properties. The property panel should be used for coordinates, labels, element connectivity, support values, load values, mass values, and related object data.
+
+\placeholderfigure{Property panel}{Screenshot placeholder for the object property panel.}
+
+\subsection{Materials and Sections}
+
+Define material properties such as elastic modulus and section properties such as area and moment of inertia before assigning them to elements. These values control element stiffness and, where density is modeled, modal mass contribution.
+
+\placeholderfigure{Materials/sections assignment}{Screenshot placeholder for assigning material and section data to elements.}
+
+\subsection{Supports, Loads, Settlements, Masses, and Diaphragms}
+
+Assign supports before solving so the model has stable boundary conditions. Assign loads for Static Analysis. Assign nodal or element mass data for Modal Analysis. Where supported by the model input, assign support settlements and diaphragm data as needed.
+
+\placeholderfigure{Supports/loads/masses assignment}{Screenshot placeholder for assigning supports, static loads, support settlements, modal masses, and diaphragm-related data.}
+
+\section{Validation}
+
+Run model validation before analysis. Validation should catch missing properties, unstable support conditions, invalid connectivity, and other model definition errors that would prevent meaningful analysis.
+
+\placeholderfigure{Validation status/dialog}{Screenshot placeholder for a successful validation state and an example validation message dialog.}
+
+\section{Running Static Analysis}
+
+Run Static Analysis after defining geometry, element properties, boundary conditions, and loads. The solver assembles the full stiffness matrix \(K\), global force vector \(F\), reduced free-DOF matrix \(K_{ff}\), and reduced force vector \(F_f\), then solves for nodal displacements and recovers reactions and member forces.
+
+\placeholderfigure{Static result summary}{Screenshot placeholder for the static result summary window.}
+
+\placeholderfigure{Static DOF map / K / Kff table}{Screenshot placeholder for static educational tables showing DOF map, full stiffness matrix, and reduced stiffness matrix.}
+
+\subsection{Interpreting Static Tables}
+
+\begin{longtable}{p{0.28\linewidth}p{0.62\linewidth}}
+\caption{Static result interpretation}\\
+\toprule
+Output & Meaning \\
+\midrule
+\endfirsthead
+\toprule
+Output & Meaning \\
+\midrule
+\endhead
+DOF map & Maps each node component \([u_x,u_y,r_z]\) to a global equation number and shows which DOFs are free or restrained. \\
+\(K\) & Full assembled global stiffness matrix before boundary reduction. \\
+\(K_{ff}\) & Reduced stiffness matrix for free DOFs after applying support conditions. \\
+\(F\) & Full assembled global force vector, including equivalent nodal actions where applicable. \\
+\(F_f\) & Reduced force vector for free DOFs, adjusted for prescribed support displacements when applicable. \\
+Nodal displacements & Solved translations and rotations at free DOFs, reconstructed into nodal form. \\
+Support reactions & Resisting forces and moments recovered at restrained DOFs from \(R=Ku-F\). \\
+Member-end forces & Local element end forces recovered from element displacement and fixed-end effects. \\
+N/V/M diagrams & Axial force, shear force, and bending moment data along each member using the project sign convention. \\
+\bottomrule
+\end{longtable}
+
+\placeholderfigure{Static deformed shape}{Screenshot placeholder for the static deformed shape plot.}
+
+\placeholderfigure{N/V/M diagram}{Screenshot placeholder for axial, shear, and moment diagrams.}
+
+\section{Running Modal Analysis}
+
+Run Modal Analysis after defining geometry, stiffness properties, boundary conditions, and mass data. The solver assembles stiffness and mass matrices, handles inactive and massless DOFs, solves the generalized eigenproblem, and reports modal properties.
+
+\placeholderfigure{Modal result summary}{Screenshot placeholder for modal eigenvalues, frequencies, periods, and participation tables.}
+
+\placeholderfigure{Modal K/M/reduced matrix view}{Screenshot placeholder for modal stiffness, mass, and reduced or condensed matrix views.}
+
+\placeholderfigure{Mode shape plot}{Screenshot placeholder for a plotted mode shape.}
+
+\subsection{Interpreting Modal Tables}
+
+\begin{longtable}{p{0.3\linewidth}p{0.6\linewidth}}
+\caption{Modal result interpretation}\\
+\toprule
+Output & Meaning \\
+\midrule
+\endfirsthead
+\toprule
+Output & Meaning \\
+\midrule
+\endhead
+Eigenvalues & Values \(\lambda=\omega^2\) from \(K\phi=\lambda M\phi\). \\
+Frequencies & Cyclic frequencies \(f=\omega/(2\pi)\). \\
+Periods & Modal periods \(T=1/f\). \\
+Mode shapes & Relative displacement patterns for each mode. Display scaling is for readability. \\
+Modal mass & Generalized mass for each mode; mass-normalized modes have unit modal mass. \\
+Participation factors & Directional participation values showing how strongly each mode contributes to the selected influence vector. \\
+Effective modal mass & Equivalent participating mass represented by each mode. \\
+Mass participation ratios & Effective modal mass divided by total participating mass; cumulative ratios show captured dynamic mass. \\
+\bottomrule
+\end{longtable}
+
+\section{Exporting Results}
+
+Use result-window export controls to save visible result tables and plots where implemented. Static table TXT export, Modal table CSV export, and Static plot PNG export are included in the final desktop command-path validation. XML save/export is used to preserve or reproduce the model itself.
+
+\placeholderfigure{Export buttons}{Screenshot placeholder for table and plot export buttons in result windows.}
+
+\section{Complete Example: Two-Dimensional Shear Frame}
+
+This example demonstrates the full workflow from model input to result visualization. It is intended as a submission-manual example; replace placeholders with final screenshots and selected numerical output after running the model in the desktop app.
+
+\subsection{Example Input}
+
+\begin{table}[htbp]
+\centering
+\caption{Example shear-frame model data}
+\begin{tabular}{p{0.28\linewidth}p{0.55\linewidth}}
+\toprule
+Item & Example value \\
+\midrule
+Geometry & One bay, two stories; story height 3.0 m; bay width 4.0 m. \\
+Elements & Columns and beams modeled as two-dimensional frame elements. \\
+Material & Linear elastic material with modulus entered by the user. \\
+Sections & Column and beam area and inertia entered through the section/property workflow. \\
+Supports & Base nodes fixed in \(u_x\), \(u_y\), and \(r_z\). \\
+Static loads & Lateral nodal loads applied at floor levels. \\
+Masses & Floor translational masses assigned for modal analysis. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Step-by-Step Procedure}
+
+\begin{enumerate}
+\item Launch the desktop app with \texttt{python -m src.ui\_desktop.app}.
+\item Create the model using the 2D shear-frame template or the blank model workflow.
+\item Review the generated nodes and elements on the canvas.
+\item Assign material and section properties to all frame elements.
+\item Fix the base nodes and apply lateral loads at the floor nodes.
+\item Assign floor masses for Modal Analysis.
+\item Run validation and correct any reported input issues.
+\item Run Static Analysis and inspect displacements, reactions, member forces, and N/V/M diagrams.
+\item Run Modal Analysis and inspect frequencies, periods, mode shapes, participation factors, effective modal mass, and mass participation ratios.
+\item Export the visible result tables and plots needed for the report.
+\end{enumerate}
+
+\placeholderfigure{Example static output}{TODO screenshot placeholder for the example static displacement/reaction summary and deformed-shape plot.}
+
+\placeholderfigure{Example modal output}{TODO screenshot placeholder for the example modal summary and mode-shape plot.}
+
+\section{User Checklist}
+
+Before final submission or classroom demonstration, confirm:
+\begin{itemize}
+\item the model validates successfully;
+\item every element has material and section data;
+\item static models have loads and stable supports;
+\item modal models have appropriate mass data;
+\item result tables match the selected analysis type;
+\item exported tables/plots correspond to the visible results being discussed.
+\end{itemize}
+
+\end{document}
+

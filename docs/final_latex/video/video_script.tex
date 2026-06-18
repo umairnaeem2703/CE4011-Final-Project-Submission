@@ -1,0 +1,133 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\title{\textbf{CE 4011 Static + Modal Desktop MVP Video Presentation Script}}
+\author{Final Documentation Package}
+\date{Planned duration: 5 to 10 minutes}
+
+\begin{document}
+\maketitle
+
+\section{Required Scope Statement}
+
+The final submitted desktop scope is Static Analysis and Modal Analysis. RSA and THA backend work is retained only as future-extension work and is not presented as part of the final desktop MVP.
+
+\section{Timing Plan}
+
+\begin{table}[htbp]
+\centering
+\caption{Video structure}
+\begin{tabular}{p{0.18\linewidth}p{0.7\linewidth}}
+\toprule
+Time & Segment \\
+\midrule
+0:00--0:45 & Introduction and final scope \\
+0:45--1:45 & Architecture and OOP pipeline \\
+1:45--3:00 & UI input workflow \\
+3:00--4:30 & Static analysis demonstration \\
+4:30--5:45 & Modal analysis demonstration \\
+5:45--6:45 & Result visualization and export \\
+6:45--7:45 & Verification and 197-test baseline \\
+7:45--8:30 & Limitations and future work \\
+8:30--9:00 & Closing \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{0:00--0:45 Introduction and Final Scope}
+
+Introduce the program as a Python educational structural analysis desktop application developed for CE 4011. State that it combines model input, computational analysis, post-processing, visualization, XML reproducibility, and automated testing.
+
+Say clearly: ``The final submitted desktop scope is Static Analysis and Modal Analysis. RSA and THA backend work is retained only as future-extension work and is not presented as part of the final desktop MVP.''
+
+Show: main Tkinter window.
+
+\section{0:45--1:45 Architecture and OOP Pipeline}
+
+Explain the pipeline:
+\[
+\text{Tkinter canvas/templates/XML}
+\rightarrow \text{ModelBuilder}
+\rightarrow \text{StructuralModel}
+\rightarrow \text{DOF/K/M/F assembly}
+\rightarrow \text{Static or Modal solver}
+\rightarrow \text{result object}
+\rightarrow \text{plots/tables/export}.
+\]
+
+Explain that \texttt{StructuralModel} stores model data, \texttt{StructuralValidator} checks model validity, assembly modules build matrices and vectors, solvers operate on assembled systems, and UI code only coordinates input and display. Emphasize that the solver does not branch by structure family; frames, trusses, shear frames, cantilevers, and benchmarks are ordinary models.
+
+Show: architecture diagram and class diagram.
+
+\section{1:45--3:00 UI Input Workflow}
+
+Demonstrate starting from either Blank Model or the 2D Shear Frame Template. Show geometry creation, the model canvas, property panel, material and section assignment, support assignment, load assignment, and mass assignment for modal analysis.
+
+Mention that XML save/load/export is the reproducibility backend, but users are not expected to hand-write XML.
+
+Show: blank/template dialog, canvas, properties, supports/loads/masses, validation dialog.
+
+\section{3:00--4:30 Static Analysis Demonstration}
+
+Run Static Analysis for a user-defined model, not a hardcoded-only example. Show the result summary. Explain the educational outputs: DOF map, full stiffness matrix \(K\), reduced stiffness matrix \(K_{ff}\), force vector \(F\), reduced force vector \(F_f\), nodal displacements, support reactions, member-end forces, and N/V/M data.
+
+Show: static summary table, DOF map and matrix tables, deformed shape, and N/V/M diagram.
+
+\section{4:30--5:45 Modal Analysis Demonstration}
+
+Run Modal Analysis for the same or a related model with mass data. Explain that massless stiffness-coupled DOFs are condensed before modal analysis rather than directly deleted. Show eigenvalues, frequencies, periods, mode shapes, modal mass, participation factors, effective modal mass, and mass participation ratios.
+
+Show: modal summary, K/M/reduced matrix view, and mode shape plot.
+
+\section{5:45--6:45 Result Visualization and Export}
+
+Demonstrate model preview, static deformed shape, internal force diagrams, and modal mode-shape visualization. Show export buttons for visible result tables and plots where implemented. Explain that XML export reproduces the model, while table/plot export supports report preparation.
+
+Show: export controls and one exported table or plot file.
+
+\section{6:45--7:45 Verification and 197-Test Baseline}
+
+State the final stable test baseline:
+\begin{verbatim}
+pytest tests/ -q -> 197 passed in approximately 2 seconds
+pytest tests/test_ui_desktop_static.py -q -> 63 passed
+pytest tests/test_ui_desktop_static.py tests/test_visualizer.py tests/test_visualizer_integration.py -q -> 76 passed
+\end{verbatim}
+
+Explain that final hardening changed only \texttt{tests/test\_ui\_desktop\_static.py}; no solver math, XML schema, or core behavior changed. Summarize coverage: XML parsing/export, model building, DOF mapping, element stiffness, static assembly, reactions, member forces, N/V/M data, dynamic assembly, modal eigenvalues/frequencies/periods, mass normalization, participation factors, effective modal mass, visualization adapters, SAP2000/reference validation, and result export helpers.
+
+Show: test output and SAP2000/reference comparison screenshot or table.
+
+\section{7:45--8:30 Limitations and Future Work}
+
+State that the final desktop MVP is limited to 2D Static and Modal analysis. Mention future work: promoted RSA/THA desktop workflows, expanded validation examples, polished PDF/report export, installer packaging, and improved classroom documentation.
+
+Emphasize that future features should reuse the same architecture and should not move solver math into the UI.
+
+\section{8:30--9:00 Closing}
+
+Conclude that the software meets the CE 4011 project goals by providing a computational engine, a desktop input workflow, object-oriented structure, result visualization, XML reproducibility, user documentation, and validation evidence for the submitted Static + Modal scope.
+
+\section{Recording Checklist}
+
+\begin{itemize}
+\item Main UI visible at start.
+\item Architecture and class diagrams ready.
+\item One user-defined model prepared for Static and Modal demonstration.
+\item Static result tables and plots ready.
+\item Modal result tables and mode shape ready.
+\item Export demonstration ready.
+\item Final pytest output screenshot ready.
+\item Verification comparison screenshot or table ready.
+\item Unlisted YouTube link saved in \texttt{video\_link.txt}.
+\end{itemize}
+
+\end{document}

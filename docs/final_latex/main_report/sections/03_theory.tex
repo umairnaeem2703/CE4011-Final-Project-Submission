@@ -1,0 +1,89 @@
+\section{Theoretical Background}
+
+\subsection{Degrees of Freedom and Transformation}
+
+Each two-dimensional node is represented with translational and rotational degrees of freedom:
+\[
+q_n = [u_x,\ u_y,\ r_z]^T .
+\]
+For a two-node frame element, the local element vector is
+\[
+q_e = [u_{x,i}, u_{y,i}, r_{z,i}, u_{x,j}, u_{y,j}, r_{z,j}]^T .
+\]
+Element local and global quantities are connected through the transformation matrix \(T\):
+\[
+q_{\mathrm{local}} = Tq_{\mathrm{global}}, \qquad
+k_{\mathrm{global}} = T^T k_{\mathrm{local}} T, \qquad
+m_{\mathrm{global}} = T^T m_{\mathrm{local}} T .
+\]
+
+\subsection{Static Direct Stiffness Method}
+
+The program assembles the global stiffness matrix \(K\) and force vector \(F\) by scattering element contributions into the global DOF map. For a bar or truss axial component,
+\[
+k = \frac{EA}{L}
+\begin{bmatrix}
+1 & -1\\
+-1 & 1
+\end{bmatrix}.
+\]
+For frame members, the Euler--Bernoulli local stiffness matrix includes axial, shear, and bending coupling terms using \(EA/L\), \(12EI/L^3\), \(6EI/L^2\), \(4EI/L\), and \(2EI/L\).
+
+Boundary conditions partition the static system into free and restrained DOFs:
+\[
+\begin{bmatrix}
+K_{ff} & K_{fr}\\
+K_{rf} & K_{rr}
+\end{bmatrix}
+\begin{bmatrix}
+u_f\\
+u_r
+\end{bmatrix}
+=
+\begin{bmatrix}
+F_f\\
+F_r
+\end{bmatrix}.
+\]
+With prescribed support displacement \(u_r\), the solved system is
+\[
+K_{ff}u_f = F_f - K_{fr}u_r .
+\]
+After recovering the full displacement vector, reactions are obtained from
+\[
+R = Ku - F .
+\]
+Member-end forces are recovered in local coordinates from element displacements and fixed-end effects:
+\[
+f_{\mathrm{local}} = k_{\mathrm{local}}u_{\mathrm{local}} + fef_{\mathrm{local}} .
+\]
+The post-processor then exposes axial force \(N\), shear force \(V\), and bending moment \(M\) diagram data.
+
+\subsection{Modal Analysis}
+
+Modal analysis solves the generalized eigenvalue problem
+\[
+K\phi = \lambda M\phi,
+\]
+where \(\lambda = \omega^2\), \(\omega\) is circular frequency, \(f=\omega/(2\pi)\), and \(T_p=1/f\). Mode shapes are mass-normalized so that
+\[
+\phi_n^T M \phi_n = 1 .
+\]
+
+For influence vector \(r\), the modal participation factor is
+\[
+\Gamma_n = \frac{\phi_n^T M r}{\phi_n^T M \phi_n}.
+\]
+For mass-normalized modes this reduces to \(\Gamma_n=\phi_n^TMr\). Effective modal mass and participation ratio are computed as
+\[
+M_{\mathrm{eff},n} = \Gamma_n^2(\phi_n^T M \phi_n), \qquad
+\rho_n = \frac{M_{\mathrm{eff},n}}{r^TMr}.
+\]
+
+Before modal solution, disconnected zero-mass DOFs may be removed, but stiffness-coupled massless DOFs are statically condensed:
+\[
+K_{\mathrm{eff}} = K_{aa} - K_{am}K_{mm}^{-1}K_{ma}, \qquad
+M_{\mathrm{eff}} = M_{aa}.
+\]
+This preserves stiffness transfer while avoiding invalid dynamic DOFs with no participating mass.
+

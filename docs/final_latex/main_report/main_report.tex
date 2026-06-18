@@ -1,0 +1,63 @@
+\documentclass[10pt,a4paper]{article}
+
+\usepackage[margin=0.75in]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{caption}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\setcounter{secnumdepth}{2}
+
+\newcommand{\placeholderfigure}[2]{%
+\begin{figure}[htbp]
+\centering
+\fbox{%
+\begin{minipage}[c][0.11\textheight][c]{0.88\linewidth}
+\centering
+\textbf{#1}\\[0.4em]
+\small #2\\[0.4em]
+\textit{TODO: Insert final screenshot, diagram, or verified table capture.}
+\end{minipage}}
+\caption{#1}
+\end{figure}
+}
+
+\newcommand{\codeterm}[1]{\texttt{#1}}
+
+\title{\textbf{CE 4011 Static and Modal Structural Analysis Desktop MVP}}
+\author{Final Project Report}
+\date{Spring Semester 2025--2026}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+This report documents a Python educational structural analysis desktop application for CE 4011. The final submitted desktop MVP supports two-dimensional Static Analysis and Modal Analysis through a Tkinter model-building workflow, XML save/load/export, educational intermediate result tables, matplotlib visualizations, and automated validation tests. Response Spectrum Analysis and Time-History Analysis backend work is retained only as deferred future-extension work and is not presented as part of the submitted desktop MVP.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\input{sections/01_introduction}
+\input{sections/02_scope}
+\input{sections/03_theory}
+\input{sections/04_architecture}
+\input{sections/05_input_output}
+\input{sections/06_analysis_workflow}
+\input{sections/07_visualization}
+\input{sections/08_validation_summary}
+\input{sections/09_limitations}
+\input{sections/10_conclusion}
+
+\newpage
+\nocite{ce4011project,projectreadme,projectarchitecture,projectmathspec}
+\bibliographystyle{plain}
+\bibliography{references}
+
+\end{document}

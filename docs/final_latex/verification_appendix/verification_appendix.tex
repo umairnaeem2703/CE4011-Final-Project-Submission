@@ -1,0 +1,137 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=0.85in]{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+
+\newcommand{\placeholderfigure}[2]{%
+\begin{figure}[htbp]
+\centering
+\fbox{%
+\begin{minipage}[c][0.13\textheight][c]{0.88\linewidth}
+\centering
+\textbf{#1}\\[0.5em]
+\small #2\\[0.5em]
+\textit{TODO: Insert final screenshot or exported comparison table.}
+\end{minipage}}
+\caption{#1}
+\end{figure}
+}
+
+\newcommand{\verificationtable}[1]{%
+\begin{table}[htbp]
+\centering
+\caption{#1 comparison table placeholder}
+\begin{tabular}{p{0.19\linewidth}p{0.18\linewidth}p{0.18\linewidth}p{0.13\linewidth}p{0.12\linewidth}p{0.1\linewidth}}
+\toprule
+Quantity & Developed software result & Reference result & Percent difference & Tolerance & Pass/fail \\
+\midrule
+TODO displacement/reaction/frequency item & TODO & TODO & TODO & TODO & TODO \\
+TODO member force or modal property & TODO & TODO & TODO & TODO & TODO \\
+\bottomrule
+\end{tabular}
+\end{table}
+}
+
+\title{\textbf{CE 4011 Static + Modal Desktop MVP Verification Appendix}}
+\author{Final Documentation Package}
+\date{Spring Semester 2025--2026}
+
+\begin{document}
+\maketitle
+
+\section{Purpose}
+
+This appendix records verification examples and automated validation coverage for the submitted Static + Modal desktop MVP. The final desktop scope is Static Analysis and Modal Analysis only. RSA and THA are future-extension backend work and are not part of the submitted desktop verification claim.
+
+\section{Static Frame Benchmark}
+
+This benchmark compares static frame displacements, reactions, and member-end forces with a reliable reference solution such as SAP2000, hand calculations, or a textbook example.
+
+\verificationtable{Static frame benchmark}
+
+\placeholderfigure{Static frame benchmark screenshot}{TODO placeholder for SAP2000/reference output and developed software static result screenshot or exported table.}
+
+\section{Settlement Benchmark}
+
+This benchmark verifies prescribed support displacement handling. The reduced system should solve \(K_{ff}u_f = F_f - K_{fr}u_r\), and reactions should be recovered from the full system.
+
+\verificationtable{Settlement benchmark}
+
+\placeholderfigure{Settlement benchmark screenshot}{TODO placeholder for settlement model input, displacement/reaction comparison, and tolerance notes.}
+
+\section{Temperature Benchmark}
+
+This benchmark verifies member fixed-end effects and result recovery for temperature or thermal strain loading where supported by the model data path.
+
+\verificationtable{Temperature benchmark}
+
+\placeholderfigure{Temperature benchmark screenshot}{TODO placeholder for temperature-load comparison output.}
+
+\section{Modal Flexible-Beam / Shear-Frame Benchmark}
+
+This benchmark compares modal eigenvalues, frequencies, periods, mode shapes, participation factors, effective modal mass, and mass participation ratios with reference values.
+
+\verificationtable{Modal flexible-beam or shear-frame benchmark}
+
+\placeholderfigure{Mode shape plot}{TODO placeholder for developed software mode-shape plot and reference mode-shape or frequency table.}
+
+\section{Automated Pytest Validation}
+
+The final stable testing baseline is:
+\begin{verbatim}
+pytest tests/ -q -> 197 passed
+pytest tests/test_ui_desktop_static.py -q -> 63 passed
+pytest tests/test_ui_desktop_static.py tests/test_visualizer.py tests/test_visualizer_integration.py -q -> 76 passed
+\end{verbatim}
+
+The final hardening changed only \texttt{tests/test\_ui\_desktop\_static.py}. No solver math, XML schema, or core behavior changed during final testing hardening. Static benchmark tests now use retained \texttt{data/test-frame.xml} instead of the deleted duplicate \texttt{data/example2\_frame.xml}. The file \texttt{data/ground\_motion.txt} was restored only for legacy/future THA backend compatibility.
+
+\placeholderfigure{Test suite output}{TODO terminal screenshot placeholder for the final 197-test baseline.}
+
+\begin{longtable}{p{0.2\linewidth}p{0.26\linewidth}p{0.34\linewidth}p{0.1\linewidth}}
+\caption{Automated test coverage summary}\\
+\toprule
+Test area & Representative tests & Checked behavior & Result \\
+\midrule
+\endfirsthead
+\toprule
+Test area & Representative tests & Checked behavior & Result \\
+\midrule
+\endhead
+XML parsing/export & XML parser/export tests and desktop XML command-path test & Save/load/export reproducibility and parse-back through XMLParser & Passed \\
+Model building & ModelBuilder tests and template workflows & Programmatic, template, table, and XML-backed model creation & Passed \\
+DOF and stiffness assembly & Static solver and assembly tests & DOF maps, element stiffness, global \(K\), reduced \(K_{ff}\), and force vectors & Passed \\
+Static result recovery & Static, post-processing, and benchmark tests & Displacements, reactions, member forces, and N/V/M diagram data & Passed \\
+Dynamic/modal assembly & Modal solver tests & Mass assembly, active dynamic DOFs, massless-DOF handling, eigenvalues, frequencies, and periods & Passed \\
+Modal properties & Modal solver tests & Mass normalization, participation factors, effective modal mass, and participation ratios & Passed \\
+Visualization & Visualizer and visualizer integration tests & Model preview, deformed shape, diagrams, and mode-shape plotting adapters & Passed \\
+Desktop workflow/export & UI desktop static tests & Static table TXT export, Modal table CSV export, Static plot PNG export, and shared export path & Passed \\
+Reference validation & SAP2000/reference comparison tests & Agreement with stored reference solutions within tolerance & Passed \\
+\bottomrule
+\end{longtable}
+
+\section{Desktop XML/Export Command-Path Validation}
+
+Two final P0 desktop workflow tests were added during final hardening:
+\begin{enumerate}
+\item A headless XML command-path test for \texttt{\_save\_xml()} and \texttt{\_export\_xml()}, with the written XML parsed back through \texttt{XMLParser}.
+\item A result export test for Static table TXT export, Modal table CSV export, and Static plot PNG export through the shared export path.
+\end{enumerate}
+
+These tests address the previous main risk area: desktop workflow coverage rather than numerical correctness.
+
+\placeholderfigure{Desktop XML/export validation evidence}{TODO placeholder for command-path output or selected test output confirming XML save/export and visible result export.}
+
+\section{Remaining Verification Inserts}
+
+Before final submission, replace the placeholder comparison rows with final numbers from the selected static frame, settlement, temperature, and modal benchmarks. Each table should preserve the required columns: Quantity, Developed software result, Reference result, Percent difference, Tolerance, and Pass/fail.
+
+\end{document}
+

@@ -1,0 +1,21 @@
+\section{Testing and Validation Summary}
+
+The final stable testing baseline is:
+\begin{itemize}
+\item \codeterm{pytest tests/ -q} \(\rightarrow\) 197 passed in approximately 2 seconds.
+\item \codeterm{pytest tests/test\_ui\_desktop\_static.py -q} \(\rightarrow\) 63 passed.
+\item Combined desktop visualization check:
+\begin{verbatim}
+pytest tests/test_ui_desktop_static.py tests/test_visualizer.py tests/test_visualizer_integration.py -q -> 76 passed
+\end{verbatim}
+\end{itemize}
+
+Final hardening changed only \codeterm{tests/test\_ui\_desktop\_static.py}. No solver math, XML schema, or core behavior changed during final testing hardening. Static benchmark tests now use retained \codeterm{data/test-frame.xml} instead of the deleted duplicate \codeterm{data/example2\_frame.xml}. The file \codeterm{data/ground\_motion.txt} was restored only for legacy/future THA backend compatibility.
+
+\placeholderfigure{Test suite output}{Terminal screenshot placeholder showing the final 197-test baseline.}
+
+\placeholderfigure{SAP2000/reference comparison screenshots or tables}{Placeholder for final SAP2000/reference comparison screenshots or benchmark result tables.}
+
+The feature-to-test audit concluded that backend Static + Modal numerical coverage is strong. Covered areas include XML parsing/export, model building, DOF mapping, element stiffness, static assembly, reactions, member forces, N/V/M data, dynamic assembly, modal eigenvalues/frequencies/periods, mass normalization, modal participation factors, effective modal mass, visualization adapters, SAP2000/reference validation, and result export helpers.
+
+The main remaining risk before final hardening was desktop workflow coverage rather than numerical correctness. Two final P0 desktop workflow tests were added: a headless XML command-path test for \codeterm{\_save\_xml()} and \codeterm{\_export\_xml()} with parsed round trip through \codeterm{XMLParser}, and a result export test for Static table TXT export, Modal table CSV export, and Static plot PNG export through the shared export path.

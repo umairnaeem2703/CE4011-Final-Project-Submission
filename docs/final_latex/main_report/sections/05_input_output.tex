@@ -1,0 +1,14 @@
+\section{Input and Output Structure}
+
+The user-facing input path is the Tkinter desktop workflow. A user may start with a blank model or a two-dimensional shear-frame template, define geometry, assign materials and sections, apply supports, loads, support settlements, masses, and diaphragm data where needed, validate the model, and then run Static or Modal analysis.
+
+The reproducibility path is XML. A desktop-created model can be saved or exported to XML, and a saved XML file can be loaded back into the same \codeterm{ModelBuilder} and \codeterm{StructuralModel} pipeline. The XML file stores analysis-relevant model data such as nodes, elements, materials, sections, supports, releases, loads, masses, and analysis settings.
+
+\placeholderfigure{Blank model workflow}{Screenshot placeholder for creating a new blank model and beginning geometry input.}
+
+\placeholderfigure{2D shear frame template}{Screenshot placeholder for using the built-in two-dimensional shear-frame template.}
+
+Static output includes the DOF map, \(K\), \(K_{ff}\), \(F\), \(F_f\), nodal displacements, support reactions, member-end forces, and axial/shear/moment diagram data. Modal output includes \(K\), \(M\), reduced or condensed dynamic matrices where available, eigenvalues, frequencies, periods, mode shapes, modal mass, participation factors, effective modal mass, and mass participation ratios.
+
+Visible result tables and plots can be exported where implemented. XML model export remains the primary persistence format for reproducing a complete model.
+

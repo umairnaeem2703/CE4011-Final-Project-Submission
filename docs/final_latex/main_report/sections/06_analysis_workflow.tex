@@ -1,0 +1,20 @@
+\section{Static and Modal Analysis Workflow}
+
+\subsection{Static Analysis}
+
+The static workflow starts after a valid \codeterm{StructuralModel} is available. The validator checks the model, the DOF manager classifies free and restrained DOFs, the global stiffness and load vector are assembled, and the reduced system \(K_{ff}u_f=F_f\) is solved. The full displacement vector is reconstructed, reactions are computed, member-end forces are recovered, and diagram data is generated for visualization.
+
+\placeholderfigure{Static result summary}{Screenshot placeholder for the static result summary table showing displacements, reactions, and member-force access.}
+
+\placeholderfigure{Static DOF map / K / Kff table}{Screenshot placeholder for educational static tables exposing the DOF map, full stiffness matrix, and reduced stiffness matrix.}
+
+\subsection{Modal Analysis}
+
+The modal workflow assembles stiffness and mass information from the same model pipeline. Active dynamic DOFs are selected, disconnected zero-mass DOFs may be removed, and stiffness-coupled massless DOFs are condensed before solving the eigenproblem. The result object stores eigenvalues, frequencies, periods, normalized mode shapes, modal masses, participation factors, effective modal masses, and participation ratios.
+
+\placeholderfigure{Modal result summary}{Screenshot placeholder for modal eigenvalue, frequency, period, and participation summary tables.}
+
+\placeholderfigure{Modal K/M/reduced matrix view}{Screenshot placeholder for modal stiffness, mass, and reduced or condensed dynamic matrix tables.}
+
+Both workflows preserve intermediate data for educational inspection and test verification. This is intentional: the project is designed for students to trace the calculation path from model definition to result plots.
+

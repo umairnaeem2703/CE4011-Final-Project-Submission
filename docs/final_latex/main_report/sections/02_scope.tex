@@ -1,0 +1,24 @@
+\section{Scope of the Software}
+
+The final desktop MVP supports two-dimensional static and modal analysis for models represented through the common project data pipeline. Frames, trusses, shear frames, cantilevers, beam-style examples, and verification benchmarks are not separate solver families; they are ordinary models with different topology, releases, properties, loads, and mass data.
+
+\begin{table}[htbp]
+\centering
+\caption{Submitted desktop scope}
+\begin{tabular}{p{0.26\linewidth}p{0.62\linewidth}}
+\toprule
+Area & Included capability \\
+\midrule
+Model input & Blank model workflow, two-dimensional shear-frame template, table-backed editing, graphical canvas workflow, and XML load/save/export. \\
+Static analysis & Global stiffness assembly, boundary reduction, support settlement handling where applicable, displacement solution, reaction recovery, member-end force recovery, and axial/shear/moment diagram data. \\
+Modal analysis & Mass assembly, active dynamic DOFs, condensation of stiffness-coupled massless DOFs, eigenvalues, frequencies, periods, mode shapes, modal mass, participation factors, effective modal mass, and mass participation ratios. \\
+Post-processing & Tkinter result tables, matplotlib model/result plots, and export of visible result tables/plots where implemented. \\
+Validation & Focused pytest coverage for model input, XML workflows, static/modal numerical behavior, visualization, benchmark/reference comparisons, and desktop command paths. \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The core numerical solver is kept transparent and standard-library oriented. Matplotlib is used for visualization, Tkinter is the submitted desktop interface, and pytest is used for validation.
+
+The excluded final desktop scope is equally important. RSA and THA are not presented as submitted UI workflows. Legacy or prototype modules may remain in the repository, but the final deliverable is the Tkinter Static + Modal desktop path.
+
