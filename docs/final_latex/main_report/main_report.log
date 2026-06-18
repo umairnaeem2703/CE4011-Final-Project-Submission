@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.2) (preloaded format=pdflatex 2026.3.13)  18 JUN 2026 20:13
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.2) (preloaded format=pdflatex 2026.3.13)  18 JUN 2026 23:53
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -396,24 +396,24 @@ Package caption Info: End \AtBeginDocument code.
  [1
 
 {C:/Users/MOHAMMAD UMAIR/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] (sections/01_introduction.tex
-<figures/main_ui.png, id=75, 1443.89438pt x 773.89125pt>
+<figures/main_ui.png, id=77, 1443.89438pt x 773.89125pt>
 File: figures/main_ui.png Graphic file (type png)
 <use figures/main_ui.png>
 Package pdftex.def Info: figures/main_ui.png  used on input line 7.
 (pdftex.def)             Requested size: 449.96005pt x 241.16733pt.
 ) (sections/02_scope.tex) (sections/03_theory.tex [2 <./figures/main_ui.png>]) (sections/04_architecture.tex
-<../diagrams/rendered/architecture_pipeline.png, id=85, 1554.80875pt x 597.23125pt>
+<../diagrams/rendered/architecture_pipeline.png, id=87, 1554.80875pt x 597.23125pt>
 File: ../diagrams/rendered/architecture_pipeline.png Graphic file (type png)
 <use ../diagrams/rendered/architecture_pipeline.png>
 Package pdftex.def Info: ../diagrams/rendered/architecture_pipeline.png  used on input line 18.
 (pdftex.def)             Requested size: 464.64317pt x 178.47816pt.
-<../diagrams/rendered/domain_model_classes.png, id=86, 782.925pt x 673.51625pt>
+<../diagrams/rendered/domain_model_classes.png, id=88, 782.925pt x 673.51625pt>
 File: ../diagrams/rendered/domain_model_classes.png Graphic file (type png)
 <use ../diagrams/rendered/domain_model_classes.png>
 Package pdftex.def Info: ../diagrams/rendered/domain_model_classes.png  used on input line 20.
 (pdftex.def)             Requested size: 256.89664pt x 220.99698pt.
 ) (sections/05_input_output.tex [3 <../diagrams/rendered/architecture_pipeline.png (PNG copy)>]) (sections/06_analysis_workflow.tex) (sections/07_visualization.tex [4 <../diagrams/rendered/domain_model_classes.png (PNG copy)>]
-<figures/static_frame_individual_member.png, id=101, 1443.14156pt x 775.39688pt>
+<figures/static_frame_individual_member.png, id=103, 1443.14156pt x 775.39688pt>
 File: figures/static_frame_individual_member.png Graphic file (type png)
 <use figures/static_frame_individual_member.png>
 Package pdftex.def Info: figures/static_frame_individual_member.png  used on input line 5.
@@ -435,9 +435,9 @@ Here is how much of TeX's memory you used:
  1141 hyphenation exceptions out of 8191
  75i,10n,79p,895b,454s stack positions out of 10000i,1000n,20000p,200000b,200000s
 <C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx9.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi7.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr7.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr9.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy7.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on main_report.pdf (7 pages, 410024 bytes).
+Output written on main_report.pdf (7 pages, 410629 bytes).
 PDF statistics:
- 182 PDF objects out of 1000 (max. 8388607)
+ 184 PDF objects out of 1000 (max. 8388607)
  31 named destinations out of 1000 (max. 500000)
  117 words of extra memory for PDF output out of 10000 (max. 10000000)
 
