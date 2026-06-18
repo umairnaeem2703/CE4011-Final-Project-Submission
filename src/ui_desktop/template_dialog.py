@@ -40,7 +40,7 @@ class ShearFrameSettings:
 class NewModelDialog(tk.Toplevel):
     """Modal wizard-style dialog that creates a ModelBuilder-backed model."""
 
-    TEMPLATE_OPTIONS = ("2D General Structure", "2D Shear Frame")
+    TEMPLATE_OPTIONS = ("Blank Model", "2D Shear Frame Template")
 
     def __init__(self, parent) -> None:
         super().__init__(parent)
@@ -51,7 +51,7 @@ class NewModelDialog(tk.Toplevel):
 
         self.project_name_var = tk.StringVar(value="New Model")
         self.unit_system_var = tk.StringVar(value="kN_m_tonne")
-        self.template_var = tk.StringVar(value="2D General Structure")
+        self.template_var = tk.StringVar(value="Blank Model")
         self.stories_var = tk.StringVar(value="1")
         self.bays_var = tk.StringVar(value="1")
         self.story_height_var = tk.StringVar(value="3.0")
@@ -172,7 +172,7 @@ class NewModelDialog(tk.Toplevel):
         return label_widget, entry_widget
 
     def _sync_template_fields(self) -> None:
-        is_shear_frame = self.template_var.get() == "2D Shear Frame"
+        is_shear_frame = self.template_var.get() == "2D Shear Frame Template"
         state = "normal" if is_shear_frame else "disabled"
         for child in self._template_sensitive_widgets:
             try:
@@ -197,9 +197,9 @@ class NewModelDialog(tk.Toplevel):
 
     def _create(self) -> None:
         try:
-            if self.template_var.get() == "2D General Structure":
+            if self.template_var.get() == "Blank Model":
                 self.result = create_general_structure_builder(
-                    self.project_name_var.get().strip() or "2D General Structure",
+                    self.project_name_var.get().strip() or "Blank Model",
                     self.unit_system_var.get().strip() or "kN_m_tonne",
                     self.material_var.get().strip() or "M1",
                     self.beam_section_var.get().strip() or "S1",

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import csv
 import math
+from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from collections.abc import Mapping
@@ -56,16 +58,12 @@ ACTIVE_COMMANDS = (
     "Delete",
     "Replicate",
 )
-PLACEHOLDER_COMMANDS = (
-    "Window Select",
-)
 COMMAND_TABS = (
     ("Model", (("action", "New"), ("action", "Open XML"), ("action", "Save XML"), ("action", "Validate"))),
     (
         "Edit",
         (
             ("command", "Select / Inspect"),
-            ("command", "Move Selection"),
             ("command", "Delete"),
             ("command", "Replicate"),
         ),
@@ -90,7 +88,6 @@ COMMAND_TABS = (
             ("view_action", "Zoom In"),
             ("view_action", "Zoom Out"),
             ("command", "Pan"),
-            ("placeholder", "Window Select"),
             ("local_axes_toggle", "Local Axes"),
             ("view_action", "Full View"),
         ),
@@ -126,6 +123,8 @@ class MainWindow:
         self.latest_modal_results = None
         self.latest_modal_result = None
         self.modal_analysis_error = None
+        self._analysis_results_cleared = False
+        self._analysis_results_clear_message = "Results were cleared because the model changed. Run analysis again."
         self.result_view_category = None
         self.result_view_tree = None
         self.result_viewer_window = None
@@ -352,7 +351,7 @@ class MainWindow:
             canvas_frame,
             status_callback=self._write_status,
             selection_callback=self._show_selection,
-            change_callback=self._refresh_object_tree,
+            change_callback=self._on_model_changed,
         )
         self.model_canvas.grid(row=0, column=0, sticky="nsew")
         self.canvas = self.model_canvas.canvas
@@ -369,7 +368,7 @@ class MainWindow:
             self.root,
             status_callback=self._write_status,
             selection_callback=self._show_selection,
-            change_callback=self._refresh_object_tree,
+            change_callback=self._on_model_changed,
         )
         self.model_canvas.grid(row=1, column=1, sticky="nsew", pady=4)
         self.canvas = self.model_canvas.canvas
@@ -466,6 +465,7 @@ class MainWindow:
         self.latest_static_results = result.results
         self.latest_static_result = result.results
         self.static_analysis_error = None
+        self._analysis_results_cleared = False
         load_case = getattr(result.results, "load_case_id", "selected load case")
         displacement_count = len(getattr(result.results, "displacements", {}))
         reaction_count = len(getattr(result.results, "reactions", {}))
@@ -530,6 +530,7 @@ class MainWindow:
         self.latest_modal_results = result.results
         self.latest_modal_result = result.results
         self.modal_analysis_error = None
+        self._analysis_results_cleared = False
         mode_count = getattr(result.results, "num_modes_extracted", None)
         requested = getattr(result.results, "num_modes_requested", requested_modes)
         if mode_count is None:
@@ -572,7 +573,7 @@ class MainWindow:
             section_var.set("Static Results")
         self._show_results_section("Static Results")
         if getattr(self, "latest_static_result", None) is None:
-            self._write_status("Run Static Analysis first.")
+            self._write_status(self._result_window_message("static"))
             return
         self._write_status("Static results opened.")
 
@@ -585,7 +586,7 @@ class MainWindow:
             section_var.set("Complete Model Static Viewer")
         self._show_results_section("Complete Model Static Viewer")
         if getattr(self, "latest_static_result", None) is None:
-            self._write_status("Run Static Analysis first.")
+            self._write_status(self._result_window_message("static"))
             return
         self._write_status("Complete Model Static Viewer opened.")
 
@@ -601,7 +602,7 @@ class MainWindow:
             dynamic_view_var.set("Modal Summary")
         self._show_modal_result_view("summary")
         if getattr(self, "latest_modal_result", None) is None:
-            self._write_status("Run Modal Analysis first.")
+            self._write_status(self._result_window_message("modal"))
             return
         self._write_status("Modal Results opened.")
 
@@ -631,7 +632,10 @@ class MainWindow:
         header.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 6))
         header.columnconfigure(0, weight=1)
         ttk.Label(header, text="Results").grid(row=0, column=0, sticky="w")
-        ttk.Button(header, text="Refresh Viewer", command=self._refresh_results_viewer).grid(row=0, column=1, sticky="e")
+        ttk.Button(header, text="Refresh Viewer", command=self._refresh_results_viewer).grid(row=0, column=1, sticky="e", padx=(0, 6))
+        ttk.Button(header, text="Export Table TXT", command=self._export_current_results_table_txt).grid(row=0, column=2, sticky="e", padx=(0, 6))
+        ttk.Button(header, text="Export Table CSV", command=self._export_current_results_table_csv).grid(row=0, column=3, sticky="e", padx=(0, 6))
+        ttk.Button(header, text="Export Plot PNG", command=self._export_current_results_plot_png).grid(row=0, column=4, sticky="e")
         body = ttk.Frame(window)
         body.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
         body.columnconfigure(0, weight=1)
@@ -644,7 +648,13 @@ class MainWindow:
         else:
             self.result_viewer_section_var = self._make_string_var(self.root, "Static Results")
             options = ("Static Results", "Complete Model Static Viewer", "Individual Member Result Viewer")
-        self.result_viewer_section_selector = ttk.Combobox(body, textvariable=self.result_viewer_section_var, values=options, state="readonly")
+        self.result_viewer_section_selector = ttk.Combobox(
+            body,
+            textvariable=self.result_viewer_section_var,
+            values=options,
+            state="readonly",
+            width=34,
+        )
         self.result_viewer_section_selector.grid(row=0, column=0, sticky="w")
         self.result_viewer_section_selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_results_viewer())
         content = ttk.Frame(body)
@@ -676,6 +686,11 @@ class MainWindow:
             self._build_individual_member_results_viewer_tab(member_tab)
         return window
 
+    def _result_window_message(self, mode: str) -> str:
+        if self._analysis_results_cleared:
+            return self._analysis_results_clear_message
+        return "Run Modal Analysis first." if mode == "modal" else "Run Static Analysis first."
+
     def _show_results_section(self, section: str) -> None:
         section_var = getattr(self, "result_viewer_section_var", None)
         if section_var is None:
@@ -699,6 +714,9 @@ class MainWindow:
             "member": self.result_viewer_member_tab,
         }
         frame = mapping.get(key)
+        notebook = getattr(self, "result_viewer_notebook", None)
+        if notebook is not None and frame is not None and hasattr(notebook, "select"):
+            notebook.select(frame)
         if frame is not None and hasattr(frame, "tkraise"):
             frame.tkraise()
 
@@ -1173,7 +1191,7 @@ class MainWindow:
     def _modal_summary_table_data(self) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
         results = self._current_modal_results()
         if results is None:
-            return (("Message",), [("Run Modal Analysis first.",)])
+            return (("Message",), [(self._result_window_message("modal"),)])
         mode_count = self._modal_mode_count(results)
         if mode_count < 1:
             return (("Message",), [("No modal modes available.",)])
@@ -1381,7 +1399,7 @@ class MainWindow:
     def _modal_result_rows(self) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
         results = self._current_modal_results()
         if results is None:
-            return (("Message",), [("Run Modal Analysis first.",)])
+            return (("Message",), [(self._result_window_message("modal"),)])
         category = self._current_modal_result_category()
         available_categories = self._modal_result_categories(results)
         if category not in available_categories:
@@ -1602,8 +1620,9 @@ class MainWindow:
 
         self._refresh_individual_member_viewer_member_options()
         if getattr(self, "latest_static_result", None) is None:
-            self.result_viewer_member_message.set("Run Static Analysis first.")
-            self._render_member_review_placeholder("Run Static Analysis first.")
+            message = self._result_window_message("static")
+            self.result_viewer_member_message.set(message)
+            self._render_member_review_placeholder(message)
             return
 
         member_id = self._current_individual_member_id()
@@ -2104,8 +2123,9 @@ class MainWindow:
             }.get(selected.get(), "deformed")
             self._show_static_result_view(key)
         if getattr(self, "latest_static_result", None) is None:
-            self.result_viewer_message.set("Run Static Analysis first.")
-            self._render_static_viewer_placeholder("Run Static Analysis first.")
+            message = self._result_window_message("static")
+            self.result_viewer_message.set(message)
+            self._render_static_viewer_placeholder(message)
             return
         model = getattr(getattr(self, "model_canvas", None), "builder", None)
         model = getattr(model, "model", None)
@@ -2126,7 +2146,7 @@ class MainWindow:
         model = getattr(getattr(self, "model_canvas", None), "builder", None)
         model = getattr(model, "model", None)
         if results is None:
-            self._render_static_viewer_placeholder("Run Static Analysis first.")
+            self._render_static_viewer_placeholder(self._result_window_message("static"))
             return
         if model is None:
             self._render_static_viewer_placeholder("No model available for Static results.")
@@ -2148,7 +2168,7 @@ class MainWindow:
     def _render_static_viewer_placeholder(self, placeholder: str) -> None:
         frames = self.result_viewer_plot_frames or {}
         for key in ("deformed", "axial", "shear", "moment"):
-            message = "Run Static Analysis first." if key == "deformed" else placeholder
+            message = placeholder if self._analysis_results_cleared else ("Run Static Analysis first." if key == "deformed" else placeholder)
             self._render_placeholder_frame(frames.get(key), message)
 
     def _render_placeholder_frame(self, parent: ttk.Frame | None, message: str) -> None:
@@ -2179,6 +2199,136 @@ class MainWindow:
     def _plot_static_diagram(self, model, results, key: str):
         return plot_static_nvm_diagram(model, results, diagram_key=key, show_extrema=True)
 
+    def _export_current_results_table_txt(self) -> None:
+        self._export_current_results_table("txt")
+
+    def _export_current_results_table_csv(self) -> None:
+        self._export_current_results_table("csv")
+
+    def _export_current_results_plot_png(self) -> None:
+        if getattr(self, "result_viewer_mode", None) == "modal":
+            canvas = getattr(self, "result_viewer_dynamic_plot_canvas", None)
+            if canvas is None:
+                self._write_status("No modal plot is visible to export.")
+                return
+            default_name = "modal_results_plot.png"
+        else:
+            section = getattr(self, "result_viewer_section_var", None)
+            section_name = section.get() if section is not None and hasattr(section, "get") else "Static Results"
+            if section_name == "Individual Member Result Viewer":
+                canvas = getattr(self, "result_viewer_member_plot_canvas", None)
+                default_name = "member_review_plot.png"
+            else:
+                canvas = self._current_static_plot_canvas()
+                default_name = "static_results_plot.png"
+            if canvas is None:
+                self._write_status("No static plot is visible to export.")
+                return
+
+        filepath = filedialog.asksaveasfilename(
+            parent=getattr(self, "root", None),
+            title="Export Plot PNG",
+            defaultextension=".png",
+            initialfile=default_name,
+            filetypes=(("PNG files", "*.png"), ("All files", "*.*")),
+        )
+        if not filepath:
+            self._write_status("Plot export canceled.")
+            return
+        try:
+            canvas.figure.savefig(filepath, dpi=150, bbox_inches="tight")
+        except Exception as exc:
+            self._write_status(f"Plot export failed: {exc}")
+            return
+        self._write_status(f"Exported plot PNG: {filepath}")
+
+    def _export_current_results_table(self, file_format: str) -> None:
+        mode = getattr(self, "result_viewer_mode", None)
+        if mode == "modal":
+            columns, rows = self._current_modal_export_table_data()
+            default_name = "modal_results_table"
+        else:
+            columns, rows = self._current_static_export_table_data()
+            default_name = "static_results_table"
+
+        extension = "csv" if file_format == "csv" else "txt"
+        filepath = filedialog.asksaveasfilename(
+            parent=getattr(self, "root", None),
+            title="Export Results Table",
+            defaultextension=f".{extension}",
+            initialfile=f"{default_name}.{extension}",
+            filetypes=((f"{extension.upper()} files", f"*.{extension}"), ("All files", "*.*")),
+        )
+        if not filepath:
+            self._write_status("Table export canceled.")
+            return
+        try:
+            self._write_table_file(filepath, columns, rows, file_format)
+        except Exception as exc:
+            self._write_status(f"Table export failed: {exc}")
+            return
+        self._write_status(f"Exported results table: {filepath}")
+
+    def _write_table_file(self, filepath: str, columns: tuple[str, ...], rows: list[tuple[str, ...]], file_format: str) -> None:
+        if file_format == "csv":
+            with open(filepath, "w", newline="", encoding="utf-8") as handle:
+                writer = csv.writer(handle)
+                writer.writerow(columns)
+                writer.writerows(rows)
+            return
+        lines = ["\t".join(columns)]
+        lines.extend("\t".join(str(value) for value in row) for row in rows)
+        Path(filepath).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def _current_static_plot_canvas(self):
+        section_var = getattr(self, "result_viewer_section_var", None)
+        section_name = section_var.get() if section_var is not None and hasattr(section_var, "get") else "Static Results"
+        if section_name == "Complete Model Static Viewer":
+            selected = getattr(self, "result_viewer_plot_view_var", None)
+            if selected is None:
+                return None
+            key = {
+                "Deformed Shape": "deformed",
+                "Axial Force N": "axial",
+                "Shear Force V": "shear",
+                "Bending Moment M": "moment",
+            }.get(selected.get(), "deformed")
+            return self.result_viewer_plot_canvases.get(self.result_viewer_plot_frames.get(key))
+        if section_name == "Individual Member Result Viewer":
+            return getattr(self, "result_viewer_member_plot_canvas", None)
+        return self.result_viewer_plot_canvases.get(self.result_viewer_plot_frames.get("deformed"))
+
+    def _current_static_export_table_data(self) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
+        category = getattr(self, "result_view_category", None)
+        category_name = category.get() if category is not None and hasattr(category, "get") else "Nodal Displacements"
+        return self._static_result_table_data(category_name)
+
+    def _current_modal_export_table_data(self) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
+        view_var = getattr(self, "result_viewer_dynamic_view_var", None)
+        view_name = view_var.get() if view_var is not None and hasattr(view_var, "get") else "Modal Summary"
+        if view_name == "Mode Shapes":
+            return self._modal_mode_shape_export_table_data()
+        if view_name == "Matrices":
+            return self._modal_result_rows()
+        return self._modal_summary_table_data()
+
+    def _modal_mode_shape_export_table_data(self) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
+        results = self._current_modal_results()
+        if results is None:
+            return (("Message",), [(self._result_window_message("modal"),)])
+        message = self._modal_mode_shape_message(results)
+        if message is not None:
+            return (("Message",), [(message,)])
+        mode_index = self._current_modal_mode_index()
+        if mode_index is None:
+            return (("Message",), [("Invalid mode index.",)])
+        mode_shapes = getattr(results, "mode_shapes", None) or []
+        mode_shape = mode_shapes[mode_index] if 0 <= mode_index < len(mode_shapes) else None
+        normalization = self._current_modal_mode_normalization()
+        reference_dof = self._current_modal_reference_dof()
+        normalized_shape, normalization_message = self._normalize_modal_mode_shape(mode_shape, normalization, reference_dof)
+        return self._modal_phi_table_data(normalized_shape, normalization_message)
+
     def _clear_viewer_container(self, parent: ttk.Frame) -> None:
         for child in parent.winfo_children():
             child.destroy()
@@ -2207,7 +2357,7 @@ class MainWindow:
             self._render_result_table(
                 getattr(self, "result_viewer_dynamic_summary_tree", None),
                 ("Message",),
-                [("Run Modal Analysis first.",)],
+                [(self._result_window_message("modal"),)],
                 column_width=130,
             )
             mode_selector = getattr(self, "result_viewer_dynamic_mode_selector", None)
@@ -2223,7 +2373,7 @@ class MainWindow:
             if matrix_var is not None:
                 matrix_var.set(matrix_values[0] if matrix_values else "Kff")
             if message_var is not None:
-                message_var.set("Run Modal Analysis first.")
+                message_var.set(self._result_window_message("modal"))
             self._refresh_modal_mode_shape_controls()
             return
 
@@ -2266,7 +2416,7 @@ class MainWindow:
     def _static_result_table_data(self, category: str) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
         results = self._current_static_results()
         if results is None:
-            return (("Message",), [("Run Static Analysis first.",)])
+            return (("Message",), [(self._result_window_message("static"),)])
         units = self._result_unit_labels()
         if category == "Nodal Displacements":
             return (
@@ -2326,6 +2476,9 @@ class MainWindow:
             "matrices": getattr(self, "result_viewer_dynamic_matrices_tab", None),
         }
         frame = frames.get(key)
+        notebook = getattr(self, "result_viewer_dynamic_notebook", None)
+        if notebook is not None and frame is not None and hasattr(notebook, "select"):
+            notebook.select(frame)
         if frame is not None and hasattr(frame, "tkraise"):
             frame.tkraise()
 
@@ -2486,8 +2639,9 @@ class MainWindow:
         phi_tree = getattr(self, "result_viewer_dynamic_phi_tree", None)
         results = self._current_modal_results()
         if results is None:
-            self._render_result_table(phi_tree, ("Message",), [("Run Modal Analysis first.",)], column_width=120)
-            ttk.Label(frame, text="Run Modal Analysis first.").grid(row=0, column=0, sticky="nw")
+            message = self._result_window_message("modal")
+            self._render_result_table(phi_tree, ("Message",), [(message,)], column_width=120)
+            ttk.Label(frame, text=message).grid(row=0, column=0, sticky="nw")
             return
         message = self._modal_mode_shape_message(results)
         if message is not None:
@@ -2684,16 +2838,21 @@ class MainWindow:
         self.property_panel.show_command(self.selected_command.get())
         self._reset_analysis_state()
 
-    def _reset_analysis_state(self) -> None:
+    def _on_model_changed(self) -> None:
+        self._refresh_object_tree()
+        self._invalidate_analysis_results()
+
+    def _invalidate_analysis_results(self, *, force_message: bool = False) -> None:
+        had_results = self.latest_static_result is not None or self.latest_modal_result is not None
+        if not had_results and not force_message:
+            return
         self.latest_static_results = None
         self.latest_static_result = None
         self.static_analysis_error = None
         self.latest_modal_results = None
         self.latest_modal_result = None
         self.modal_analysis_error = None
-        self.result_view_category = None
-        self.result_view_tree = None
-        self.selected_member_id = None
+        self._analysis_results_cleared = had_results or force_message
         results_window = getattr(self, "result_viewer_window", None)
         if results_window is not None and hasattr(results_window, "winfo_exists"):
             try:
@@ -2701,6 +2860,10 @@ class MainWindow:
                     self._refresh_results_viewer()
             except tk.TclError:
                 pass
+
+    def _reset_analysis_state(self) -> None:
+        self._invalidate_analysis_results(force_message=False)
+        self.selected_member_id = None
 
     def _save_xml(self) -> None:
         path = filedialog.asksaveasfilename(

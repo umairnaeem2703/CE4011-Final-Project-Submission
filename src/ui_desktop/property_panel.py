@@ -119,8 +119,6 @@ class PropertyPanel(ttk.LabelFrame):
             self._delete_panel()
         elif command == "Replicate":
             self._replicate_panel()
-        elif command == "Move Selection":
-            self._move_panel()
         else:
             self._placeholder_panel(command, "No settings for this command yet.")
 
@@ -131,8 +129,6 @@ class PropertyPanel(ttk.LabelFrame):
             self.show_command(self.current_command)
         elif self.current_command == "Assign Diaphragm":
             self.show_command("Assign Diaphragm")
-        elif self.current_command == "Move Selection":
-            self.show_command("Move Selection")
 
     def sync_from_canvas(self) -> None:
         self.material_var.set(self.model_canvas.active_material_id)
@@ -271,6 +267,9 @@ class PropertyPanel(ttk.LabelFrame):
         if self.selected_kind == "element" and self.selected_object is not None:
             self._member_id_editor(start_row=2)
             self._member_properties_editor(start_row=3)
+        selection_count = getattr(self.model_canvas, "selection_count", lambda: 0)()
+        if selection_count > 0:
+            self._move_selection_editor(start_row=4 if self.selected_kind in {"node", "element"} and self.selected_object is not None else 2)
 
     def _placeholder_panel(self, title: str, text: str) -> None:
         self._title(title)
@@ -281,6 +280,16 @@ class PropertyPanel(ttk.LabelFrame):
             sticky="ew",
             pady=(8, 0),
         )
+
+    def _move_selection_editor(self, start_row: int) -> None:
+        editor = ttk.LabelFrame(self, text="Move Selection", padding=6)
+        editor.grid(row=start_row, column=0, sticky="ew", pady=(8, 0))
+        editor.columnconfigure(1, weight=1)
+        ttk.Label(editor, text="dx").grid(row=0, column=0, sticky="w", pady=2)
+        ttk.Entry(editor, textvariable=self.move_dx_var, width=10).grid(row=0, column=1, sticky="ew", pady=2)
+        ttk.Label(editor, text="dy").grid(row=1, column=0, sticky="w", pady=2)
+        ttk.Entry(editor, textvariable=self.move_dy_var, width=10).grid(row=1, column=1, sticky="ew", pady=2)
+        ttk.Button(editor, text="Apply Move", command=self._apply_move_selection).grid(row=2, column=0, columnspan=2, sticky="ew", pady=(8, 0))
 
     def _delete_panel(self) -> None:
         self._title("Delete")

@@ -15,6 +15,7 @@ from parser import XMLParser
 from ui.static_analysis import run_static_analysis
 from ui_desktop import main_window
 from ui_desktop.property_panel import PropertyPanel
+from ui_desktop.template_dialog import NewModelDialog
 from ui_desktop.result_formatting import dof_equation_labels, format_matrix, format_scalar
 from visualizer import build_member_review_profile, plot_member_review_panel, plot_static_nvm_diagrams
 
@@ -174,6 +175,8 @@ def _window_with_model(model=object()):
     window.latest_modal_results = None
     window.latest_modal_result = None
     window.modal_analysis_error = None
+    window._analysis_results_cleared = False
+    window._analysis_results_clear_message = "Results were cleared because the model changed. Run analysis again."
     window.modal_num_modes_var = DummyVar("3")
     window.modal_rayleigh_mode_i_var = DummyVar("1")
     window.modal_rayleigh_zeta_i_var = DummyVar("0.05")
@@ -533,7 +536,13 @@ def test_desktop_command_area_builds_dropdown_menus(monkeypatch):
     assert len(created) == len(main_window.COMMAND_TABS) + 1
     assert [entry[1]["label"] for entry in created[0].entries if entry[0] == "cascade"] == [name for name, _items in main_window.COMMAND_TABS]
     edit_entries = next(entry[1]["menu"].entries for entry in created[0].entries if entry[0] == "cascade" and entry[1]["label"] == "Edit")
-    assert any(item[1].get("label") == "Move Selection" for item in edit_entries if item[0] == "command")
+    view_entries = next(entry[1]["menu"].entries for entry in created[0].entries if entry[0] == "cascade" and entry[1]["label"] == "View")
+    assert not any(item[1].get("label") == "Move Selection" for item in edit_entries if item[0] == "command")
+    assert not any(item[1].get("label") == "Window Select" for item in view_entries if item[0] == "command")
+
+
+def test_desktop_new_model_dialog_exposes_revised_template_options():
+    assert NewModelDialog.TEMPLATE_OPTIONS == ("Blank Model", "2D Shear Frame Template")
 
 
 def test_desktop_workspace_uses_horizontal_panedwindow(monkeypatch):
@@ -1278,7 +1287,9 @@ def test_desktop_results_workflow_initializes_individual_member_tab(monkeypatch)
 
     def fake_create_results_window(mode="static"):
         window.result_viewer_notebook = SimpleNamespace(select=lambda tab: selected_tabs.append(tab))
+        window.result_viewer_content_frame = DummyFrame()
         if mode == "static":
+            window.result_viewer_section_var = DummyVar("Static Results")
             window.result_viewer_table_tab = table_tab
             window.result_viewer_member_var = DummyVar("e1")
             window.result_viewer_member_selector = DummySelector()
@@ -1291,6 +1302,7 @@ def test_desktop_results_workflow_initializes_individual_member_tab(monkeypatch)
             window.result_viewer_member_plot_container = DummyFrame()
             window._refresh_individual_member_viewer()
         else:
+            window.result_viewer_section_var = DummyVar("Modal Results")
             window.result_viewer_dynamic_tab = table_tab
         return object()
 
@@ -1752,8 +1764,7 @@ def test_desktop_open_xml_replaces_builder_refreshes_ui_and_clears_results(tmp_p
     assert window.static_analysis_error is None
     assert window.latest_modal_results is None
     assert window.modal_analysis_error is None
-    assert window.result_view_category is None
-    assert window.result_view_tree is None
+    assert window._analysis_results_cleared is True
     assert ("refresh_object_tree", None) in events
     assert ("tree_select", None) in events
     assert ("panel_selection", None, None) in events
@@ -1762,6 +1773,37 @@ def test_desktop_open_xml_replaces_builder_refreshes_ui_and_clears_results(tmp_p
     assert ("restore_full_view", False) in events
     assert errors == []
     assert window.messages[-1] == f"Opened XML: {xml_path}"
+
+
+def test_desktop_model_change_clears_stale_results_and_refreshes_open_viewer():
+    window = _window_with_model(model=SimpleNamespace(name="Current Model"))
+    window.latest_static_result = object()
+    window.latest_static_results = object()
+    window.latest_modal_result = object()
+    window.latest_modal_results = object()
+    window.result_viewer_window = SimpleNamespace(winfo_exists=lambda: True)
+    refreshed = []
+    window._refresh_results_viewer = lambda: refreshed.append("refreshed")
+
+    window._on_model_changed()
+
+    assert window.latest_static_result is None
+    assert window.latest_modal_result is None
+    assert window._analysis_results_cleared is True
+    assert refreshed == ["refreshed"]
+
+
+def test_desktop_static_table_export_writes_csv(tmp_path, monkeypatch):
+    window = _window_with_model()
+    window.result_view_category = DummyVar("Nodal Displacements")
+    window.latest_static_result = SimpleNamespace(displacements={1: [0.001, 0.0, 0.0]})
+    window.result_viewer_mode = "static"
+    output = tmp_path / "static_results.csv"
+    monkeypatch.setattr(main_window.filedialog, "asksaveasfilename", lambda **_kwargs: str(output))
+
+    window._export_current_results_table_csv()
+
+    assert output.read_text().splitlines()[0] == "Node,UX [m],UY [m],RZ [rad]"
 
 
 def test_desktop_open_xml_reports_failure_and_keeps_current_model(monkeypatch):
