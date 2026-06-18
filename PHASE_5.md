@@ -28,7 +28,7 @@ Architecture/UI cleanup is complete enough to proceed. Rigid-link behavior is cl
 
 ## Current State
 
-5D0, 5D1, 5D2, 5D2B, 5D3A, 5D3B, 5D3C, 5D3D, 5D3E, 5D3F, 5D4A, 5D4B, and 5D4C are complete. Modal workflow cleanup now uses a tabbed engineering-style Dynamic Results view whose matrices resolve from the modal result cache only and now shows reduced `Kff`/`Mff`/`Cff` labels, DOF-indexed rows, mode-shape normalization controls, phi-value tables, and Rayleigh damping metadata. The existing Static Results workflow stays intact, and the next implementation task is the modal validation/audit pass.
+5D0, 5D1, 5D2, 5D2B, 5D3A, 5D3B, 5D3C, 5D3D, 5D3E, 5D3F, 5D4A, 5D4B, and 5D4C are complete. Modal workflow cleanup now uses a tabbed engineering-style Modal Results view whose matrices resolve from the modal result cache only and now shows reduced `Kff`/`Mff`/`Cff` labels, DOF-indexed rows, mode-shape normalization controls, phi-value tables, and Rayleigh damping metadata. The existing Static Results workflow stays intact. The instructor-approved final submission scope is Static Analysis + Modal Analysis only; RSA and THA desktop workflows are deferred as future extensions.
 
 ## Task Status
 
@@ -46,11 +46,11 @@ Architecture/UI cleanup is complete enough to proceed. Rigid-link behavior is cl
 | 5D3F Static Results workflow stabilization audit | DONE   | Audited the Static Results workflow and confirmed stable no-result, table, complete-model viewer, and member-viewer behavior. |
 | 5D4A Modal run from desktop UI           | DONE   | Desktop UI can run Modal analysis from the current model, validate first, store the result, and show success/error status. |
 | 5D4B Modal results UI audit              | DONE   | Modal Results now uses the singular cached result state, has safer summary fallbacks, and keeps the static-result workflow intact. |
-| 5D4C Modal mode-shape plotting           | DONE   | Dynamic Results now uses modal summary, mode-shape, and matrix tabs with reduced `Kff`/`Mff`/`Cff` labels, normalization controls, Rayleigh damping metadata, and clear missing-data handling. |
-| 5D4 Modal run + mode shape/results       | DONE   | Modal run, result tables, and mode-shape plotting are all wired into the desktop Dynamic Results workflow. |
+| 5D4C Modal mode-shape plotting           | DONE   | Modal Results now uses modal summary, mode-shape, and matrix tabs with reduced `Kff`/`Mff`/`Cff` labels, normalization controls, Rayleigh damping metadata, and clear missing-data handling. |
+| 5D4 Modal run + mode shape/results       | DONE   | Modal run, result tables, and mode-shape plotting are all wired into the desktop Modal Results workflow. |
 | 5D4D Modal validation/audit              | TODO   |                                                                                                                         |
-| 5D5 RSA run + results                   | TODO   |                                                                                                                         |
-| 5D6 THA run + histories                 | TODO   |                                                                                                                         |
+| 5D5 RSA run + results                   | DEFERRED/FUTURE | Deferred from final desktop submission scope; backend may remain for future extension. |
+| 5D6 THA run + histories                 | DEFERRED/FUTURE | Deferred from final desktop submission scope; backend may remain for future extension. |
 | 5D7 Export visible tables/plots         | TODO   |                                                                                                                         |
 | 5D8 Final smoke audit                   | TODO   |                                                                                                                         |
 

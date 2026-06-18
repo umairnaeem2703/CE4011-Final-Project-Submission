@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import csv
 import math
+from pathlib import Path
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 from collections.abc import Mapping
@@ -56,9 +58,6 @@ ACTIVE_COMMANDS = (
     "Delete",
     "Replicate",
 )
-PLACEHOLDER_COMMANDS = (
-    "Window Select",
-)
 COMMAND_TABS = (
     ("Model", (("action", "New"), ("action", "Open XML"), ("action", "Save XML"), ("action", "Validate"))),
     (
@@ -89,13 +88,12 @@ COMMAND_TABS = (
             ("view_action", "Zoom In"),
             ("view_action", "Zoom Out"),
             ("command", "Pan"),
-            ("placeholder", "Window Select"),
             ("local_axes_toggle", "Local Axes"),
             ("view_action", "Full View"),
         ),
     ),
     ("Analyze", (("action", "Run Static Analysis"), ("action", "Run Modal Analysis"))),
-    ("Results", (("action", "Static Results"), ("action", "Dynamic Results"))),
+    ("Results", (("action", "Static Results"), ("action", "Modal Results"))),
 )
 
 
@@ -125,17 +123,24 @@ class MainWindow:
         self.latest_modal_results = None
         self.latest_modal_result = None
         self.modal_analysis_error = None
+        self._analysis_results_cleared = False
+        self._analysis_results_clear_message = "Results were cleared because the model changed. Run analysis again."
         self.result_view_category = None
         self.result_view_tree = None
         self.result_viewer_window = None
         self.result_viewer_mode = None
         self.result_viewer_notebook = None
+        self.result_viewer_section_var = None
+        self.result_viewer_section_selector = None
+        self.result_viewer_content_frame = None
         self.result_viewer_table_tab = None
         self.result_viewer_shell_tab = None
         self.result_viewer_message = None
         self.result_viewer_dynamic_category = None
         self.result_viewer_dynamic_message = None
         self.result_viewer_dynamic_tree = None
+        self.result_viewer_dynamic_view_var = None
+        self.result_viewer_dynamic_view_selector = None
         self.result_viewer_dynamic_summary_vars = {}
         self.result_viewer_dynamic_notebook = None
         self.result_viewer_dynamic_top_controls = None
@@ -149,6 +154,8 @@ class MainWindow:
         self.result_viewer_dynamic_mode_normalization_selector = None
         self.result_viewer_dynamic_reference_dof_var = None
         self.result_viewer_dynamic_reference_dof_selector = None
+        self.result_viewer_dynamic_mode_precision_var = None
+        self.result_viewer_dynamic_mode_precision_selector = None
         self.result_viewer_dynamic_matrix_selector = None
         self.result_viewer_dynamic_matrix_tree = None
         self.result_viewer_dynamic_mode_info_frame = None
@@ -157,6 +164,9 @@ class MainWindow:
         self.result_viewer_dynamic_plot_canvas = None
         self.result_viewer_dynamic_phi_tree = None
         self.result_viewer_plot_notebook = None
+        self.result_viewer_plot_view_var = None
+        self.result_viewer_plot_view_selector = None
+        self.result_viewer_plot_content_frame = None
         self.result_viewer_plot_frames = {}
         self.result_viewer_plot_canvases = {}
         self.result_viewer_member_tab = None
@@ -178,6 +188,8 @@ class MainWindow:
         self.result_viewer_member_cursor_scale = None
         self.result_viewer_member_display_mode_var = None
         self.result_viewer_member_display_mode_selector = None
+        self.result_viewer_member_precision_var = None
+        self.result_viewer_member_precision_selector = None
         self.result_viewer_member_scroll_var = None
         self.result_viewer_member_show_max_var = None
         self.result_viewer_member_profile = None
@@ -194,14 +206,32 @@ class MainWindow:
         self.selected_member_id = None
         self.result_display_tolerance = DEFAULT_DISPLAY_TOLERANCE
         self.result_tolerance_var = None
+        self.workspace_panedwindow = None
+        self.workspace_left_frame = None
+        self.workspace_canvas_frame = None
 
         self._configure_grid()
         self._build_command_area()
-        self._build_left_panel()
-        self._build_model_canvas()
+        self._build_workspace_area()
         self._build_right_panel()
         self._build_status_panel()
         self._refresh_object_tree()
+
+    def _make_string_var(self, master, value: str):
+        try:
+            return tk.StringVar(master=master, value=value)
+        except Exception:
+            class _FallbackVar:
+                def __init__(self, initial: str):
+                    self.value = initial
+
+                def get(self):
+                    return self.value
+
+                def set(self, value):
+                    self.value = value
+
+            return _FallbackVar(value)
 
     def run(self) -> None:
         self.root.mainloop()
@@ -215,72 +245,79 @@ class MainWindow:
         self.root.rowconfigure(2, weight=0)
 
     def _build_command_area(self) -> None:
-        command_area = ttk.Notebook(self.root)
-        command_area.grid(row=0, column=0, columnspan=3, sticky="ew", padx=8, pady=(6, 2))
+        self.menu_bar = tk.Menu(self.root)
+        self.root.config(menu=self.menu_bar)
 
-        for tab_name, items in COMMAND_TABS:
-            tab = ttk.Frame(command_area, padding=(8, 6))
-            command_area.add(tab, text=tab_name)
-            self._build_command_group(tab, items)
-            if tab_name == "Analyze":
-                self._build_modal_controls(tab)
+        for menu_name, items in COMMAND_TABS:
+            menu = tk.Menu(self.menu_bar, tearoff=False)
+            self.menu_bar.add_cascade(label=menu_name, menu=menu)
+            self._build_command_menu(menu_name, menu, items)
 
-    def _build_command_group(self, parent: ttk.Frame, items: tuple[tuple[str, str], ...]) -> None:
-        parent.columnconfigure(len(items), weight=1)
-        for column, (kind, label) in enumerate(items):
+    def _build_command_menu(self, menu_name: str, menu: tk.Menu, items: tuple[tuple[str, str], ...]) -> None:
+        if menu_name == "View":
+            menu.add_checkbutton(label="Grid", variable=self.grid_visible, command=self._toggle_grid_visible)
+            menu.add_checkbutton(label="Snap to Grid", variable=self.snap_to_grid, command=self._toggle_snap_to_grid)
+            menu.add_checkbutton(label="Local Axes", variable=self.local_axes_visible, command=self._toggle_local_axes_visible)
+            menu.add_separator()
+            menu.add_command(label="Grid Spacing...", command=self._open_grid_spacing_dialog)
+            menu.add_separator()
+            menu.add_command(label="Zoom In", command=lambda: self._view_action("Zoom In"))
+            menu.add_command(label="Zoom Out", command=lambda: self._view_action("Zoom Out"))
+            menu.add_command(label="Full View", command=lambda: self._view_action("Full View"))
+            return
+        if menu_name == "Analyze":
+            menu.add_command(label="Modal Settings...", command=self._open_modal_settings_dialog)
+        for kind, label in items:
             if kind == "command":
-                widget = ttk.Radiobutton(
-                    parent,
-                    text=label,
-                    value=label,
-                    variable=self.selected_command,
-                    command=lambda name=label: self._select_command(name),
-                )
+                menu.add_command(label=label, command=lambda name=label: self._select_command(name))
             elif kind == "action":
-                widget = ttk.Button(parent, text=label, command=lambda name=label: self._toolbar_action(name))
+                menu.add_command(label=label, command=lambda name=label: self._toolbar_action(name))
             elif kind == "view_action":
-                widget = ttk.Button(parent, text=label, command=lambda name=label: self._view_action(name))
-            elif kind == "grid_controls":
-                widget = self._build_grid_controls(parent)
-            elif kind == "snap_toggle":
-                widget = ttk.Checkbutton(
-                    parent,
-                    text="Snap to Grid",
-                    variable=self.snap_to_grid,
-                    command=self._toggle_snap_to_grid,
-                )
-            elif kind == "local_axes_toggle":
-                widget = ttk.Checkbutton(
-                    parent,
-                    text="Local Axes",
-                    variable=self.local_axes_visible,
-                    command=self._toggle_local_axes_visible,
-                )
-            else:
-                widget = ttk.Button(parent, text=label, state=tk.DISABLED)
-            widget.grid(row=0, column=column, padx=(0, 6), sticky="w")
+                menu.add_command(label=label, command=lambda name=label: self._view_action(name))
+            elif kind == "placeholder":
+                menu.add_command(label=label, state=tk.DISABLED)
 
-    def _build_modal_controls(self, parent: ttk.Frame) -> None:
-        controls = ttk.Frame(parent)
-        controls.grid(row=1, column=0, columnspan=3, sticky="w", pady=(8, 0))
-        ttk.Label(controls, text="Number of Modes").grid(row=0, column=0, sticky="w")
-        spin = ttk.Spinbox(controls, from_=1, to=20, width=6, textvariable=self.modal_num_modes_var)
-        spin.grid(row=0, column=1, padx=(8, 0), sticky="w")
-        damping_controls = ttk.LabelFrame(controls, text="Rayleigh Damping", padding=(8, 6))
-        damping_controls.grid(row=1, column=0, columnspan=3, sticky="w", pady=(8, 0))
-        ttk.Label(damping_controls, text="Mode i").grid(row=0, column=0, sticky="w")
-        ttk.Entry(damping_controls, width=6, textvariable=self.modal_rayleigh_mode_i_var).grid(row=0, column=1, padx=(6, 12), sticky="w")
-        ttk.Label(damping_controls, text="ζi").grid(row=0, column=2, sticky="w")
-        ttk.Entry(damping_controls, width=8, textvariable=self.modal_rayleigh_zeta_i_var).grid(row=0, column=3, padx=(6, 12), sticky="w")
-        ttk.Label(damping_controls, text="Mode j").grid(row=0, column=4, sticky="w")
-        ttk.Entry(damping_controls, width=6, textvariable=self.modal_rayleigh_mode_j_var).grid(row=0, column=5, padx=(6, 12), sticky="w")
-        ttk.Label(damping_controls, text="ζj").grid(row=0, column=6, sticky="w")
-        ttk.Entry(damping_controls, width=8, textvariable=self.modal_rayleigh_zeta_j_var).grid(row=0, column=7, padx=(6, 0), sticky="w")
-        ttk.Label(
-            controls,
-            text="Modal analysis uses the current stiffness and mass model. Static analysis is not required.",
-            wraplength=520,
-        ).grid(row=0, column=2, padx=(12, 0), sticky="w")
+    def _open_grid_spacing_dialog(self) -> None:
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Grid Spacing")
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        frame = ttk.Frame(dialog, padding=10)
+        frame.grid(row=0, column=0, sticky="nsew")
+        ttk.Label(frame, text="Grid spacing").grid(row=0, column=0, sticky="w")
+        entry = ttk.Entry(frame, textvariable=self.grid_spacing, width=12)
+        entry.grid(row=0, column=1, padx=(8, 0), sticky="ew")
+        entry.focus_set()
+        actions = ttk.Frame(frame)
+        actions.grid(row=1, column=0, columnspan=2, pady=(10, 0), sticky="e")
+        ttk.Button(actions, text="Apply", command=lambda: (self._apply_grid_spacing(), dialog.destroy())).grid(row=0, column=0, padx=(0, 6))
+        ttk.Button(actions, text="Cancel", command=dialog.destroy).grid(row=0, column=1)
+
+    def _open_modal_settings_dialog(self) -> None:
+        dialog = tk.Toplevel(self.root)
+        dialog.title("Modal Analysis Settings")
+        dialog.resizable(False, False)
+        dialog.transient(self.root)
+        dialog.grab_set()
+        frame = ttk.Frame(dialog, padding=10)
+        frame.grid(row=0, column=0, sticky="nsew")
+        ttk.Label(frame, text="Number of Modes").grid(row=0, column=0, sticky="w")
+        ttk.Spinbox(frame, from_=1, to=20, width=6, textvariable=self.modal_num_modes_var).grid(row=0, column=1, padx=(8, 0), sticky="w")
+        damping = ttk.LabelFrame(frame, text="Rayleigh Damping", padding=(8, 6))
+        damping.grid(row=1, column=0, columnspan=2, sticky="ew", pady=(8, 0))
+        ttk.Label(damping, text="Mode i").grid(row=0, column=0, sticky="w")
+        ttk.Entry(damping, width=6, textvariable=self.modal_rayleigh_mode_i_var).grid(row=0, column=1, padx=(6, 12), sticky="w")
+        ttk.Label(damping, text="ζi").grid(row=0, column=2, sticky="w")
+        ttk.Entry(damping, width=8, textvariable=self.modal_rayleigh_zeta_i_var).grid(row=0, column=3, padx=(6, 12), sticky="w")
+        ttk.Label(damping, text="Mode j").grid(row=0, column=4, sticky="w")
+        ttk.Entry(damping, width=6, textvariable=self.modal_rayleigh_mode_j_var).grid(row=0, column=5, padx=(6, 12), sticky="w")
+        ttk.Label(damping, text="ζj").grid(row=0, column=6, sticky="w")
+        ttk.Entry(damping, width=8, textvariable=self.modal_rayleigh_zeta_j_var).grid(row=0, column=7, padx=(6, 0), sticky="w")
+        ttk.Label(frame, text="Modal analysis uses the current stiffness and mass model. Static analysis is not required.", wraplength=480).grid(row=2, column=0, columnspan=2, sticky="w", pady=(8, 0))
+        actions = ttk.Frame(frame)
+        actions.grid(row=3, column=0, columnspan=2, pady=(10, 0), sticky="e")
+        ttk.Button(actions, text="Close", command=dialog.destroy).grid(row=0, column=0)
 
     def _build_grid_controls(self, parent: ttk.Frame) -> ttk.Frame:
         group = ttk.Frame(parent)
@@ -297,21 +334,45 @@ class MainWindow:
         ttk.Button(group, text="Apply", command=self._apply_grid_spacing).grid(row=0, column=3, padx=(4, 0), sticky="w")
         return group
 
-    def _build_left_panel(self) -> None:
-        panel = ttk.Frame(self.root, padding=(8, 4))
-        panel.grid(row=1, column=0, sticky="nsw")
-        panel.columnconfigure(0, weight=1)
+    def _build_workspace_area(self) -> None:
+        workspace = ttk.Panedwindow(self.root, orient=tk.HORIZONTAL)
+        workspace.grid(row=1, column=0, columnspan=2, sticky="nsew")
+        self.workspace_panedwindow = workspace
 
-        self.object_tree = ObjectTreePanel(panel, selection_callback=self._select_from_tree)
+        left_frame = ttk.Frame(workspace, padding=(8, 4))
+        left_frame.columnconfigure(0, weight=1)
+        left_frame.rowconfigure(0, weight=1)
+        self.workspace_left_frame = left_frame
+        self.object_tree = ObjectTreePanel(left_frame, selection_callback=self._select_from_tree)
         self.object_tree.grid(row=0, column=0, sticky="nsew")
-        panel.rowconfigure(0, weight=1)
+        workspace.add(left_frame, weight=0)
+
+        canvas_frame = ttk.Frame(workspace, padding=4)
+        canvas_frame.columnconfigure(0, weight=1)
+        canvas_frame.rowconfigure(0, weight=1)
+        self.workspace_canvas_frame = canvas_frame
+        self.model_canvas = ModelCanvas(
+            canvas_frame,
+            status_callback=self._write_status,
+            selection_callback=self._show_selection,
+            change_callback=self._on_model_changed,
+        )
+        self.model_canvas.grid(row=0, column=0, sticky="nsew")
+        self.canvas = self.model_canvas.canvas
+        workspace.add(canvas_frame, weight=1)
 
     def _build_model_canvas(self) -> None:
+        return
+
+    def _build_left_panel(self) -> None:
+        return
+
+    def _build_workspace_area_old(self) -> None:
         self.model_canvas = ModelCanvas(
             self.root,
             status_callback=self._write_status,
             selection_callback=self._show_selection,
-            change_callback=self._refresh_object_tree,
+            change_callback=self._on_model_changed,
         )
         self.model_canvas.grid(row=1, column=1, sticky="nsew", pady=4)
         self.canvas = self.model_canvas.canvas
@@ -391,7 +452,7 @@ class MainWindow:
         if name == "Static Results":
             self._show_static_results()
             return
-        if name == "Dynamic Results":
+        if name == "Modal Results":
             self._show_modal_results()
             return
         self._write_status(f"{name}: not wired yet.")
@@ -408,6 +469,7 @@ class MainWindow:
         self.latest_static_results = result.results
         self.latest_static_result = result.results
         self.static_analysis_error = None
+        self._analysis_results_cleared = False
         load_case = getattr(result.results, "load_case_id", "selected load case")
         displacement_count = len(getattr(result.results, "displacements", {}))
         reaction_count = len(getattr(result.results, "reactions", {}))
@@ -472,6 +534,7 @@ class MainWindow:
         self.latest_modal_results = result.results
         self.latest_modal_result = result.results
         self.modal_analysis_error = None
+        self._analysis_results_cleared = False
         mode_count = getattr(result.results, "num_modes_extracted", None)
         requested = getattr(result.results, "num_modes_requested", requested_modes)
         if mode_count is None:
@@ -509,12 +572,12 @@ class MainWindow:
     def _show_static_results(self) -> None:
         window = self._create_results_window("static")
         self._refresh_static_result_table()
-        notebook = getattr(self, "result_viewer_notebook", None)
-        table_tab = getattr(self, "result_viewer_table_tab", None)
-        if notebook is not None and table_tab is not None:
-            notebook.select(table_tab)
+        section_var = getattr(self, "result_viewer_section_var", None)
+        if section_var is not None:
+            section_var.set("Static Results")
+        self._show_results_section("Static Results")
         if getattr(self, "latest_static_result", None) is None:
-            self._write_status("Run Static Analysis first.")
+            self._write_status(self._result_window_message("static"))
             return
         self._write_status("Static results opened.")
 
@@ -522,30 +585,30 @@ class MainWindow:
         window = self._create_results_window("static")
         self._refresh_static_result_table()
         self._refresh_static_viewer()
-        notebook = getattr(self, "result_viewer_notebook", None)
-        shell_tab = getattr(self, "result_viewer_shell_tab", None)
-        if notebook is not None and shell_tab is not None:
-            notebook.select(shell_tab)
+        section_var = getattr(self, "result_viewer_section_var", None)
+        if section_var is not None:
+            section_var.set("Complete Model Static Viewer")
+        self._show_results_section("Complete Model Static Viewer")
         if getattr(self, "latest_static_result", None) is None:
-            self._write_status("Run Static Analysis first.")
+            self._write_status(self._result_window_message("static"))
             return
         self._write_status("Complete Model Static Viewer opened.")
 
     def _show_modal_results(self) -> None:
         window = self._create_results_window("modal")
         self._refresh_modal_viewer()
-        notebook = getattr(self, "result_viewer_notebook", None)
-        dynamic_tab = getattr(self, "result_viewer_dynamic_tab", None)
-        if notebook is not None and dynamic_tab is not None:
-            notebook.select(dynamic_tab)
-        dynamic_notebook = getattr(self, "result_viewer_dynamic_notebook", None)
-        summary_tab = getattr(self, "result_viewer_dynamic_summary_tab", None)
-        if dynamic_notebook is not None and summary_tab is not None:
-            dynamic_notebook.select(summary_tab)
+        section_var = getattr(self, "result_viewer_section_var", None)
+        if section_var is not None:
+            section_var.set("Modal Results")
+        self._show_results_section("Modal Results")
+        dynamic_view_var = getattr(self, "result_viewer_dynamic_view_var", None)
+        if dynamic_view_var is not None:
+            dynamic_view_var.set("Modal Summary")
+        self._show_modal_result_view("summary")
         if getattr(self, "latest_modal_result", None) is None:
-            self._write_status("Run Modal Analysis first.")
+            self._write_status(self._result_window_message("modal"))
             return
-        self._write_status("Dynamic Results opened.")
+        self._write_status("Modal Results opened.")
 
     def _create_results_window(self, mode: str = "static") -> tk.Toplevel:
         current_window = getattr(self, "result_viewer_window", None)
@@ -573,27 +636,50 @@ class MainWindow:
         header.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 6))
         header.columnconfigure(0, weight=1)
         ttk.Label(header, text="Results").grid(row=0, column=0, sticky="w")
-        ttk.Button(header, text="Refresh Viewer", command=self._refresh_results_viewer).grid(row=0, column=1, sticky="e")
-
-        body = ttk.Notebook(window)
+        ttk.Button(header, text="Refresh Viewer", command=self._refresh_results_viewer).grid(row=0, column=1, sticky="e", padx=(0, 6))
+        ttk.Button(header, text="Export Table TXT", command=self._export_current_results_table_txt).grid(row=0, column=2, sticky="e", padx=(0, 6))
+        ttk.Button(header, text="Export Table CSV", command=self._export_current_results_table_csv).grid(row=0, column=3, sticky="e", padx=(0, 6))
+        ttk.Button(header, text="Export Plot PNG", command=self._export_current_results_plot_png).grid(row=0, column=4, sticky="e")
+        body = ttk.Frame(window)
         body.grid(row=1, column=0, sticky="nsew", padx=10, pady=(0, 10))
-        self.result_viewer_notebook = body
+        body.columnconfigure(0, weight=1)
+        body.rowconfigure(1, weight=1)
+        self.result_viewer_notebook = None
+        self.result_viewer_content_frame = body
+        if mode == "modal":
+            self.result_viewer_section_var = self._make_string_var(self.root, "Modal Results")
+            options = ("Modal Results",)
+        else:
+            self.result_viewer_section_var = self._make_string_var(self.root, "Static Results")
+            options = ("Static Results", "Complete Model Static Viewer", "Individual Member Result Viewer")
+        self.result_viewer_section_selector = ttk.Combobox(
+            body,
+            textvariable=self.result_viewer_section_var,
+            values=options,
+            state="readonly",
+            width=34,
+        )
+        self.result_viewer_section_selector.grid(row=0, column=0, sticky="w")
+        self.result_viewer_section_selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_results_viewer())
+        content = ttk.Frame(body)
+        content.grid(row=1, column=0, sticky="nsew", pady=(8, 0))
+        content.columnconfigure(0, weight=1)
+        content.rowconfigure(0, weight=1)
 
         if mode == "modal":
-            dynamic_tab = ttk.Frame(body, padding=6)
-            body.add(dynamic_tab, text="Dynamic Results")
+            dynamic_tab = ttk.Frame(content, padding=6)
+            dynamic_tab.grid(row=0, column=0, sticky="nsew")
             self.result_viewer_dynamic_tab = dynamic_tab
             self.result_viewer_table_tab = None
             self.result_viewer_shell_tab = None
             self.result_viewer_member_tab = None
             self._build_modal_results_tab(dynamic_tab)
         else:
-            table_tab = ttk.Frame(body, padding=6)
-            viewer_tab = ttk.Frame(body, padding=6)
-            member_tab = ttk.Frame(body, padding=6)
-            body.add(table_tab, text="Static Results")
-            body.add(viewer_tab, text="Complete Model Static Viewer")
-            body.add(member_tab, text="Individual Member Result Viewer")
+            table_tab = ttk.Frame(content, padding=6)
+            viewer_tab = ttk.Frame(content, padding=6)
+            member_tab = ttk.Frame(content, padding=6)
+            for tab in (table_tab, viewer_tab, member_tab):
+                tab.grid(row=0, column=0, sticky="nsew")
             self.result_viewer_table_tab = table_tab
             self.result_viewer_dynamic_tab = None
             self.result_viewer_shell_tab = viewer_tab
@@ -604,10 +690,47 @@ class MainWindow:
             self._build_individual_member_results_viewer_tab(member_tab)
         return window
 
+    def _result_window_message(self, mode: str) -> str:
+        if self._analysis_results_cleared:
+            return self._analysis_results_clear_message
+        return "Run Modal Analysis first." if mode == "modal" else "Run Static Analysis first."
+
+    def _show_results_section(self, section: str) -> None:
+        section_var = getattr(self, "result_viewer_section_var", None)
+        if section_var is None:
+            return
+        content = getattr(self, "result_viewer_content_frame", None)
+        if content is None:
+            return
+        if section == "Static Results":
+            self._show_static_results_section("table")
+        elif section == "Complete Model Static Viewer":
+            self._show_static_results_section("viewer")
+        elif section == "Individual Member Result Viewer":
+            self._show_static_results_section("member")
+        elif section == "Modal Results":
+            self._show_modal_result_view("summary")
+
+    def _show_static_results_section(self, key: str) -> None:
+        mapping = {
+            "table": self.result_viewer_table_tab,
+            "viewer": self.result_viewer_shell_tab,
+            "member": self.result_viewer_member_tab,
+        }
+        frame = mapping.get(key)
+        notebook = getattr(self, "result_viewer_notebook", None)
+        if notebook is not None and frame is not None and hasattr(notebook, "select"):
+            notebook.select(frame)
+        if frame is not None and hasattr(frame, "tkraise"):
+            frame.tkraise()
+
     def _refresh_results_viewer(self) -> None:
         self._refresh_static_result_table()
         self._refresh_static_viewer()
         self._refresh_modal_viewer()
+        section_var = getattr(self, "result_viewer_section_var", None)
+        if section_var is not None:
+            self._show_results_section(section_var.get())
 
     def _close_static_results_window(self) -> None:
         if self.result_viewer_window is not None and self.result_viewer_window.winfo_exists():
@@ -615,12 +738,19 @@ class MainWindow:
         self.result_viewer_window = None
         self.result_viewer_mode = None
         self.result_viewer_notebook = None
+        self.result_viewer_section_var = None
+        self.result_viewer_section_selector = None
+        self.result_viewer_content_frame = None
         self.result_viewer_message = None
         self.result_viewer_dynamic_notebook = None
         self.result_viewer_dynamic_top_controls = None
         self.result_viewer_dynamic_summary_tab = None
         self.result_viewer_dynamic_mode_shapes_tab = None
         self.result_viewer_dynamic_matrices_tab = None
+        self.result_viewer_dynamic_view_var = None
+        self.result_viewer_dynamic_view_selector = None
+        self.result_viewer_dynamic_mode_precision_var = None
+        self.result_viewer_dynamic_mode_precision_selector = None
         self.result_viewer_dynamic_summary_tree = None
         self.result_viewer_dynamic_mode_selector = None
         self.result_viewer_dynamic_matrix_selector = None
@@ -630,6 +760,9 @@ class MainWindow:
         self.result_viewer_dynamic_plot_frame = None
         self.result_viewer_dynamic_plot_canvas = None
         self.result_viewer_plot_notebook = None
+        self.result_viewer_plot_view_var = None
+        self.result_viewer_plot_view_selector = None
+        self.result_viewer_plot_content_frame = None
         self.result_viewer_plot_frames = {}
         self.result_viewer_plot_canvases = {}
         self.result_viewer_table_tab = None
@@ -657,6 +790,8 @@ class MainWindow:
         self.result_viewer_member_cursor_scale = None
         self.result_viewer_member_display_mode_var = None
         self.result_viewer_member_display_mode_selector = None
+        self.result_viewer_member_precision_var = None
+        self.result_viewer_member_precision_selector = None
         self.result_viewer_member_scroll_var = None
         self.result_viewer_member_show_max_var = None
         self.result_viewer_member_profile = None
@@ -710,45 +845,49 @@ class MainWindow:
 
         controls = ttk.Frame(parent)
         controls.grid(row=0, column=0, sticky="ew", pady=(0, 6))
-        for column in range(4):
-            controls.columnconfigure(column, weight=1)
-        ttk.Button(controls, text="Deformed Shape", command=lambda: self._select_static_viewer_tab("deformed")).grid(row=0, column=0, sticky="ew", padx=(0, 4))
-        ttk.Button(controls, text="Axial Force N", command=lambda: self._select_static_viewer_tab("axial")).grid(row=0, column=1, sticky="ew", padx=4)
-        ttk.Button(controls, text="Shear Force V", command=lambda: self._select_static_viewer_tab("shear")).grid(row=0, column=2, sticky="ew", padx=4)
-        ttk.Button(controls, text="Bending Moment M", command=lambda: self._select_static_viewer_tab("moment")).grid(row=0, column=3, sticky="ew", padx=(4, 0))
+        ttk.Label(controls, text="Diagram").grid(row=0, column=0, sticky="w")
+        self.result_viewer_plot_view_var = self._make_string_var(parent, "Deformed Shape")
+        self.result_viewer_plot_view_selector = ttk.Combobox(
+            controls,
+            textvariable=self.result_viewer_plot_view_var,
+            values=("Deformed Shape", "Axial Force N", "Shear Force V", "Bending Moment M"),
+            state="readonly",
+            width=22,
+        )
+        self.result_viewer_plot_view_selector.grid(row=0, column=1, sticky="w", padx=(8, 0))
+        self.result_viewer_plot_view_selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_static_viewer())
 
         self.result_viewer_message = tk.StringVar(value="Complete model viewer shell is ready for the stored Static result.")
         ttk.Label(parent, textvariable=self.result_viewer_message).grid(row=1, column=0, sticky="w", pady=(0, 6))
-
-        notebook = ttk.Notebook(parent)
-        notebook.grid(row=2, column=0, sticky="nsew")
-        self.result_viewer_plot_notebook = notebook
-
+        content = ttk.Frame(parent)
+        content.grid(row=2, column=0, sticky="nsew")
+        content.columnconfigure(0, weight=1)
+        content.rowconfigure(0, weight=1)
+        self.result_viewer_plot_notebook = None
+        self.result_viewer_plot_content_frame = content
         self.result_viewer_plot_frames = {
-            "deformed": ttk.Frame(notebook, padding=6),
-            "axial": ttk.Frame(notebook, padding=6),
-            "shear": ttk.Frame(notebook, padding=6),
-            "moment": ttk.Frame(notebook, padding=6),
+            "deformed": ttk.Frame(content, padding=6),
+            "axial": ttk.Frame(content, padding=6),
+            "shear": ttk.Frame(content, padding=6),
+            "moment": ttk.Frame(content, padding=6),
         }
-        notebook.add(self.result_viewer_plot_frames["deformed"], text="Deformed Shape")
-        notebook.add(self.result_viewer_plot_frames["axial"], text="Axial Force N")
-        notebook.add(self.result_viewer_plot_frames["shear"], text="Shear Force V")
-        notebook.add(self.result_viewer_plot_frames["moment"], text="Bending Moment M")
+        for frame in self.result_viewer_plot_frames.values():
+            frame.grid(row=0, column=0, sticky="nsew")
         self._refresh_static_viewer()
 
     def _build_modal_results_tab(self, parent: ttk.Frame) -> None:
         parent.columnconfigure(0, weight=1)
-        parent.rowconfigure(1, weight=1)
+        parent.rowconfigure(2, weight=1)
 
         self.result_viewer_dynamic_top_controls = ttk.Frame(parent)
         self.result_viewer_dynamic_top_controls.grid(row=0, column=0, sticky="ew", pady=(0, 6))
-        self.result_viewer_dynamic_top_controls.columnconfigure(3, weight=1)
-        ttk.Label(self.result_viewer_dynamic_top_controls, text="Dynamic Results: Modal").grid(row=0, column=0, sticky="w")
+        self.result_viewer_dynamic_top_controls.columnconfigure(4, weight=1)
+        ttk.Label(self.result_viewer_dynamic_top_controls, text="Modal Results").grid(row=0, column=0, sticky="w")
 
         mode_controls = ttk.Frame(self.result_viewer_dynamic_top_controls)
         mode_controls.grid(row=0, column=1, sticky="w", padx=(12, 0))
         ttk.Label(mode_controls, text="Mode").grid(row=0, column=0, sticky="w")
-        self.result_viewer_dynamic_mode_var = tk.StringVar(value="1")
+        self.result_viewer_dynamic_mode_var = self._make_string_var(parent, "1")
         self.result_viewer_dynamic_mode_selector = ttk.Combobox(
             mode_controls,
             textvariable=self.result_viewer_dynamic_mode_var,
@@ -762,7 +901,7 @@ class MainWindow:
         normalization_controls = ttk.Frame(self.result_viewer_dynamic_top_controls)
         normalization_controls.grid(row=0, column=2, sticky="w", padx=(12, 0))
         ttk.Label(normalization_controls, text="Display").grid(row=0, column=0, sticky="w")
-        self.result_viewer_dynamic_mode_normalization_var = tk.StringVar(value="Mass normalized")
+        self.result_viewer_dynamic_mode_normalization_var = self._make_string_var(parent, "Mass normalized")
         self.result_viewer_dynamic_mode_normalization_selector = ttk.Combobox(
             normalization_controls,
             textvariable=self.result_viewer_dynamic_mode_normalization_var,
@@ -773,7 +912,7 @@ class MainWindow:
         self.result_viewer_dynamic_mode_normalization_selector.grid(row=0, column=1, padx=(8, 12), sticky="w")
         self.result_viewer_dynamic_mode_normalization_selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_modal_mode_shape_view())
         ttk.Label(normalization_controls, text="Reference DOF").grid(row=0, column=2, sticky="w")
-        self.result_viewer_dynamic_reference_dof_var = tk.StringVar(value="1")
+        self.result_viewer_dynamic_reference_dof_var = self._make_string_var(parent, "1")
         self.result_viewer_dynamic_reference_dof_selector = ttk.Combobox(
             normalization_controls,
             textvariable=self.result_viewer_dynamic_reference_dof_var,
@@ -783,18 +922,39 @@ class MainWindow:
         )
         self.result_viewer_dynamic_reference_dof_selector.grid(row=0, column=3, padx=(8, 0), sticky="w")
         self.result_viewer_dynamic_reference_dof_selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_modal_mode_shape_view())
-        ttk.Button(self.result_viewer_dynamic_top_controls, text="Refresh Viewer", command=self._refresh_results_viewer).grid(row=0, column=3, sticky="e")
+        ttk.Label(normalization_controls, text="Precision").grid(row=0, column=4, sticky="w")
+        self.result_viewer_dynamic_mode_precision_var = self._make_string_var(parent, "1e-3")
+        self.result_viewer_dynamic_mode_precision_selector = ttk.Entry(
+            normalization_controls,
+            textvariable=self.result_viewer_dynamic_mode_precision_var,
+            width=10,
+        )
+        self.result_viewer_dynamic_mode_precision_selector.grid(row=0, column=5, padx=(8, 0), sticky="w")
+        self.result_viewer_dynamic_mode_precision_selector.bind("<Return>", lambda _event: self._refresh_modal_mode_shape_view())
+        ttk.Label(self.result_viewer_dynamic_top_controls, text="View").grid(row=0, column=3, sticky="w", padx=(12, 0))
+        self.result_viewer_dynamic_view_var = self._make_string_var(parent, "Modal Summary")
+        self.result_viewer_dynamic_view_selector = ttk.Combobox(
+            self.result_viewer_dynamic_top_controls,
+            textvariable=self.result_viewer_dynamic_view_var,
+            values=("Modal Summary", "Mode Shapes", "Matrices"),
+            state="readonly",
+            width=18,
+        )
+        self.result_viewer_dynamic_view_selector.grid(row=0, column=4, sticky="w")
+        self.result_viewer_dynamic_view_selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_modal_viewer())
+        ttk.Button(self.result_viewer_dynamic_top_controls, text="Refresh Viewer", command=self._refresh_results_viewer).grid(row=0, column=5, sticky="e", padx=(12, 0))
 
-        notebook = ttk.Notebook(parent)
-        notebook.grid(row=1, column=0, sticky="nsew")
-        self.result_viewer_dynamic_notebook = notebook
+        content = ttk.Frame(parent)
+        content.grid(row=1, column=0, sticky="nsew")
+        content.columnconfigure(0, weight=1)
+        content.rowconfigure(0, weight=1)
+        self.result_viewer_dynamic_notebook = None
 
-        summary_tab = ttk.Frame(notebook, padding=6)
-        mode_tab = ttk.Frame(notebook, padding=6)
-        matrices_tab = ttk.Frame(notebook, padding=6)
-        notebook.add(summary_tab, text="Modal Summary")
-        notebook.add(mode_tab, text="Mode Shapes")
-        notebook.add(matrices_tab, text="Matrices")
+        summary_tab = ttk.Frame(content, padding=6)
+        mode_tab = ttk.Frame(content, padding=6)
+        matrices_tab = ttk.Frame(content, padding=6)
+        for tab in (summary_tab, mode_tab, matrices_tab):
+            tab.grid(row=0, column=0, sticky="nsew")
         self.result_viewer_dynamic_summary_tab = summary_tab
         self.result_viewer_dynamic_mode_shapes_tab = mode_tab
         self.result_viewer_dynamic_matrices_tab = matrices_tab
@@ -803,7 +963,7 @@ class MainWindow:
         self._build_modal_mode_shapes_tab(mode_tab)
         self._build_modal_matrices_tab(matrices_tab)
 
-        self.result_viewer_dynamic_message = tk.StringVar(value="Run Modal Analysis first.")
+        self.result_viewer_dynamic_message = self._make_string_var(parent, "Run Modal Analysis first.")
         ttk.Label(parent, textvariable=self.result_viewer_dynamic_message).grid(row=2, column=0, sticky="ew", pady=(6, 0))
         self._refresh_modal_viewer()
         if self.result_viewer_dynamic_notebook is not None and self.result_viewer_dynamic_summary_tab is not None:
@@ -938,20 +1098,25 @@ class MainWindow:
         )
         self.result_viewer_member_display_mode_selector.grid(row=0, column=4, sticky="ew", padx=(8, 4))
         self.result_viewer_member_display_mode_selector.bind("<<ComboboxSelected>>", lambda _event: self._refresh_individual_member_viewer())
+        ttk.Label(controls, text="Precision").grid(row=0, column=5, sticky="w")
+        self.result_viewer_member_precision_var = self._make_string_var(parent, "1e-3")
+        self.result_viewer_member_precision_selector = ttk.Entry(controls, textvariable=self.result_viewer_member_precision_var, width=10)
+        self.result_viewer_member_precision_selector.grid(row=0, column=6, sticky="w", padx=(8, 4))
+        self.result_viewer_member_precision_selector.bind("<Return>", lambda _event: self._refresh_individual_member_viewer())
         self.result_viewer_member_scroll_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
             controls,
             text="Scroll for Values",
             variable=self.result_viewer_member_scroll_var,
             command=self._update_member_review_cursor_only,
-        ).grid(row=0, column=5, sticky="w", padx=(0, 10))
+        ).grid(row=0, column=7, sticky="w", padx=(0, 10))
         self.result_viewer_member_show_max_var = tk.BooleanVar(value=True)
         ttk.Checkbutton(
             controls,
             text="Show Max",
             variable=self.result_viewer_member_show_max_var,
             command=self._refresh_individual_member_viewer,
-        ).grid(row=0, column=6, sticky="w")
+        ).grid(row=0, column=8, sticky="w")
 
         self.result_viewer_member_message = tk.StringVar(value="Select a member to review static results.")
         ttk.Label(parent, textvariable=self.result_viewer_member_message).grid(row=1, column=0, sticky="w", pady=(0, 6))
@@ -1048,7 +1213,7 @@ class MainWindow:
     def _modal_summary_table_data(self) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
         results = self._current_modal_results()
         if results is None:
-            return (("Message",), [("Run Modal Analysis first.",)])
+            return (("Message",), [(self._result_window_message("modal"),)])
         mode_count = self._modal_mode_count(results)
         if mode_count < 1:
             return (("Message",), [("No modal modes available.",)])
@@ -1256,7 +1421,7 @@ class MainWindow:
     def _modal_result_rows(self) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
         results = self._current_modal_results()
         if results is None:
-            return (("Message",), [("Run Modal Analysis first.",)])
+            return (("Message",), [(self._result_window_message("modal"),)])
         category = self._current_modal_result_category()
         available_categories = self._modal_result_categories(results)
         if category not in available_categories:
@@ -1333,12 +1498,16 @@ class MainWindow:
                 value_var.set(value)
 
     def _select_static_viewer_tab(self, key: str) -> None:
-        notebook = self.result_viewer_plot_notebook
-        if notebook is None:
-            return
-        frame = self.result_viewer_plot_frames.get(key)
-        if frame is not None:
-            notebook.select(frame)
+        mapping = {
+            "deformed": "Deformed Shape",
+            "axial": "Axial Force N",
+            "shear": "Shear Force V",
+            "moment": "Bending Moment M",
+        }
+        selector = getattr(self, "result_viewer_plot_view_selector", None)
+        if selector is not None and key in mapping and getattr(self, "result_viewer_plot_view_var", None) is not None:
+            self.result_viewer_plot_view_var.set(mapping[key])
+        self._refresh_static_viewer()
 
     def _available_member_ids(self) -> list[object]:
         results = self._current_static_results()
@@ -1473,8 +1642,9 @@ class MainWindow:
 
         self._refresh_individual_member_viewer_member_options()
         if getattr(self, "latest_static_result", None) is None:
-            self.result_viewer_member_message.set("Run Static Analysis first.")
-            self._render_member_review_placeholder("Run Static Analysis first.")
+            message = self._result_window_message("static")
+            self.result_viewer_member_message.set(message)
+            self._render_member_review_placeholder(message)
             return
 
         member_id = self._current_individual_member_id()
@@ -1691,7 +1861,7 @@ class MainWindow:
                     px = x0 + (float(extrema.get("x", 0.0)) / length) * (x1 - x0)
                     py = row_center - float(extrema.get("value", 0.0)) * y_scale
                     canvas.create_oval(px - 4, py - 4, px + 4, py + 4, fill="#222222", outline="")
-                    canvas.create_text(px + 6, py - 8, text=self._format_number(extrema.get("value", 0.0)), anchor="w", fill="#222222", font=("Segoe UI", 8))
+                    canvas.create_text(px + 6, py - 8, text=self._format_member_review_number(extrema.get("value", 0.0)), anchor="w", fill="#222222", font=("Segoe UI", 8))
 
         self.result_viewer_member_canvas_geometry = {
             "x0": x0,
@@ -1818,7 +1988,7 @@ class MainWindow:
         canvas.create_line(x, y, x + dx, y + dy, fill=color, width=2, arrow=tk.LAST)
         text_x = x + 38.0 if text_side == "right" else x - 38.0
         anchor = "w" if text_side == "right" else "e"
-        canvas.create_text(text_x, y, text=f"{label}={self._format_number(numeric_value)}", anchor=anchor, fill=color, font=("Segoe UI", 8))
+        canvas.create_text(text_x, y, text=f"{label}={self._format_member_review_number(numeric_value)}", anchor=anchor, fill=color, font=("Segoe UI", 8))
 
     def _draw_labeled_moment_arrow(self, canvas: tk.Canvas, x: float, y: float, value: object, *, text_side: str, label: str = "M") -> None:
         try:
@@ -1834,7 +2004,7 @@ class MainWindow:
         canvas.create_line(*points, fill=color, width=2, smooth=True, arrow=tk.LAST)
         text_x = x + 38.0 if text_side == "right" else x - 38.0
         anchor = "w" if text_side == "right" else "e"
-        canvas.create_text(text_x, y, text=f"{label}={self._format_number(numeric_value)}", anchor=anchor, fill=color, font=("Segoe UI", 8))
+        canvas.create_text(text_x, y, text=f"{label}={self._format_member_review_number(numeric_value)}", anchor=anchor, fill=color, font=("Segoe UI", 8))
 
     def _update_member_review_cursor_only(self) -> None:
         if not getattr(self, "result_viewer_member_profile", None):
@@ -1880,7 +2050,7 @@ class MainWindow:
             y_scale = ((geometry["bottom"] - geometry["top"]) / 5 * 0.32) / max_abs
             py = row_center - float(y_value) * y_scale
             canvas.create_oval(px - 3, py - 3, px + 3, py + 3, fill="#1f6feb", outline="", tags="member_cursor_value")
-            canvas.create_text(px + 6, py - 6, text=self._format_number(y_value), anchor="w", fill="#1f6feb", font=("Segoe UI", 8), tags="member_cursor_value")
+            canvas.create_text(px + 6, py - 6, text=self._format_member_review_number(y_value), anchor="w", fill="#1f6feb", font=("Segoe UI", 8), tags="member_cursor_value")
 
     def _render_member_review_summary(self, review_state: Mapping[str, object] | None) -> None:
         review_state = review_state or {}
@@ -1895,7 +2065,7 @@ class MainWindow:
 
         if getattr(self, "result_viewer_member_current_location_var", None) is not None:
             self.result_viewer_member_current_location_var.set(
-                f"x = {self._format_number(cursor_x)} / {self._format_number(profile.get('length', 0.0))} {length_unit}"
+                f"x = {self._format_member_review_number(cursor_x)} / {self._format_member_review_number(profile.get('length', 0.0))} {length_unit}"
             )
         if getattr(self, "result_viewer_member_current_n_var", None) is not None:
             self.result_viewer_member_current_n_var.set(self._member_review_value_label(current.get("N"), force_unit))
@@ -1914,13 +2084,13 @@ class MainWindow:
     def _member_review_value_label(self, value: object, unit: str) -> str:
         if value is None:
             return "-"
-        return f"{self._format_number(value)} {unit}"
+        return f"{self._format_member_review_number(value)} {unit}"
 
     def _set_member_review_extremum_vars(self, key: str, value: Mapping[str, object] | None, unit: str) -> None:
         label = "-"
         if value:
-            x_value = self._format_number(value.get("x", 0.0))
-            y_value = self._format_number(value.get("value", 0.0))
+            x_value = self._format_member_review_number(value.get("x", 0.0))
+            y_value = self._format_member_review_number(value.get("value", 0.0))
             label = f"x = {x_value}, {y_value} {unit}"
         if key == "N" and getattr(self, "result_viewer_member_max_n_var", None) is not None:
             self.result_viewer_member_max_n_var.set(label)
@@ -1965,9 +2135,19 @@ class MainWindow:
     def _refresh_static_viewer(self) -> None:
         if getattr(self, "result_viewer_message", None) is None:
             return
+        selected = getattr(self, "result_viewer_plot_view_var", None)
+        if selected is not None:
+            key = {
+                "Deformed Shape": "deformed",
+                "Axial Force N": "axial",
+                "Shear Force V": "shear",
+                "Bending Moment M": "moment",
+            }.get(selected.get(), "deformed")
+            self._show_static_result_view(key)
         if getattr(self, "latest_static_result", None) is None:
-            self.result_viewer_message.set("Run Static Analysis first.")
-            self._render_static_viewer_placeholder("Run Static Analysis first.")
+            message = self._result_window_message("static")
+            self.result_viewer_message.set(message)
+            self._render_static_viewer_placeholder(message)
             return
         model = getattr(getattr(self, "model_canvas", None), "builder", None)
         model = getattr(model, "model", None)
@@ -1988,7 +2168,7 @@ class MainWindow:
         model = getattr(getattr(self, "model_canvas", None), "builder", None)
         model = getattr(model, "model", None)
         if results is None:
-            self._render_static_viewer_placeholder("Run Static Analysis first.")
+            self._render_static_viewer_placeholder(self._result_window_message("static"))
             return
         if model is None:
             self._render_static_viewer_placeholder("No model available for Static results.")
@@ -2010,7 +2190,7 @@ class MainWindow:
     def _render_static_viewer_placeholder(self, placeholder: str) -> None:
         frames = self.result_viewer_plot_frames or {}
         for key in ("deformed", "axial", "shear", "moment"):
-            message = "Run Static Analysis first." if key == "deformed" else placeholder
+            message = placeholder if self._analysis_results_cleared else ("Run Static Analysis first." if key == "deformed" else placeholder)
             self._render_placeholder_frame(frames.get(key), message)
 
     def _render_placeholder_frame(self, parent: ttk.Frame | None, message: str) -> None:
@@ -2041,6 +2221,136 @@ class MainWindow:
     def _plot_static_diagram(self, model, results, key: str):
         return plot_static_nvm_diagram(model, results, diagram_key=key, show_extrema=True)
 
+    def _export_current_results_table_txt(self) -> None:
+        self._export_current_results_table("txt")
+
+    def _export_current_results_table_csv(self) -> None:
+        self._export_current_results_table("csv")
+
+    def _export_current_results_plot_png(self) -> None:
+        if getattr(self, "result_viewer_mode", None) == "modal":
+            canvas = getattr(self, "result_viewer_dynamic_plot_canvas", None)
+            if canvas is None:
+                self._write_status("No modal plot is visible to export.")
+                return
+            default_name = "modal_results_plot.png"
+        else:
+            section = getattr(self, "result_viewer_section_var", None)
+            section_name = section.get() if section is not None and hasattr(section, "get") else "Static Results"
+            if section_name == "Individual Member Result Viewer":
+                canvas = getattr(self, "result_viewer_member_plot_canvas", None)
+                default_name = "member_review_plot.png"
+            else:
+                canvas = self._current_static_plot_canvas()
+                default_name = "static_results_plot.png"
+            if canvas is None:
+                self._write_status("No static plot is visible to export.")
+                return
+
+        filepath = filedialog.asksaveasfilename(
+            parent=getattr(self, "root", None),
+            title="Export Plot PNG",
+            defaultextension=".png",
+            initialfile=default_name,
+            filetypes=(("PNG files", "*.png"), ("All files", "*.*")),
+        )
+        if not filepath:
+            self._write_status("Plot export canceled.")
+            return
+        try:
+            canvas.figure.savefig(filepath, dpi=150, bbox_inches="tight")
+        except Exception as exc:
+            self._write_status(f"Plot export failed: {exc}")
+            return
+        self._write_status(f"Exported plot PNG: {filepath}")
+
+    def _export_current_results_table(self, file_format: str) -> None:
+        mode = getattr(self, "result_viewer_mode", None)
+        if mode == "modal":
+            columns, rows = self._current_modal_export_table_data()
+            default_name = "modal_results_table"
+        else:
+            columns, rows = self._current_static_export_table_data()
+            default_name = "static_results_table"
+
+        extension = "csv" if file_format == "csv" else "txt"
+        filepath = filedialog.asksaveasfilename(
+            parent=getattr(self, "root", None),
+            title="Export Results Table",
+            defaultextension=f".{extension}",
+            initialfile=f"{default_name}.{extension}",
+            filetypes=((f"{extension.upper()} files", f"*.{extension}"), ("All files", "*.*")),
+        )
+        if not filepath:
+            self._write_status("Table export canceled.")
+            return
+        try:
+            self._write_table_file(filepath, columns, rows, file_format)
+        except Exception as exc:
+            self._write_status(f"Table export failed: {exc}")
+            return
+        self._write_status(f"Exported results table: {filepath}")
+
+    def _write_table_file(self, filepath: str, columns: tuple[str, ...], rows: list[tuple[str, ...]], file_format: str) -> None:
+        if file_format == "csv":
+            with open(filepath, "w", newline="", encoding="utf-8") as handle:
+                writer = csv.writer(handle)
+                writer.writerow(columns)
+                writer.writerows(rows)
+            return
+        lines = ["\t".join(columns)]
+        lines.extend("\t".join(str(value) for value in row) for row in rows)
+        Path(filepath).write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    def _current_static_plot_canvas(self):
+        section_var = getattr(self, "result_viewer_section_var", None)
+        section_name = section_var.get() if section_var is not None and hasattr(section_var, "get") else "Static Results"
+        if section_name == "Complete Model Static Viewer":
+            selected = getattr(self, "result_viewer_plot_view_var", None)
+            if selected is None:
+                return None
+            key = {
+                "Deformed Shape": "deformed",
+                "Axial Force N": "axial",
+                "Shear Force V": "shear",
+                "Bending Moment M": "moment",
+            }.get(selected.get(), "deformed")
+            return self.result_viewer_plot_canvases.get(self.result_viewer_plot_frames.get(key))
+        if section_name == "Individual Member Result Viewer":
+            return getattr(self, "result_viewer_member_plot_canvas", None)
+        return self.result_viewer_plot_canvases.get(self.result_viewer_plot_frames.get("deformed"))
+
+    def _current_static_export_table_data(self) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
+        category = getattr(self, "result_view_category", None)
+        category_name = category.get() if category is not None and hasattr(category, "get") else "Nodal Displacements"
+        return self._static_result_table_data(category_name)
+
+    def _current_modal_export_table_data(self) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
+        view_var = getattr(self, "result_viewer_dynamic_view_var", None)
+        view_name = view_var.get() if view_var is not None and hasattr(view_var, "get") else "Modal Summary"
+        if view_name == "Mode Shapes":
+            return self._modal_mode_shape_export_table_data()
+        if view_name == "Matrices":
+            return self._modal_result_rows()
+        return self._modal_summary_table_data()
+
+    def _modal_mode_shape_export_table_data(self) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
+        results = self._current_modal_results()
+        if results is None:
+            return (("Message",), [(self._result_window_message("modal"),)])
+        message = self._modal_mode_shape_message(results)
+        if message is not None:
+            return (("Message",), [(message,)])
+        mode_index = self._current_modal_mode_index()
+        if mode_index is None:
+            return (("Message",), [("Invalid mode index.",)])
+        mode_shapes = getattr(results, "mode_shapes", None) or []
+        mode_shape = mode_shapes[mode_index] if 0 <= mode_index < len(mode_shapes) else None
+        normalization = self._current_modal_mode_normalization()
+        reference_dof = self._current_modal_reference_dof()
+        normalized_shape, normalization_message = self._normalize_modal_mode_shape(mode_shape, normalization, reference_dof)
+        return self._modal_phi_table_data(normalized_shape, normalization_message)
+
     def _clear_viewer_container(self, parent: ttk.Frame) -> None:
         for child in parent.winfo_children():
             child.destroy()
@@ -2069,7 +2379,7 @@ class MainWindow:
             self._render_result_table(
                 getattr(self, "result_viewer_dynamic_summary_tree", None),
                 ("Message",),
-                [("Run Modal Analysis first.",)],
+                [(self._result_window_message("modal"),)],
                 column_width=130,
             )
             mode_selector = getattr(self, "result_viewer_dynamic_mode_selector", None)
@@ -2085,7 +2395,7 @@ class MainWindow:
             if matrix_var is not None:
                 matrix_var.set(matrix_values[0] if matrix_values else "Kff")
             if message_var is not None:
-                message_var.set("Run Modal Analysis first.")
+                message_var.set(self._result_window_message("modal"))
             self._refresh_modal_mode_shape_controls()
             return
 
@@ -2128,7 +2438,7 @@ class MainWindow:
     def _static_result_table_data(self, category: str) -> tuple[tuple[str, ...], list[tuple[str, ...]]]:
         results = self._current_static_results()
         if results is None:
-            return (("Message",), [("Run Static Analysis first.",)])
+            return (("Message",), [(self._result_window_message("static"),)])
         units = self._result_unit_labels()
         if category == "Nodal Displacements":
             return (
@@ -2166,6 +2476,33 @@ class MainWindow:
         self._refresh_modal_summary()
         self._refresh_modal_mode_shape_view()
         self._refresh_modal_matrix_table()
+        view_var = getattr(self, "result_viewer_dynamic_view_var", None)
+        if view_var is not None:
+            selected = view_var.get()
+            if selected == "Modal Summary":
+                self._show_modal_result_view("summary")
+            elif selected == "Mode Shapes":
+                self._show_modal_result_view("mode_shapes")
+            elif selected == "Matrices":
+                self._show_modal_result_view("matrices")
+
+    def _show_static_result_view(self, key: str) -> None:
+        frame = self.result_viewer_plot_frames.get(key)
+        if frame is not None and hasattr(frame, "tkraise"):
+            frame.tkraise()
+
+    def _show_modal_result_view(self, key: str) -> None:
+        frames = {
+            "summary": getattr(self, "result_viewer_dynamic_summary_tab", None),
+            "mode_shapes": getattr(self, "result_viewer_dynamic_mode_shapes_tab", None),
+            "matrices": getattr(self, "result_viewer_dynamic_matrices_tab", None),
+        }
+        frame = frames.get(key)
+        notebook = getattr(self, "result_viewer_dynamic_notebook", None)
+        if notebook is not None and frame is not None and hasattr(notebook, "select"):
+            notebook.select(frame)
+        if frame is not None and hasattr(frame, "tkraise"):
+            frame.tkraise()
 
     def _modal_mode_shape_message(self, results: object) -> str | None:
         mode_shapes = getattr(results, "mode_shapes", None) or []
@@ -2274,7 +2611,7 @@ class MainWindow:
         return (
             ("DOF", "Phi"),
             [
-                (f"DOF{index + 1}", self._format_number(value))
+                (f"DOF{index + 1}", self._format_modal_phi_number(value))
                 for index, value in enumerate(mode_shape)
             ],
         )
@@ -2324,8 +2661,9 @@ class MainWindow:
         phi_tree = getattr(self, "result_viewer_dynamic_phi_tree", None)
         results = self._current_modal_results()
         if results is None:
-            self._render_result_table(phi_tree, ("Message",), [("Run Modal Analysis first.",)], column_width=120)
-            ttk.Label(frame, text="Run Modal Analysis first.").grid(row=0, column=0, sticky="nw")
+            message = self._result_window_message("modal")
+            self._render_result_table(phi_tree, ("Message",), [(message,)], column_width=120)
+            ttk.Label(frame, text=message).grid(row=0, column=0, sticky="nw")
             return
         message = self._modal_mode_shape_message(results)
         if message is not None:
@@ -2480,6 +2818,27 @@ class MainWindow:
     def _format_number(self, value: object) -> str:
         return format_scalar(value, tolerance=self._display_tolerance())
 
+    def _precision_value(self, var: object, default: float = 1.0e-3) -> float:
+        if var is None or not hasattr(var, "get"):
+            return default
+        try:
+            precision = float(var.get())
+        except (TypeError, ValueError):
+            return default
+        return precision if precision > 0.0 else default
+
+    def _member_review_precision(self) -> float:
+        return self._precision_value(getattr(self, "result_viewer_member_precision_var", None), default=1.0e-3)
+
+    def _modal_phi_precision(self) -> float:
+        return self._precision_value(getattr(self, "result_viewer_dynamic_mode_precision_var", None), default=1.0e-3)
+
+    def _format_member_review_number(self, value: object) -> str:
+        return format_scalar(value, tolerance=self._member_review_precision())
+
+    def _format_modal_phi_number(self, value: object) -> str:
+        return format_scalar(value, tolerance=self._modal_phi_precision())
+
     def _new_model(self) -> None:
         builder = ask_new_model(self.root)
         if builder is None:
@@ -2522,16 +2881,21 @@ class MainWindow:
         self.property_panel.show_command(self.selected_command.get())
         self._reset_analysis_state()
 
-    def _reset_analysis_state(self) -> None:
+    def _on_model_changed(self) -> None:
+        self._refresh_object_tree()
+        self._invalidate_analysis_results()
+
+    def _invalidate_analysis_results(self, *, force_message: bool = False) -> None:
+        had_results = self.latest_static_result is not None or self.latest_modal_result is not None
+        if not had_results and not force_message:
+            return
         self.latest_static_results = None
         self.latest_static_result = None
         self.static_analysis_error = None
         self.latest_modal_results = None
         self.latest_modal_result = None
         self.modal_analysis_error = None
-        self.result_view_category = None
-        self.result_view_tree = None
-        self.selected_member_id = None
+        self._analysis_results_cleared = had_results or force_message
         results_window = getattr(self, "result_viewer_window", None)
         if results_window is not None and hasattr(results_window, "winfo_exists"):
             try:
@@ -2539,6 +2903,10 @@ class MainWindow:
                     self._refresh_results_viewer()
             except tk.TclError:
                 pass
+
+    def _reset_analysis_state(self) -> None:
+        self._invalidate_analysis_results(force_message=False)
+        self.selected_member_id = None
 
     def _save_xml(self) -> None:
         path = filedialog.asksaveasfilename(

@@ -15,6 +15,7 @@ from parser import XMLParser
 from ui.static_analysis import run_static_analysis
 from ui_desktop import main_window
 from ui_desktop.property_panel import PropertyPanel
+from ui_desktop.template_dialog import NewModelDialog
 from ui_desktop.result_formatting import dof_equation_labels, format_matrix, format_scalar
 from visualizer import build_member_review_profile, plot_member_review_panel, plot_static_nvm_diagrams
 
@@ -60,6 +61,9 @@ class DummyWidget:
     def destroy(self):
         pass
 
+    def tkraise(self):
+        pass
+
 
 class DummyFrame(DummyWidget):
     pass
@@ -96,6 +100,33 @@ class DummyNotebook(DummyWidget):
 
     def select(self, frame):
         self.selected = frame
+
+
+class DummyPanedwindow(DummyWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.added = []
+
+    def add(self, child, **kwargs):
+        self.added.append((child, kwargs))
+
+
+class DummyMenu(DummyWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.entries = []
+
+    def add_cascade(self, **kwargs):
+        self.entries.append(("cascade", kwargs))
+
+    def add_command(self, **kwargs):
+        self.entries.append(("command", kwargs))
+
+    def add_checkbutton(self, **kwargs):
+        self.entries.append(("checkbutton", kwargs))
+
+    def add_separator(self):
+        self.entries.append(("separator", {}))
 
 
 class DummyTreeview(DummyWidget):
@@ -144,6 +175,8 @@ def _window_with_model(model=object()):
     window.latest_modal_results = None
     window.latest_modal_result = None
     window.modal_analysis_error = None
+    window._analysis_results_cleared = False
+    window._analysis_results_clear_message = "Results were cleared because the model changed. Run analysis again."
     window.modal_num_modes_var = DummyVar("3")
     window.modal_rayleigh_mode_i_var = DummyVar("1")
     window.modal_rayleigh_zeta_i_var = DummyVar("0.05")
@@ -176,6 +209,8 @@ def _window_with_model(model=object()):
     window.result_viewer_member_cursor_scale = None
     window.result_viewer_member_display_mode_var = DummyVar("Absolute")
     window.result_viewer_member_display_mode_selector = None
+    window.result_viewer_member_precision_var = DummyVar("1e-3")
+    window.result_viewer_member_precision_selector = None
     window.result_viewer_member_scroll_var = DummyVar(True)
     window.result_viewer_member_show_max_var = DummyVar(True)
     window.result_viewer_member_profile = None
@@ -204,6 +239,8 @@ def _window_with_model(model=object()):
     window.result_viewer_dynamic_mode_normalization_selector = None
     window.result_viewer_dynamic_reference_dof_var = DummyVar("1")
     window.result_viewer_dynamic_reference_dof_selector = None
+    window.result_viewer_dynamic_mode_precision_var = DummyVar("1e-3")
+    window.result_viewer_dynamic_mode_precision_selector = None
     window.result_viewer_dynamic_matrix_selector = None
     window.result_viewer_dynamic_matrix_tree = None
     window.result_viewer_dynamic_mode_info_frame = None
@@ -436,12 +473,12 @@ def test_desktop_modal_analysis_rejects_invalid_mode_count(monkeypatch):
     assert window.messages[-1] == "Number of modes must be at least 1."
 
 
-def test_desktop_modal_results_builds_tabbed_layout(monkeypatch):
+def test_desktop_modal_results_builds_dropdown_layout(monkeypatch):
     window = _window_with_model()
     parent = DummyFrame()
     monkeypatch.setattr(main_window.tk, "StringVar", DummyVar)
     monkeypatch.setattr(main_window.ttk, "Frame", DummyFrame)
-    monkeypatch.setattr(main_window.ttk, "Notebook", DummyNotebook)
+    monkeypatch.setattr(main_window.ttk, "Entry", DummyWidget)
     monkeypatch.setattr(main_window.ttk, "Label", DummyLabel)
     monkeypatch.setattr(main_window.ttk, "Button", DummyButton)
     monkeypatch.setattr(main_window.ttk, "Combobox", DummyCombobox)
@@ -451,13 +488,137 @@ def test_desktop_modal_results_builds_tabbed_layout(monkeypatch):
 
     window._build_modal_results_tab(parent)
 
-    assert [text for _frame, text in window.result_viewer_dynamic_notebook.tabs] == ["Modal Summary", "Mode Shapes", "Matrices"]
-    assert window.result_viewer_dynamic_notebook.selected is window.result_viewer_dynamic_summary_tab
+    assert window.result_viewer_dynamic_view_selector.configured["values"] == ("Modal Summary", "Mode Shapes", "Matrices")
+    assert window.result_viewer_dynamic_notebook is None
     assert window.result_viewer_dynamic_message.get() == "Run Modal Analysis first."
     assert window.result_viewer_dynamic_summary_tree.rows == [("Run Modal Analysis first.",)]
     assert window.result_viewer_dynamic_mode_selector.configured["state"] == "disabled"
     assert window.result_viewer_dynamic_matrix_selector.configured["state"] == "disabled"
     assert window.result_viewer_dynamic_reference_dof_selector.configured["state"] == "disabled"
+    assert window.result_viewer_dynamic_mode_precision_var.get() == "1e-3"
+
+
+def test_desktop_member_precision_defaults_to_1e_minus3():
+    window = _window_with_model()
+    assert window.result_viewer_member_precision_var.get() == "1e-3"
+    assert window._member_review_precision() == 0.001
+
+
+def test_desktop_member_precision_controls_static_labels():
+    window = _window_with_model()
+    window.result_viewer_member_precision_var = DummyVar("1e-1")
+
+    assert window._member_review_value_label(0.04, "kN") == "0 kN"
+    assert window._member_review_value_label(0.12, "kN") == "0.1 kN"
+
+
+def test_desktop_modal_precision_controls_phi_values():
+    window = _window_with_model()
+    window.result_viewer_dynamic_mode_precision_var = DummyVar("1e-1")
+
+    columns, rows = window._modal_phi_table_data([0.04, 0.12])
+
+    assert columns == ("DOF", "Phi")
+    assert rows[0] == ("DOF1", "0")
+    assert rows[1] == ("DOF2", "0.1")
+
+
+def test_desktop_static_viewer_builds_dropdown_selector(monkeypatch):
+    window = _window_with_model()
+    parent = DummyFrame()
+    monkeypatch.setattr(main_window.tk, "StringVar", DummyVar)
+    monkeypatch.setattr(main_window.ttk, "Frame", DummyFrame)
+    monkeypatch.setattr(main_window.ttk, "Label", DummyLabel)
+    monkeypatch.setattr(main_window.ttk, "Button", DummyButton)
+    monkeypatch.setattr(main_window.ttk, "Combobox", DummyCombobox)
+    monkeypatch.setattr(main_window.ttk, "Treeview", DummyTreeview)
+    monkeypatch.setattr(main_window.ttk, "Scrollbar", DummyScrollbar)
+
+    window._build_static_results_viewer_tab(parent)
+
+    assert window.result_viewer_plot_view_selector.configured["values"] == ("Deformed Shape", "Axial Force N", "Shear Force V", "Bending Moment M")
+    assert window.result_viewer_plot_notebook is None
+
+
+def test_desktop_command_area_builds_dropdown_menus(monkeypatch):
+    window = _window_with_model()
+    window.root = SimpleNamespace(config=lambda **kwargs: setattr(window, "configured_menu", kwargs.get("menu")))
+    window.grid_visible = DummyVar(True)
+    window.snap_to_grid = DummyVar(False)
+    window.local_axes_visible = DummyVar(False)
+    window.grid_spacing = DummyVar("1.0")
+    window.modal_num_modes_var = DummyVar("3")
+    window.modal_rayleigh_mode_i_var = DummyVar("1")
+    window.modal_rayleigh_zeta_i_var = DummyVar("0.05")
+    window.modal_rayleigh_mode_j_var = DummyVar("2")
+    window.modal_rayleigh_zeta_j_var = DummyVar("0.05")
+    created = []
+
+    def fake_menu(*args, **kwargs):
+        menu = DummyMenu(*args, **kwargs)
+        created.append(menu)
+        return menu
+
+    monkeypatch.setattr(main_window.tk, "Menu", fake_menu)
+
+    window._build_command_area()
+
+    assert window.configured_menu is created[0]
+    assert len(created) == len(main_window.COMMAND_TABS) + 1
+    assert [entry[1]["label"] for entry in created[0].entries if entry[0] == "cascade"] == [name for name, _items in main_window.COMMAND_TABS]
+    edit_entries = next(entry[1]["menu"].entries for entry in created[0].entries if entry[0] == "cascade" and entry[1]["label"] == "Edit")
+    view_entries = next(entry[1]["menu"].entries for entry in created[0].entries if entry[0] == "cascade" and entry[1]["label"] == "View")
+    assert not any(item[1].get("label") == "Move Selection" for item in edit_entries if item[0] == "command")
+    assert not any(item[1].get("label") == "Window Select" for item in view_entries if item[0] == "command")
+
+
+def test_desktop_new_model_dialog_exposes_revised_template_options():
+    assert NewModelDialog.TEMPLATE_OPTIONS == ("Blank Model", "2D Shear Frame Template")
+
+
+def test_desktop_workspace_uses_horizontal_panedwindow(monkeypatch):
+    window = _window_with_model()
+    window.root = DummyFrame()
+    window._refresh_object_tree = lambda: None
+    window._select_from_tree = lambda *_args: None
+    window._show_selection = lambda *_args: None
+    window._write_status = lambda *_args: None
+    monkeypatch.setattr(main_window.ttk, "Panedwindow", DummyPanedwindow)
+    monkeypatch.setattr(main_window.ttk, "Frame", DummyFrame)
+    monkeypatch.setattr(main_window, "ObjectTreePanel", lambda parent, selection_callback=None: SimpleNamespace(grid=lambda **_kw: None))
+    monkeypatch.setattr(main_window, "ModelCanvas", lambda *args, **kwargs: SimpleNamespace(grid=lambda **_kw: None, canvas=object()))
+
+    window._build_workspace_area()
+
+    assert window.workspace_panedwindow.kwargs["orient"] == main_window.tk.HORIZONTAL
+    assert len(window.workspace_panedwindow.added) == 2
+
+
+def test_desktop_move_selection_translates_selected_objects_and_elements():
+    builder = ModelBuilder(name="Move Model")
+    builder.add_material("m1", E=200000.0)
+    builder.add_section("s1", A=0.02, I=0.0001)
+    builder.add_node(1, 0.0, 0.0)
+    builder.add_node(2, 3.0, 0.0)
+    builder.add_element("e1", "frame", 1, 2, "m1", "s1")
+    canvas = main_window.ModelCanvas.__new__(main_window.ModelCanvas)
+    canvas.builder = builder
+    canvas.selected_node_ids = {1}
+    canvas.selected_element_ids = {"e1"}
+    canvas._selection_count = lambda: 2
+    canvas._mark_model_dirty = lambda: None
+    canvas.redraw_model = lambda *args, **kwargs: None
+    canvas.change_callback = lambda: None
+    canvas.status_callback = lambda *_args: None
+    canvas._set_multi_selection = lambda node_ids, element_ids: setattr(canvas, "selection_snapshot", (set(node_ids), set(element_ids)))
+
+    result = canvas.move_selection(1.5, -0.5)
+
+    assert result == (2, 1)
+    assert builder.model.nodes[1].x == 1.5
+    assert builder.model.nodes[1].y == -0.5
+    assert builder.model.nodes[2].x == 4.5
+    assert builder.model.nodes[2].y == -0.5
 
 
 def test_desktop_modal_summary_shows_one_row_per_mode():
@@ -982,7 +1143,7 @@ def test_desktop_results_button_callback_handles_partial_viewer_state(monkeypatc
     window._refresh_static_result_table = lambda: refreshes.append("table")
     window._refresh_static_viewer = lambda: refreshes.append("viewer")
 
-    window._toolbar_action("Dynamic Results")
+    window._toolbar_action("Modal Results")
 
     assert refreshes == []
     assert selected_tabs == []
@@ -1063,6 +1224,7 @@ def test_desktop_results_window_switches_between_static_and_dynamic_modes(monkey
     monkeypatch.setattr(main_window.tk, "Toplevel", fake_toplevel)
     monkeypatch.setattr(main_window.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(main_window.ttk, "Notebook", DummyNotebook)
+    monkeypatch.setattr(main_window.ttk, "Combobox", DummyCombobox)
     monkeypatch.setattr(main_window.ttk, "Label", DummyLabel)
     monkeypatch.setattr(main_window.ttk, "Button", DummyButton)
     monkeypatch.setattr(window, "_build_static_results_table_tab", lambda *_args, **_kwargs: None)
@@ -1156,7 +1318,9 @@ def test_desktop_results_workflow_initializes_individual_member_tab(monkeypatch)
 
     def fake_create_results_window(mode="static"):
         window.result_viewer_notebook = SimpleNamespace(select=lambda tab: selected_tabs.append(tab))
+        window.result_viewer_content_frame = DummyFrame()
         if mode == "static":
+            window.result_viewer_section_var = DummyVar("Static Results")
             window.result_viewer_table_tab = table_tab
             window.result_viewer_member_var = DummyVar("e1")
             window.result_viewer_member_selector = DummySelector()
@@ -1169,6 +1333,7 @@ def test_desktop_results_workflow_initializes_individual_member_tab(monkeypatch)
             window.result_viewer_member_plot_container = DummyFrame()
             window._refresh_individual_member_viewer()
         else:
+            window.result_viewer_section_var = DummyVar("Modal Results")
             window.result_viewer_dynamic_tab = table_tab
         return object()
 
@@ -1184,7 +1349,7 @@ def test_desktop_results_workflow_initializes_individual_member_tab(monkeypatch)
 
 
 def test_desktop_static_complete_model_viewer_renders_plots(monkeypatch):
-    assert main_window.COMMAND_TABS[-1][1] == (("action", "Static Results"), ("action", "Dynamic Results"))
+    assert main_window.COMMAND_TABS[-1][1] == (("action", "Static Results"), ("action", "Modal Results"))
     window = _window_with_model()
 
     class DummyFrame:
@@ -1252,6 +1417,19 @@ def test_desktop_static_complete_model_viewer_renders_plots(monkeypatch):
     assert ("V", True) in calls
     assert ("M", True) in calls
     assert window.result_viewer_plot_canvases
+
+
+def test_desktop_final_scope_exposes_static_and_modal_only():
+    analyze_actions = main_window.COMMAND_TABS[-2][1]
+    result_actions = main_window.COMMAND_TABS[-1][1]
+
+    assert analyze_actions == (("action", "Run Static Analysis"), ("action", "Run Modal Analysis"))
+    assert result_actions == (("action", "Static Results"), ("action", "Modal Results"))
+    exposed_labels = " ".join(label for _kind, label in analyze_actions + result_actions)
+    assert "RSA" not in exposed_labels
+    assert "THA" not in exposed_labels
+    assert "Response Spectrum" not in exposed_labels
+    assert "Time History" not in exposed_labels
 
 
 def test_desktop_static_complete_model_viewer_empty_states(monkeypatch):
@@ -1617,8 +1795,7 @@ def test_desktop_open_xml_replaces_builder_refreshes_ui_and_clears_results(tmp_p
     assert window.static_analysis_error is None
     assert window.latest_modal_results is None
     assert window.modal_analysis_error is None
-    assert window.result_view_category is None
-    assert window.result_view_tree is None
+    assert window._analysis_results_cleared is True
     assert ("refresh_object_tree", None) in events
     assert ("tree_select", None) in events
     assert ("panel_selection", None, None) in events
@@ -1627,6 +1804,37 @@ def test_desktop_open_xml_replaces_builder_refreshes_ui_and_clears_results(tmp_p
     assert ("restore_full_view", False) in events
     assert errors == []
     assert window.messages[-1] == f"Opened XML: {xml_path}"
+
+
+def test_desktop_model_change_clears_stale_results_and_refreshes_open_viewer():
+    window = _window_with_model(model=SimpleNamespace(name="Current Model"))
+    window.latest_static_result = object()
+    window.latest_static_results = object()
+    window.latest_modal_result = object()
+    window.latest_modal_results = object()
+    window.result_viewer_window = SimpleNamespace(winfo_exists=lambda: True)
+    refreshed = []
+    window._refresh_results_viewer = lambda: refreshed.append("refreshed")
+
+    window._on_model_changed()
+
+    assert window.latest_static_result is None
+    assert window.latest_modal_result is None
+    assert window._analysis_results_cleared is True
+    assert refreshed == ["refreshed"]
+
+
+def test_desktop_static_table_export_writes_csv(tmp_path, monkeypatch):
+    window = _window_with_model()
+    window.result_view_category = DummyVar("Nodal Displacements")
+    window.latest_static_result = SimpleNamespace(displacements={1: [0.001, 0.0, 0.0]})
+    window.result_viewer_mode = "static"
+    output = tmp_path / "static_results.csv"
+    monkeypatch.setattr(main_window.filedialog, "asksaveasfilename", lambda **_kwargs: str(output))
+
+    window._export_current_results_table_csv()
+
+    assert output.read_text().splitlines()[0] == "Node,UX [m],UY [m],RZ [rad]"
 
 
 def test_desktop_open_xml_reports_failure_and_keeps_current_model(monkeypatch):

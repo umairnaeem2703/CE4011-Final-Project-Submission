@@ -1,7 +1,7 @@
 # ARCHITECTURE.md
 
 ## Target
-Python OOP structural analysis program for 2D static and generalized 2D dynamic analysis: modal, RSA, and THA. The engine must be transparent for education and expose intermediate matrices/results.
+Python OOP structural analysis program for the final submitted desktop scope: 2D static analysis and modal analysis. RSA and THA backend modules may remain in the repository, but response-spectrum and time-history desktop workflows are future extensions outside the final submission. The engine must be transparent for education and expose intermediate matrices/results.
 
 ## Pipeline
 ```text
@@ -15,8 +15,8 @@ src/
   model/             # StructuralModel, Node, Material, Section, Support, Load, Mass
   elements/          # ElementBase, Truss2D, Beam2D/Frame2D, Spring
   assembly/          # DOFManager, K/M/C/load assembly, boundary reduction
-  solvers/           # Static, Modal, RSA, Newmark, SolverRunner
-  results/           # StaticResults, ModalResults, RSAResults, THAResults
+  solvers/           # Static, Modal; RSA/Newmark retained as future-extension backend work
+  results/           # StaticResults, ModalResults; RSAResults/THAResults retained for future extension
   io/                # CSV/XML/JSON read-write, report/export helpers
   templates/         # shear frame, cantilever, portal frame examples
   visualization/     # matplotlib figures only
@@ -306,7 +306,7 @@ New Model (Blank / 2D Frame-Truss / 2D Shear Frame)
   -> ModelBuilder
   -> validate -> mark model dirty
   -> rebuild model/DOFs (if needed, check is_dirty) 
-  -> run selected analysis (static/modal/RSA/THA) 
+  -> run selected analysis (static/modal) 
   -> cache results 
   -> embedded plots/tables
   -> XML save/load/export
@@ -315,10 +315,11 @@ New Model (Blank / 2D Frame-Truss / 2D Shear Frame)
 On subsequent runs, if input unchanged, reuse cached matrices.
 
 The desktop UI is responsible for collecting geometry, supports, properties, loads,
-masses, spectra, and ground-motion settings; all model creation flows go through
-`ModelBuilder`. XML is the backend persistence/export format, not a manual input
-requirement for students. Static, Modal, RSA, and THA analyses must be accessible
-from the UI, with plots and educational result tables embedded in the application.
+and masses; all model creation flows go through `ModelBuilder`. XML is the backend
+persistence/export format, not a manual input requirement for students. Static and
+Modal analyses must be accessible from the final desktop UI, with plots and
+educational result tables embedded in the application. RSA and THA controls/results
+are reserved for future extension.
 
 ---
 
