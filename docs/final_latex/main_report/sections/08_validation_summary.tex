@@ -1,36 +1,20 @@
 \section{Testing and Validation Summary}
 
-The final testing baseline reported for the submitted scope is:
-\begin{itemize}
-\item \codeterm{pytest tests/ -q} \(\rightarrow\) 197 passed.
-\item \codeterm{pytest tests/test\_ui\_desktop\_static.py -q} \(\rightarrow\) 63 passed.
-\item Combined desktop visualization check \(\rightarrow\) 76 passed:
-\begin{verbatim}
-pytest tests/test_ui_desktop_static.py
-       tests/test_visualizer.py tests/test_visualizer_integration.py -q
-\end{verbatim}
-\end{itemize}
-
-\reportfigure{Test suite output}{test_suite_output.png}{Terminal screenshot placeholder showing the final 197-test baseline.}
-
-The automated validation covers model creation, XML round trips, static stiffness assembly, modal dynamic assembly, reaction recovery, member-end force recovery, N/V/M diagram data, modal eigenvalues and frequencies, mass normalization, participation factors, effective modal mass, visualization adapters, SAP2000/reference comparisons, and desktop command paths. Detailed benchmark descriptions and comparison-table placeholders are provided in the verification appendix.
+The final compact testing baseline for the submitted scope is \codeterm{pytest tests/ -q} \(\rightarrow\) 197 passed. Detailed focused test commands, terminal evidence, benchmark tables, and reference comparisons are placed in the verification appendix.
 
 \begin{table}[htbp]
 \centering
-\caption{Main validation evidence summary}
-\begin{tabular}{p{0.26\linewidth}p{0.58\linewidth}p{0.08\linewidth}}
+\caption{Compact validation summary}
+\begin{tabular}{p{0.30\linewidth}p{0.54\linewidth}p{0.08\linewidth}}
 \toprule
-Area & Evidence & Status \\
+Area & Evidence kept in the final baseline & Status \\
 \midrule
-Static benchmark & Frame model compared with retained \codeterm{data/test-frame.xml} and SAP2000 reference output. & Passed \\
-Settlement benchmark & Prescribed support displacement benchmark compared with SAP2000 displacement and reaction output. & Passed \\
-Temperature benchmark & Thermal loading, inclined truss transformation, reactions, and member-end forces compared with SAP2000 output. & Passed \\
-Modal benchmark & Flexible-beam/shear-frame modal benchmark compared for condensed stiffness, eigenvalues, frequencies, periods, and mode shapes. & Passed \\
-Desktop workflow & XML save/export command paths and visible result table/plot export paths covered by final P0 tests. & Passed \\
+Static analysis & DOF mapping, stiffness assembly, boundary reduction, displacements, reactions, member forces, N/V/M data, and SAP2000/reference benchmarks. & Passed \\
+Modal analysis & Mass assembly, massless DOF handling, eigenvalues, frequencies, periods, mode shapes, participation factors, effective mass, and participation ratios. & Passed \\
+Desktop workflow & Tkinter Static + Modal command paths, XML save/export parse-back, and TXT/CSV/PNG result export paths. & Passed \\
+Visualization and XML & Model/result plotting adapters, result table formatting, XML round trips, and reproducibility checks. & Passed \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-Final hardening changed only \codeterm{tests/test\_ui\_desktop\_static.py}. No solver math, XML schema, fixtures, or source behavior changed during final hardening. Static benchmark tests now use retained \codeterm{data/test-frame.xml}. The file \codeterm{data/ground\_motion.txt} was restored only for legacy/future THA backend compatibility, not as a final desktop THA claim.
-
-\placeholderfigure{SAP2000/reference comparison tables}{Placeholder for final SAP2000/reference screenshots or exported comparison tables. Detailed comparison rows are intentionally placed in the verification appendix.}
+Final hardening changed only \codeterm{tests/test\_ui\_desktop\_static.py}; no solver math, XML schema, fixtures, or source behavior changed. Static benchmark tests use retained \codeterm{data/test-frame.xml}. \codeterm{data/ground\_motion.txt} was restored only for legacy/future THA backend compatibility. The final P0 desktop tests covered XML save/export command paths and TXT/CSV/PNG result export paths.

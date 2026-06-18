@@ -1,35 +1,7 @@
 \section{Result Visualization and Post-Processing}
 
-Post-processing is provided through Tkinter result windows and matplotlib plots. Plotting functions consume a model plus a result object; they do not perform solver math. This separation keeps plotted values traceable to \codeterm{StaticResults}, \codeterm{ModalResults}, and the post-processor output used by tests and exports.
+Post-processing is provided through Tkinter result windows and matplotlib plots. Plotting functions consume the model and result objects; they do not perform solver math. This separation keeps each plotted result traceable to \codeterm{StaticResults}, \codeterm{ModalResults}, and post-processor data.
 
-\reportfigure{Static deformed shape}{static_deformed_shape.png}{Screenshot placeholder for the static deformed-shape plot.}
+\reportfigure{Results and visualization}{static_deformed_shape.png}{Representative result-view visualization. Detailed static, modal, N/V/M, and export screenshots are provided in the verification appendix.}
 
-\reportfigure{Axial force diagram}{static_axial_force_diagram.png}{Screenshot placeholder for an axial force diagram.}
-
-\reportfigure{Shear force diagram}{static_shear_diagram.png}{Screenshot placeholder for a shear force diagram.}
-
-\placeholderfigure{N/V/M diagram}{Screenshot placeholder for final combined axial force, shear force, and bending moment diagram evidence, including moment diagram capture if not already inserted.}
-
-\reportfigure{Mode shape plot}{mode_shapes.png}{Screenshot placeholder for a modal mode-shape plot.}
-
-The principal visual outputs are model preview, static deformed shape, axial force diagram, shear force diagram, bending moment diagram, and modal mode shapes. The numerical counterpart is available in result tables: matrices, vectors, DOF labels, displacements, reactions, member forces, member diagram values, eigenvalues, frequencies, periods, mode-shape components, and participation quantities.
-
-\begin{table}[htbp]
-\centering
-\caption{Post-processing and export outputs}
-\begin{tabular}{p{0.26\linewidth}p{0.62\linewidth}}
-\toprule
-Output surface & Purpose \\
-\midrule
-Result tables & Inspect matrices, vectors, nodal values, member values, and modal properties in a report-friendly form. \\
-Matplotlib plots & Review geometry, deformed shapes, internal force diagrams, and mode shapes visually. \\
-Visible table export & Save selected result tables as text or CSV where implemented. \\
-Visible plot export & Save selected result plots as PNG where implemented. \\
-XML export & Save the model definition for reproduction and later re-analysis. \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-\placeholderfigure{Export controls}{Screenshot placeholder for visible table export, visible plot export, and XML save/export controls.}
-
-This post-processing design supports the educational goal of pairing a visual result with the exact numerical data behind it. For example, a static deformed shape can be checked against the displacement table, and an N/V/M plot can be traced back to member-end forces and load recovery data.
+The main visual outputs are model preview, static deformed shape, axial/shear/moment diagrams, and modal mode shapes. Result tables provide the numerical counterpart: matrices, vectors, DOF labels, displacements, reactions, member forces, diagram values, eigenvalues, frequencies, periods, mode-shape components, and participation quantities. Visible result tables can be exported as text or CSV where implemented, visible plots can be exported as PNG where implemented, and XML remains the reproducible model format.

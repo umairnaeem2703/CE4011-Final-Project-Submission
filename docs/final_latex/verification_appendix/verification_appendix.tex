@@ -9,6 +9,7 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{graphicx}
 \usepackage{caption}
+\usepackage{placeins}
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt}
@@ -86,6 +87,67 @@ Desktop command paths & Headless desktop test doubles and temporary files & XML 
 \end{longtable}
 
 The retained benchmark inputs are \path|data/test-frame.xml|, \path|data/test-settlement.xml|, \path|data/test-temperature.xml|, and \path|data/test-modal-flex-beam.xml|. The corresponding reference outputs are stored under \path|sap2000_solutions/| and \path|modal_solution/|.
+
+\section{Detailed Theory Notes}
+
+This section retains the longer equations and implementation notes removed from the main report to keep the submitted main body within the CE 4011 page limit.
+
+For a two-dimensional frame member with local axial and flexural behavior, the local stiffness contribution has the standard direct-stiffness form
+\[
+k_\ell =
+\begin{bmatrix}
+EA/L & 0 & 0 & -EA/L & 0 & 0\\
+0 & 12EI/L^3 & 6EI/L^2 & 0 & -12EI/L^3 & 6EI/L^2\\
+0 & 6EI/L^2 & 4EI/L & 0 & -6EI/L^2 & 2EI/L\\
+-EA/L & 0 & 0 & EA/L & 0 & 0\\
+0 & -12EI/L^3 & -6EI/L^2 & 0 & 12EI/L^3 & -6EI/L^2\\
+0 & 6EI/L^2 & 2EI/L & 0 & -6EI/L^2 & 4EI/L
+\end{bmatrix}.
+\]
+Truss members use the axial subspace of this relationship. Each element contribution is transformed into global coordinates, assembled into the global stiffness matrix, and partitioned into free and restrained degrees of freedom. With restrained displacement vector \(u_r\), the solved static system is
+\[
+K_{ff}u_f=F_f-K_{fr}u_r,\qquad R=Ku-F.
+\]
+Element end forces are recovered by returning the solved global displacement vector to local member coordinates and adding equivalent nodal-load effects where member loads, settlement, or temperature loads apply. The same recovered local-force data supports axial-force, shear-force, and bending-moment diagram sampling.
+
+The modal workflow solves the generalized eigenproblem
+\[
+K_d\phi_i=\lambda_i M_d\phi_i,\qquad \omega_i=\sqrt{\lambda_i},\qquad T_i=\frac{2\pi}{\omega_i},
+\]
+on the active dynamic degrees of freedom. Massless DOFs that are stiffness-coupled to retained inertial DOFs are statically condensed rather than deleted:
+\[
+K_c=K_{aa}-K_{am}K_{mm}^{-1}K_{ma}.
+\]
+Direct deletion is reserved for disconnected zero-mass DOFs. Mode shapes are normalized for display and for modal-property reporting. Modal mass, participation factor, effective modal mass, and participation ratio are computed from the retained mass matrix and the selected excitation direction.
+
+\section{Desktop Screenshot Evidence}
+
+The main report keeps one UI/workflow figure and one result/visualization figure. The remaining screenshots are retained here as detailed evidence for the installation/user workflow, model setup, validation feedback, static outputs, modal outputs, and visualization/export behavior.
+
+\evidencefigure{Main desktop UI}{../main_report/figures/main_ui.png}{TODO screenshot placeholder for the main Tkinter workspace.}
+\evidencefigure{Quick-start workflow screen}{../main_report/figures/quick_start.png}{TODO screenshot placeholder for the quick-start workflow.}
+\evidencefigure{Shear-frame template input}{../main_report/figures/shear_frame_template.png}{TODO screenshot placeholder for template-driven model creation.}
+\evidencefigure{Property panel}{../main_report/figures/property_panel.png}{TODO screenshot placeholder for node/member/support/property editing.}
+\evidencefigure{Member load assignment}{../main_report/figures/member_load_assignment.png}{TODO screenshot placeholder for member-load input.}
+\evidencefigure{Support assignment}{../main_report/figures/support_assignment.png}{TODO screenshot placeholder for support input.}
+\evidencefigure{Mass assignment}{../main_report/figures/mass_assignments.png}{TODO screenshot placeholder for modal mass input.}
+\evidencefigure{Successful model validation}{../main_report/figures/succesful_model_validation.png}{TODO screenshot placeholder for successful validation feedback.}
+\evidencefigure{Unsuccessful model validation}{../main_report/figures/unsuccessful_validation.png}{TODO screenshot placeholder for validation error feedback.}
+\evidencefigure{Static result summary}{../main_report/figures/static_frame_result_summary.png}{TODO screenshot placeholder for static result summary.}
+\evidencefigure{Static DOF map}{../main_report/figures/static_dof_map.png}{TODO screenshot placeholder for static DOF map.}
+\evidencefigure{Static stiffness matrix}{../main_report/figures/static_k.png}{TODO screenshot placeholder for static stiffness matrix table.}
+\evidencefigure{Static deformed shape}{../main_report/figures/static_deformed_shape.png}{TODO screenshot placeholder for static deformed-shape plot.}
+\evidencefigure{Static axial-force diagram}{../main_report/figures/static_axial_force_diagram.png}{TODO screenshot placeholder for axial-force diagram.}
+\evidencefigure{Static shear-force diagram}{../main_report/figures/static_shear_diagram.png}{TODO screenshot placeholder for shear-force diagram.}
+\evidencefigure{Settlement case screen}{../main_report/figures/satatic_settlement.png}{TODO screenshot placeholder for settlement workflow evidence.}
+\evidencefigure{Temperature case screen}{../main_report/figures/static_temperature.png}{TODO screenshot placeholder for temperature workflow evidence.}
+\evidencefigure{Modal settings}{../main_report/figures/modal_analysis_settings.png}{TODO screenshot placeholder for modal settings.}
+\evidencefigure{Modal result summary}{../main_report/figures/modal_analysis_results_summary.png}{TODO screenshot placeholder for modal result summary.}
+\evidencefigure{Modal stiffness matrix}{../main_report/figures/modal_stiffness_matrix.png}{TODO screenshot placeholder for modal stiffness matrix.}
+\evidencefigure{Modal mass matrix}{../main_report/figures/modal_mass_matrix.png}{TODO screenshot placeholder for modal mass matrix.}
+\evidencefigure{Mode-shape visualization}{../main_report/figures/mode_shapes.png}{TODO screenshot placeholder for modal mode-shape plotting.}
+
+\FloatBarrier
 
 \section{Static Frame Benchmark}
 

@@ -1,45 +1,7 @@
 \section{Input and Output Structure}
 
-The user-facing input path is the Tkinter desktop workflow. A student can start from a blank model or a two-dimensional shear-frame template, define nodes and members on the canvas, assign material and section properties, apply supports, add nodal or member loads, assign lumped masses for modal analysis, validate the model, and then run Static or Modal analysis. The property panel and object tree are used to inspect and revise selected model objects without editing source code or writing XML manually.
+The user-facing input path is the Tkinter desktop workflow. A student can start from a blank model or shear-frame template, define nodes and members on the canvas, assign material and section properties, apply supports and loads, assign masses for modal analysis, validate the model, and then run Static or Modal analysis. The object tree and property panel support editing without writing XML or source code.
 
-\reportfigure{Shear-frame template workflow}{shear_frame_template.png}{Screenshot placeholder for using the built-in two-dimensional shear-frame template.}
+XML is the reproducibility backend. A desktop-created model can be saved/exported to XML and later loaded into the same \codeterm{ModelBuilder} and \codeterm{StructuralModel} path. The XML stores analysis-relevant geometry, materials, sections, supports, releases, loads, masses, unit settings, and load cases, while ordinary users work through the desktop UI.
 
-\reportfigure{Property panel}{property_panel.png}{Screenshot placeholder for node, member, material, section, support, load, mass, and diaphragm editing controls.}
-
-\placeholderfigure{Model canvas}{Screenshot placeholder focused on drawing, selecting, moving, replicating, and editing nodes and members on the Tkinter canvas.}
-
-XML is the reproducibility path. A desktop-created model can be saved or exported to XML, and a saved XML file can be loaded back into the same \codeterm{ModelBuilder} and \codeterm{StructuralModel} pipeline. The XML file records analysis-relevant model information including nodes, elements, materials, sections, supports, releases, loads, support settlements, masses, diaphragm groups where present, unit system, and load cases. XML is therefore a backend interchange and archive format, not a requirement placed on ordinary users.
-
-\begin{table}[htbp]
-\centering
-\caption{Input data handled by the final desktop workflow}
-\begin{tabular}{p{0.25\linewidth}p{0.65\linewidth}}
-\toprule
-Input group & Engineering meaning \\
-\midrule
-Geometry and topology & Node coordinates, member connectivity, member type, local axes, and member end releases or hinges. \\
-Properties & Material modulus, thermal coefficient and density where used, section area, inertia, depth, and shape-derived properties. \\
-Boundary conditions & Translational and rotational restraints, including support settlements where the static model uses prescribed restrained displacements. \\
-Loads & Nodal loads, uniformly distributed member loads, member point loads, and temperature loads supported by the model data path. \\
-Mass data & Lumped translational masses and available rotational inertia fields for modal workflows; member density can also contribute to mass assembly where modeled. \\
-Persistence & XML load/save/export for reproducibility, validation, and sharing of complete example models. \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Static output includes the DOF map, full stiffness matrix \(K\), reduced stiffness matrix \(K_{ff}\), global force vector \(F\), reduced force vector \(F_f\), nodal displacements, support reactions, local member-end forces, and axial/shear/moment diagram data. Modal output includes stiffness and mass matrices, reduced or condensed dynamic matrices where available, eigenvalues, circular frequencies, ordinary frequencies, periods, mode shapes, modal masses, participation factors, effective modal masses, and mass participation ratios.
-
-\begin{table}[htbp]
-\centering
-\caption{Educational outputs preserved for inspection}
-\begin{tabular}{p{0.22\linewidth}p{0.68\linewidth}}
-\toprule
-Analysis & Required reportable outputs \\
-\midrule
-Static & DOF map, \(K\), \(K_{ff}\), \(F\), \(F_f\), displacements, reactions, member-end forces, and N/V/M diagram data. \\
-Modal & \(K\), \(M\), reduced or condensed dynamic matrices, eigenvalues, frequencies, periods, mode shapes, modal mass, participation factors, effective modal mass, and mass participation ratios. \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Visible result tables and plots can be exported where implemented. XML model export remains the primary persistence format for reproducing a complete model, while text, CSV, and PNG exports support classroom reporting and quick review of the currently visible results.
+Static outputs include the DOF map, \(K\), \(K_{ff}\), \(F\), \(F_f\), displacements, reactions, member-end forces, and N/V/M data. Modal outputs include \(K\), \(M\), reduced or condensed matrices, eigenvalues, frequencies, periods, mode shapes, modal masses, participation factors, effective modal masses, and mass participation ratios. Visible tables and plots can be exported where implemented. The installation manual covers environment setup, and the user manual gives a complete workflow example.

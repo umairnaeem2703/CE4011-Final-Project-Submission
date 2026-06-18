@@ -2,13 +2,6 @@
 
 The submitted desktop MVP is intentionally limited to two-dimensional Static Analysis and Modal Analysis. It is an educational tool rather than a commercial structural analysis package. It does not claim three-dimensional modeling, nonlinear analysis, design-code checking, staged construction, automated meshing, advanced load combinations, production-quality drawing tools, or final desktop RSA/THA workflows.
 
-Important current limitations are:
-\begin{itemize}
-\item The model scope is two-dimensional with nodal DOFs \([u_x,u_y,r_z]\).
-\item Modal analysis is based on the available lumped-mass-oriented educational workflow; more advanced consistent mass options could be extended later.
-\item The desktop interface focuses on final Static + Modal workflows, while legacy/prototype modules may remain outside the submitted path.
-\item Final report screenshots, class/architecture diagrams, and exported benchmark comparison tables still require final insertion where placeholders remain.
-\item The solver core is intentionally standard-library oriented, which favors transparency over large-scale numerical performance.
-\end{itemize}
+Main limitations are the two-dimensional DOF set \([u_x,u_y,r_z]\), the educational lumped-mass-oriented modal workflow, the deliberately transparent standard-library numerical core, and remaining placeholder figures/tables that must be replaced before final packaging.
 
-Possible improvements include a polished installer, richer classroom examples, automated report generation, additional validated benchmark cases, expanded plot styling, more robust production input checking, and broader modal modeling options. RSA and THA could be promoted from future-extension backend work to desktop workflows only if the project scope is formally expanded. Any future analysis feature should preserve the same architecture: model data flows through validation, assembly, solver result objects, and visualization/export without moving solver math into UI code.
+Possible improvements include a polished installer, richer classroom examples, automated report generation, additional benchmark cases, expanded plot styling, more robust input checking, and broader modal modeling options. RSA and THA should be promoted to desktop workflows only if the project scope is formally expanded, and any future feature should preserve the same model-to-assembly-to-solver-to-result-object-to-visualization architecture.

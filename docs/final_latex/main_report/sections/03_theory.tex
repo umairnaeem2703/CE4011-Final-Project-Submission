@@ -1,112 +1,19 @@
 \section{Theoretical Background}
 
-\subsection{Degrees of Freedom and Element Transformation}
+Each two-dimensional node uses the DOF vector \([u_x,u_y,r_z]\). A two-node frame element therefore carries \([u_{x,i},u_{y,i},r_{z,i},u_{x,j},u_{y,j},r_{z,j}]\). Truss behavior uses the translational components needed for axial deformation while sharing the same global model DOF map. Element local quantities are transformed to global coordinates using \(q_l=Tq_g\), \(k_g=T^Tk_lT\), and, for modal analysis, \(m_g=T^Tm_lT\).
 
-Each two-dimensional node has three degrees of freedom:
-\[
-q_n=[u_x,\ u_y,\ r_z]^T ,
-\]
-where \(u_x\) and \(u_y\) are global translations and \(r_z\) is the out-of-plane rotation. A two-node frame element therefore uses
-\[
-q_e=[u_{x,i},u_{y,i},r_{z,i},u_{x,j},u_{y,j},r_{z,j}]^T .
-\]
-Truss elements use the translational components that contribute to axial deformation, while the shared global DOF map still provides a consistent model-level numbering scheme.
-
-For an element with length \(L\), direction cosine \(c\), and direction sine \(s\), local and global quantities are connected by a transformation matrix \(T\):
-\[
-q_{\mathrm{local}}=Tq_{\mathrm{global}}, \qquad
-k_{\mathrm{global}}=T^T k_{\mathrm{local}}T, \qquad
-m_{\mathrm{global}}=T^T m_{\mathrm{local}}T .
-\]
-This transformation is central for inclined members, member releases, member loads, thermal effects, and SAP2000 comparison cases because a sign or direction-cosine error propagates directly into displacement and member-force recovery.
-
-\subsection{Direct Stiffness Method for Static Analysis}
-
-The static solver follows the direct stiffness method. For each element, the local stiffness matrix is formed, transformed to global coordinates, and scattered into the global stiffness matrix \(K\) according to the DOF map. Nodal loads, equivalent nodal member loads, fixed-end effects, temperature effects, and prescribed support displacement terms are assembled into the corresponding force vectors.
-
-For an axial truss or bar component,
-\[
-k=\frac{EA}{L}
-\begin{bmatrix}
-1 & -1\\
--1 & 1
-\end{bmatrix}.
-\]
-For an Euler--Bernoulli frame element, the local \(6\times6\) matrix combines axial and flexural stiffness terms:
-\[
-\begin{bmatrix}
-EA/L & 0 & 0 & -EA/L & 0 & 0\\
-0 & 12EI/L^3 & 6EI/L^2 & 0 & -12EI/L^3 & 6EI/L^2\\
-0 & 6EI/L^2 & 4EI/L & 0 & -6EI/L^2 & 2EI/L\\
--EA/L & 0 & 0 & EA/L & 0 & 0\\
-0 & -12EI/L^3 & -6EI/L^2 & 0 & 12EI/L^3 & -6EI/L^2\\
-0 & 6EI/L^2 & 2EI/L & 0 & -6EI/L^2 & 4EI/L
-\end{bmatrix}.
-\]
-Member end releases and hinged behavior are handled before or during assembly so that the assembled global system represents the actual modeled constraints.
-
-Boundary conditions partition the static equilibrium equations into free and restrained DOFs:
-\[
-\begin{bmatrix}
-K_{ff} & K_{fr}\\
-K_{rf} & K_{rr}
-\end{bmatrix}
-\begin{bmatrix}
-u_f\\
-u_r
-\end{bmatrix}
-=
-\begin{bmatrix}
-F_f\\
-F_r
-\end{bmatrix}.
-\]
-With prescribed support displacement \(u_r\), the free displacement vector is solved from
+Static analysis follows the direct stiffness method. Element stiffness and equivalent nodal loads are assembled into the global system \(Ku=F\). Boundary conditions partition the system into free and restrained DOFs:
 \[
 K_{ff}u_f=F_f-K_{fr}u_r .
 \]
-When restrained displacements are zero, this reduces to \(K_{ff}u_f=F_f\). The full displacement vector is reconstructed after the reduced solve, and support reactions are recovered from
-\[
-R=Ku-F .
-\]
+After solving for \(u_f\), the full displacement vector is reconstructed and reactions are recovered from \(R=Ku-F\). Member-end forces are recovered in local coordinates using element displacements and fixed-end effects. The post-processor uses the recovered member forces and load data to generate axial force \(N\), shear force \(V\), and bending moment \(M\) diagram values.
 
-Member-end forces are then computed in local coordinates:
-\[
-f_{\mathrm{local}}=k_{\mathrm{local}}u_{\mathrm{local}}+fef_{\mathrm{local}},
-\]
-where \(fef_{\mathrm{local}}\) contains the fixed-end contribution from supported member loads, thermal loading, settlements, and equivalent nodal actions. The post-processor uses the recovered member forces and load data to generate axial force \(N\), shear force \(V\), and bending moment \(M\) diagram values along each member.
-
-\subsection{Mass Assembly and Modal Analysis}
-
-Modal analysis uses the same structural model and DOF map, but also assembles mass information. The final educational workflow uses lumped mass as the default representation. Member mass may be distributed to translational nodal DOFs based on density, area, and length, and nodal lumped masses are added directly to the corresponding active translational DOFs. Rotational inertia is ignored unless explicitly provided by model data.
-
-The free-vibration problem is written as the generalized eigenvalue problem
+Modal analysis solves the generalized eigenvalue problem
 \[
 K\phi=\lambda M\phi ,
 \]
-where \(\lambda=\omega^2\). Circular frequency, ordinary frequency, and period are then
+where \(\lambda=\omega^2\), \(f=\omega/(2\pi)\), and \(T_p=1/f\). Mass is assembled from modeled member and nodal mass data, with lumped mass used as the final educational default. Disconnected zero-mass DOFs may be removed, but stiffness-coupled massless DOFs are statically condensed:
 \[
-\omega=\sqrt{\lambda}, \qquad f=\frac{\omega}{2\pi}, \qquad T_p=\frac{1}{f}.
+K_{\mathrm{eff}}=K_{aa}-K_{am}K_{mm}^{-1}K_{ma}, \qquad M_{\mathrm{eff}}=M_{aa}.
 \]
-The stored modal properties are mass-normalized:
-\[
-\phi_n^T M\phi_n=1 .
-\]
-
-Massless dynamic DOFs require special treatment. A disconnected zero-mass DOF may be removed because it has no stiffness transfer path. A stiffness-coupled massless DOF must not be directly deleted because doing so changes the structural stiffness seen by the massive DOFs. Instead, the massless DOFs are statically condensed. With active massive DOFs \(a\) and massless stiffness-coupled DOFs \(m\),
-\[
-K_{\mathrm{eff}}=K_{aa}-K_{am}K_{mm}^{-1}K_{ma}, \qquad
-M_{\mathrm{eff}}=M_{aa}.
-\]
-The modal eigenproblem is then solved on the reduced or condensed dynamic system.
-
-For an influence vector \(r\), usually representing horizontal ground-direction participation, the participation factor for mode \(n\) is
-\[
-\Gamma_n=\frac{\phi_n^TMr}{\phi_n^TM\phi_n}.
-\]
-For mass-normalized modes this reduces to \(\Gamma_n=\phi_n^TMr\). Effective modal mass and mass participation ratio are computed as
-\[
-M_{\mathrm{eff},n}=\Gamma_n^2(\phi_n^TM\phi_n), \qquad
-\rho_n=\frac{M_{\mathrm{eff},n}}{r^TMr}.
-\]
-The modal result object preserves eigenvalues, frequencies, periods, mode shapes, modal masses, participation factors, effective modal masses, participation ratios, and available reduced or condensed matrices for educational inspection.
+Mode shapes are mass-normalized. For influence vector \(r\), the participation factor is \(\Gamma_n=(\phi_n^TMr)/(\phi_n^TM\phi_n)\), the effective modal mass is \(M_{\mathrm{eff},n}=\Gamma_n^2(\phi_n^TM\phi_n)\), and the participation ratio is \(M_{\mathrm{eff},n}/(r^TMr)\). Detailed stiffness matrices, derivations, and benchmark equations are retained in the verification appendix.
