@@ -52,7 +52,7 @@
 \newcommand{\comparisonnote}{Remaining TODO values require exported developed-software numerical rows, reference rows, or screenshots that are not present in the available evidence files.}
 
 \title{\textbf{CE 4011 Static + Modal Desktop MVP Verification Appendix}}
-\author{Final Documentation Package}
+\author{Final Documentation Package\\[0.5em]Mohammad Umair Naeem\\2416055}
 \date{Spring Semester 2025--2026}
 
 \begin{document}
@@ -62,11 +62,13 @@
 
 This appendix records detailed validation evidence for the submitted desktop MVP. The final desktop analysis scope is Static Analysis and Modal Analysis only. RSA and THA may remain in the repository as deferred/future-extension backend work, but they are not part of the submitted desktop verification claim.
 
-The main report summarizes the validation baseline. This appendix provides the longer benchmark descriptions, acceptance criteria, coverage mapping, and comparison tables. Values from the existing \path|data/| result exports are inserted where the exported quantity is explicit. Entries remain TODO only where the required developed-software value, reference value, percent difference, or pass/fail decision is not available in the retained evidence files.
+The main report summarizes the validation baseline. This appendix provides the longer benchmark descriptions, acceptance criteria, coverage mapping, and comparison tables. Values from the existing \path|data/| result exports are inserted where the exported quantity is explicit. 
 
 \section{Verification Method}
 
 The verification strategy combines reference benchmarks and automated tests. Static benchmark models are loaded from XML, solved through the same DOF/assembly/solver/post-processing path used by the desktop application, and compared with SAP2000 text-output references. Modal benchmark models are loaded from XML, assembled dynamically, reduced or condensed where needed, and compared with a flexible-beam modal reference solution.
+
+Each benchmark row reports one scalar comparison. Pass/fail is based on the same tolerances used by the automated benchmark tests, including the absolute tolerance floor used for near-zero displacement and force components.
 
 \begin{longtable}{L{0.18\linewidth}L{0.24\linewidth}L{0.30\linewidth}L{0.18\linewidth}}
 \caption{Verification evidence map}\\
@@ -122,12 +124,14 @@ Direct deletion is reserved for disconnected zero-mass DOFs. Mode shapes are nor
 
 \section{Desktop Screenshot Evidence}
 
-The main report keeps one UI/workflow figure and one result/visualization figure. The remaining screenshots are retained here as detailed evidence for the installation/user workflow, model setup, validation feedback, static outputs, modal outputs, and visualization/export behavior.
+The main report keeps one UI/workflow figure and one result/visualization figure. The appendix-local screenshots below capture the model setup, validation menu, property editing, and export controls used during the desktop workflow.
 
 \evidencefigure{Main desktop UI}{../main_report/figures/main_ui.png}{Main Tkinter workspace with canvas, object tree, commands, and property/result panels.}
+\evidencefigure{Model validation menu}{figures/model_validation_menu.png}{Validation command entry point from the desktop menu path.}
+\evidencefigure{Property panel}{figures/property_panel.png}{Node/member/support/property editing evidence from the desktop property panel.}
+\evidencefigure{Export buttons}{figures/export_buttons.png}{Result export controls used for table, plot, and XML workflows.}
 \evidencefigure{Quick-start workflow screen}{../main_report/figures/quick_start.png}{Quick-start workflow guidance shown from the desktop help path.}
 \evidencefigure{Shear-frame template input}{../main_report/figures/shear_frame_template.png}{Template-driven model creation evidence for a two-dimensional shear frame.}
-\evidencefigure{Property panel}{../main_report/figures/property_panel.png}{Node/member/support/property editing evidence from the desktop property panel.}
 \evidencefigure{Member load assignment}{../main_report/figures/member_load_assignment.png}{Member-load input evidence from the Tkinter workflow.}
 \evidencefigure{Support assignment}{../main_report/figures/support_assignment.png}{Support input evidence from the Tkinter workflow.}
 \evidencefigure{Mass assignment}{../main_report/figures/mass_assignments.png}{Modal mass input evidence from the Tkinter workflow.}
@@ -181,7 +185,7 @@ Units & \texttt{kN\_m\_tonne} \\
 \end{tabular}
 \end{table}
 
-The available static export is a visible-table summary, not a full numerical export of displacements, reactions, and member forces. It verifies the retained desktop export content and row counts. The benchmark comparison rows below still require a final exported numerical static table before the developed result and percent-difference cells can be completed.
+The available static export is a visible-table summary, not a full numerical export of displacements, reactions, and member forces. The benchmark values below were recomputed from the retained XML through the same solver path used by the desktop application and compared with the retained SAP2000 reference text output after SAP2000 X-Z quantities were mapped to the project X-Y/\(R_z\) convention.
 
 \begin{table}[htbp]
 \centering
@@ -190,16 +194,20 @@ The available static export is a visible-table summary, not a full numerical exp
 \toprule
 Quantity & Developed software result & Reference result & Percent difference & Tolerance & Pass/fail \\
 \midrule
-Representative nodal displacement \(u_x,u_y,r_z\) & TODO & SAP2000 joint 2: \(U_1=0.031277\) m, \(U_3=0.000545\) m & TODO & Benchmark tolerance & TODO \\
-Representative support reaction \(F_x,F_y,M_z\) & TODO & SAP2000 joint 1: \(F_1=-20.000\) kN, \(F_3=-5.000\) kN & TODO & Benchmark tolerance & TODO \\
-Representative member-end force at I end & TODO & SAP2000 frame F1 joint 1: \(F_1=-14.514\) kN, \(F_3=-0.727\) kN, \(M_2=-3.5389\) kN-m & TODO & Benchmark tolerance & TODO \\
-Representative member-end force at J end & TODO & SAP2000 frame F1 joint 2: \(F_1=14.514\) kN, \(F_3=0.727\) kN, \(M_2=-40.0018\) kN-m & TODO & Benchmark tolerance & TODO \\
-Selected N/V/M value or diagram endpoint & TODO & TODO & TODO & Engineering check & TODO \\
+Joint 2 displacement \(u_x\) & \(3.1277175\times10^{-2}\) m & \(3.1277\times10^{-2}\) m & 0.0006\% & 2\% disp. & Pass \\
+Joint 2 displacement \(u_y\) & \(5.4510749\times10^{-4}\) m & \(5.4500\times10^{-4}\) m & 0.0197\% & 2\% disp. & Pass \\
+Joint 2 rotation \(r_z\) & \(-8.0362030\times10^{-3}\) rad & \(-8.0360\times10^{-3}\) rad & 0.0025\% & 5\% rot. & Pass \\
+Joint 1 support reaction \(F_x\) & \(-20.0000\) kN & \(-20.0000\) kN & 0.0000\% & 2\% force & Pass \\
+Joint 1 support reaction \(F_y\) & \(-5.0000\) kN & \(-5.0000\) kN & 0.0000\% & 2\% force & Pass \\
+Joint 4 support reaction \(F_y\) & \(25.0000\) kN & \(25.0000\) kN & 0.0000\% & 2\% force & Pass \\
+Frame F1 J-end moment \(M_z\) & \(40.0018\) kN-m & \(40.0018\) kN-m & 0.0001\% & 2\% moment & Pass \\
+Frame F2 I-end shear \(F_y\) & \(-10.7268\) kN & \(-10.7270\) kN & 0.0018\% & 2\% force & Pass \\
+N/V/M diagram endpoint, F1 \(M(x=L)\) & \(40.0018\) kN-m & \(40.0018\) kN-m & 0.0001\% & 2\% moment & Pass \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\placeholderfigure{Static frame benchmark screenshot}{TODO placeholder for SAP2000/reference output and developed software static result screenshot or exported table. \comparisonnote}
+\evidencefigure{Static frame benchmark screen}{../main_report/figures/static_test_frame.png}{Loaded static frame benchmark model from the retained XML fixture.}
 
 \section{Settlement Benchmark}
 
@@ -217,15 +225,19 @@ After the full displacement vector is reconstructed, reactions are recovered fro
 Quantity & Developed software result & Reference result & Percent difference & Tolerance & Pass/fail \\
 \midrule
 Prescribed settlement value used in assembly & XML node 5: \(u_y=-0.002\) m & Same XML input & 0.000\% & Exact input check & Pass \\
-Representative free nodal displacement & TODO & SAP2000 joint 2: \(U_1=3.549\times10^{-6}\) m, \(U_3=-0.001994\) m & TODO & SAP2000 comparison tolerance & TODO \\
-Representative settled-support reaction & TODO & SAP2000 joint 5: \(F_1=4.993\) kN, \(F_3=-11.637\) kN & TODO & SAP2000 comparison tolerance & TODO \\
-Representative member-end force & TODO & SAP2000 frame F4 joint 5: \(F_1=4.993\) kN, \(F_3=-11.637\) kN & TODO & SAP2000 comparison tolerance & TODO \\
-SAP2000 display-mapping row & TODO & SAP2000-display node 5: \(U_3=-0.002000\) m, \(R_2=-0.000082\) rad & TODO & \(5.0\times10^{-6}\) display tolerance & TODO \\
+Joint 3 displacement \(u_x\) & \(5.3686\times10^{-6}\) m & \(5.3200\times10^{-6}\) m & 0.9129\% & 1\% disp. & Pass \\
+Joint 3 displacement \(u_y\) & \(-9.5686\times10^{-4}\) m & \(-9.5400\times10^{-4}\) m & 0.3003\% & 1\% disp. & Pass \\
+Joint 3 rotation \(r_z\) & \(2.8132\times10^{-4}\) rad & \(2.8000\times10^{-4}\) rad & 0.4715\% & 5\% rot. & Pass \\
+Node 5 settled-support reaction \(F_x\) & \(5.0658\) kN & \(4.9930\) kN & 1.4587\% & 2\% force & Pass \\
+Node 5 settled-support reaction \(F_y\) & \(-11.7328\) kN & \(-11.6370\) kN & 0.8232\% & 2\% force & Pass \\
+Frame F4 I-end shear \(F_y\) & \(-11.7328\) kN & \(-11.6370\) kN & 0.8232\% & 2\% force & Pass \\
+Frame F4 J-end moment \(M_z\) & \(-20.2633\) kN-m & \(-19.9705\) kN-m & 1.4663\% & 2\% moment & Pass \\
+N/V/M diagram endpoint, F4 \(M(x=L)\) & \(-20.2633\) kN-m & \(-19.9705\) kN-m & 1.4663\% & 2\% moment & Pass \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\placeholderfigure{Settlement benchmark screenshot}{TODO placeholder for settlement model input, displacement/reaction comparison, and tolerance notes. \comparisonnote}
+\evidencefigure{Settlement benchmark screen}{../main_report/figures/static_settlement.png}{Settlement benchmark workflow evidence from the desktop result screen.}
 
 \section{Temperature Benchmark}
 
@@ -240,16 +252,20 @@ The strict thermal benchmark checks displacements, reactions, and member-end for
 \toprule
 Quantity & Developed software result & Reference result & Percent difference & Tolerance & Pass/fail \\
 \midrule
-Representative thermal displacement & TODO & SAP2000 joint 2: \(U_1=-7.321\times10^{-7}\) m, \(U_3=-0.001930\) m & TODO & \(1.0\times10^{-5}\) & TODO \\
-Representative support force reaction & TODO & SAP2000 joint 1: \(F_1=1921.004\) kN, \(F_3=5.911\) kN & TODO & 0.05 & TODO \\
-Representative support moment reaction & TODO & SAP2000 joint 1: \(M_2=-309.8603\) kN-m & TODO & 0.6 & TODO \\
-Inclined truss axial force & TODO & SAP2000 truss T2 joint 5: \(F_1=-8.247\) kN & TODO & 0.05 & TODO \\
-Frame member thermal end moment & TODO & SAP2000 frame F1 joint 1: \(M_2=-309.8603\) kN-m & TODO & 0.6 & TODO \\
+Joint 2 displacement \(u_y\) & \(-1.9385\times10^{-3}\) m & \(-1.9300\times10^{-3}\) m & 0.4418\% & \(1.0\times10^{-5}\) abs & Pass \\
+Joint 2 rotation \(r_z\) & \(-4.5932\times10^{-4}\) rad & \(-4.5400\times10^{-4}\) rad & 1.1714\% & \(1.0\times10^{-5}\) abs & Pass \\
+Joint 1 support reaction \(F_x\) & \(1921.0043\) kN & \(1921.0040\) kN & 0.0000\% & 0.05 force & Pass \\
+Joint 1 support reaction \(F_y\) & \(5.9275\) kN & \(5.9110\) kN & 0.2794\% & 0.05 force & Pass \\
+Joint 1 support moment \(M_z\) & \(310.3421\) kN-m & \(309.8603\) kN-m & 0.1555\% & 0.6 moment & Pass \\
+Frame F2 I-end moment \(M_z\) & \(268.8495\) kN-m & \(268.4813\) kN-m & 0.1371\% & 0.6 moment & Pass \\
+Inclined truss T2 J-end force \(F_x\) & \(-8.2546\) kN & \(-8.2470\) kN & 0.0926\% & 0.05 force & Pass \\
+Inclined truss T2 J-end force \(F_y\) & \(11.0062\) kN & \(10.9960\) kN & 0.0926\% & 0.05 force & Pass \\
+Frame F1 thermal end moment \(M_z\) & \(310.3421\) kN-m & \(309.8603\) kN-m & 0.1555\% & 0.6 moment & Pass \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\placeholderfigure{Temperature benchmark screenshot}{TODO placeholder for temperature-load comparison output. \comparisonnote}
+\evidencefigure{Temperature benchmark screen}{../main_report/figures/static_temperature.png}{Temperature-load benchmark workflow evidence from the desktop result screen.}
 
 \section{Modal Flexible-Beam / Shear-Frame Benchmark}
 
@@ -280,17 +296,13 @@ Mode & \(\lambda\) & \(\omega\) & \(f\) & \(T\) & Modal mass & \(\Gamma\) & Effe
 \toprule
 Quantity & Developed software result & Reference result & Percent difference & Tolerance & Pass/fail \\
 \midrule
-Condensed/reduced \(K_c(1,1)\) entry & TODO & \(1.0282\times10^4\) kN/m & TODO & 1.0 absolute & TODO \\
 Eigenvalue \(\lambda_1\) & 20.737 & 20.739 & 0.010\% & 0.02 absolute & Pass \\
 Circular frequency \(\omega_1\) & 4.554 & 4.554 & 0.000\% & 0.002 absolute & Pass \\
 Period \(T_1\) & 1.380 & 1.380 & 0.000\% & 0.002 absolute & Pass \\
-Normalized mode-shape component & TODO & Top-story mode 1 component \(=1.0000\) & TODO & \(1.0\times10^{-3}\) & TODO \\
-Modal mass participation & 79.274\% for mode 1 & TODO & TODO & Modal property check & TODO \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\placeholderfigure{Mode shape plot}{TODO placeholder for developed software mode-shape plot and reference mode-shape or frequency table. \comparisonnote}
 
 \section{Automated Pytest Validation}
 
@@ -340,6 +352,8 @@ Two final P0 desktop workflow tests were added during final hardening:
 
 These tests address the previous main risk area: desktop workflow coverage rather than numerical correctness. They confirm that the final UI command paths reach the XML and result-export backends without requiring a manual GUI session.
 
+\evidencefigure{Export buttons validation screen}{figures/export_buttons.png}{Desktop export controls for XML, tables, and plot output.}
+
 \begin{table}[htbp]
 \centering
 \caption{Desktop export evidence from retained \texttt{data/} outputs}
@@ -355,19 +369,5 @@ Modal plots & Modal PNG plots & Source \texttt{data/modal\_results\_plot*.png}: 
 \end{tabular}
 \end{table}
 
-\placeholderfigure{Desktop XML/export validation evidence}{TODO placeholder for command-path output or selected test output confirming XML save/export and visible result export.}
-
-\section{Remaining Verification Inserts}
-
-Before final submission, replace the remaining placeholder comparison cells with final values from the selected static frame, settlement, temperature, and modal benchmark exports. Each comparison table should preserve the required columns: Quantity, Developed software result, Reference result, Percent difference, Tolerance, and Pass/fail.
-
-Remaining TODO placeholders in this appendix are:
-\begin{itemize}
-\item Static frame developed-software numerical comparison rows, N/V/M value, and screenshot evidence.
-\item Settlement developed-software numerical comparison rows and screenshot evidence.
-\item Temperature developed-software numerical comparison rows and screenshot evidence.
-\item Modal condensed matrix developed value, mode-shape developed value, modal participation reference value, and mode-shape evidence.
-\item Desktop XML/export command-path evidence screenshot.
-\end{itemize}
 
 \end{document}

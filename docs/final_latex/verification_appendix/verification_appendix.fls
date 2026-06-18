@@ -1,6 +1,6 @@
-PWD C:\Users\MOHAMMAD UMAIR\Documents\GitHub\CE4011-Final-Project-V2\docs\final_latex\verification_appendix
+PWD c:\Users\MOHAMMAD UMAIR\Documents\GitHub\CE4011-Final-Project-V2\docs\final_latex\verification_appendix
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\MiKTeX\miktex\data\le\pdftex\pdflatex.fmt
-INPUT verification_appendix.tex
+INPUT c:\Users\MOHAMMAD UMAIR\Documents\GitHub\CE4011-Final-Project-V2\docs\final_latex\verification_appendix\verification_appendix.tex
 OUTPUT verification_appendix.log
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex\latex\base\article.cls
@@ -161,6 +161,24 @@ INPUT ..\main_report\figures\main_ui.png
 INPUT ..\main_report\figures\main_ui.png
 INPUT ..\main_report\figures\main_ui.png
 INPUT ..\main_report\figures\main_ui.png
+INPUT .\figures\model_validation_menu.png
+INPUT .\figures\model_validation_menu.png
+INPUT .\figures\model_validation_menu.png
+INPUT .\figures\model_validation_menu.png
+INPUT .\figures\model_validation_menu.png
+INPUT .\figures\model_validation_menu.png
+INPUT .\figures\property_panel.png
+INPUT .\figures\property_panel.png
+INPUT .\figures\property_panel.png
+INPUT .\figures\property_panel.png
+INPUT .\figures\property_panel.png
+INPUT .\figures\property_panel.png
+INPUT .\figures\export_buttons.png
+INPUT .\figures\export_buttons.png
+INPUT .\figures\export_buttons.png
+INPUT .\figures\export_buttons.png
+INPUT .\figures\export_buttons.png
+INPUT .\figures\export_buttons.png
 INPUT ..\main_report\figures\quick_start.png
 INPUT ..\main_report\figures\quick_start.png
 INPUT ..\main_report\figures\quick_start.png
@@ -173,12 +191,6 @@ INPUT ..\main_report\figures\shear_frame_template.png
 INPUT ..\main_report\figures\shear_frame_template.png
 INPUT ..\main_report\figures\shear_frame_template.png
 INPUT ..\main_report\figures\shear_frame_template.png
-INPUT ..\main_report\figures\property_panel.png
-INPUT ..\main_report\figures\property_panel.png
-INPUT ..\main_report\figures\property_panel.png
-INPUT ..\main_report\figures\property_panel.png
-INPUT ..\main_report\figures\property_panel.png
-INPUT ..\main_report\figures\property_panel.png
 INPUT ..\main_report\figures\member_load_assignment.png
 INPUT ..\main_report\figures\member_load_assignment.png
 INPUT ..\main_report\figures\member_load_assignment.png
@@ -305,22 +317,27 @@ INPUT ..\main_report\figures\mode_shapes.png
 INPUT ..\main_report\figures\mode_shapes.png
 INPUT ..\main_report\figures\mode_shapes.png
 INPUT ..\main_report\figures\mode_shapes.png
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmbx10.tfm
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\public\cm\cmti10.tfm
+INPUT ..\main_report\figures\static_test_frame.png
+INPUT ..\main_report\figures\static_test_frame.png
+INPUT ..\main_report\figures\static_test_frame.png
+INPUT ..\main_report\figures\static_settlement.png
+INPUT ..\main_report\figures\static_settlement.png
+INPUT ..\main_report\figures\static_settlement.png
+INPUT ..\main_report\figures\static_temperature.png
+INPUT ..\main_report\figures\static_temperature.png
+INPUT ..\main_report\figures\static_temperature.png
 INPUT ..\main_report\figures\test_suite_output.png
 INPUT ..\main_report\figures\test_suite_output.png
 INPUT ..\main_report\figures\test_suite_output.png
 INPUT ..\main_report\figures\test_suite_output.png
 INPUT ..\main_report\figures\test_suite_output.png
 INPUT ..\main_report\figures\test_suite_output.png
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\tfm\jknappen\ec\tcrm1095.tfm
+INPUT .\figures\export_buttons.png
+INPUT .\figures\export_buttons.png
+INPUT .\figures\export_buttons.png
 INPUT verification_appendix.aux
 INPUT .\verification_appendix.out
 INPUT .\verification_appendix.out
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\tcrm1095.pk
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\MiKTeX\fonts\pk\ljfour\jknappen\ec\dpi600\tcrm1095.pk
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmbx10.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmbx10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmbx12.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmbx12.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmex10.pfb
@@ -339,7 +356,5 @@ INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\a
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmsy10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmsy8.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmsy8.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmti10.pfb
-INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmti10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmtt10.pfb
 INPUT C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\fonts\type1\public\amsfonts\cm\cmtt10.pfb

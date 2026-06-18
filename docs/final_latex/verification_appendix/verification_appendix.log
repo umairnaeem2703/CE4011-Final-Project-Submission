@@ -1,18 +1,15 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.2) (preloaded format=pdflatex 2026.3.13)  18 JUN 2026 19:41
+This is pdfTeX, Version 3.141592653-2.6-1.40.29 (MiKTeX 26.2) (preloaded format=pdflatex 2026.3.13)  18 JUN 2026 21:27
 entering extended mode
  restricted \write18 enabled.
+ file:line:error style messages enabled.
  %&-line parsing enabled.
-**./verification_appendix.tex
-(verification_appendix.tex
+**"c:/Users/MOHAMMAD UMAIR/Documents/GitHub/CE4011-Final-Project-V2/docs/final_latex/verification_appendix/verification_appendix.tex"
+(c:/Users/MOHAMMAD UMAIR/Documents/GitHub/CE4011-Final-Project-V2/docs/final_latex/verification_appendix/verification_appendix.tex
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/base\article.c
-ls
+(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/base\article.cls
 Document Class: article 2025/01/22 v1.4n Standard LaTeX document class
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/base\size11.cl
-o
+(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/base\size11.clo
 File: size11.clo 2025/01/22 v1.4n Standard LaTeX file (size option)
 )
 \c@part=\count275
@@ -26,22 +23,14 @@ File: size11.clo 2025/01/22 v1.4n Standard LaTeX file (size option)
 \abovecaptionskip=\skip49
 \belowcaptionskip=\skip50
 \bibindent=\dimen148
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geome
-try.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geometry.sty
 Package: geometry 2020/01/02 v5.9 Page Geometry
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics\keyva
-l.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics\keyval.sty
 Package: keyval 2022/05/29 v1.15 key=value parser (DPC)
 \KV@toks@=\toks17
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/iftex\ifvtex
-.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/iftex\ifvtex.sty
 Package: ifvtex 2019/10/25 v1.7 ifvtex legacy package. Use iftex instead.
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/iftex\iftex.
-sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/iftex\iftex.sty
 Package: iftex 2024/12/12 v1.0g TeX engine tests
 ))
 \Gm@cnth=\count283
@@ -56,33 +45,21 @@ Package: iftex 2024/12/12 v1.0g TeX engine tests
 \Gm@layouthoffset=\dimen155
 \Gm@layoutvoffset=\dimen156
 \Gm@dimlist=\toks18
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geome
-try.cfg))
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsmat
-h.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/geometry\geometry.cfg)) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsmath.sty
 Package: amsmath 2025/07/09 v2.17z AMS math features
 \@mathmargin=\skip51
 
 For additional information on amsmath, use the `?' option.
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amstex
-t.sty
+(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amstext.sty
 Package: amstext 2024/11/17 v2.01 AMS text
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsgen
-.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsgen.sty
 File: amsgen.sty 1999/11/30 v2.0 generic functions
 \@emptytoks=\toks19
 \ex@=\dimen157
-))
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsbsy
-.sty
+)) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsbsy.sty
 Package: amsbsy 1999/11/29 v1.2d Bold Symbols
 \pmbraise@=\dimen158
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsopn
-.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/amsmath\amsopn.sty
 Package: amsopn 2022/04/08 v2.04 operator names
 )
 \inf@bad=\count286
@@ -132,9 +109,7 @@ LaTeX Info: Redefining \Relbar on input line 970.
 \mathdisplay@stack=\toks23
 LaTeX Info: Redefining \[ on input line 2950.
 LaTeX Info: Redefining \] on input line 2951.
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/booktabs\bookt
-abs.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/booktabs\booktabs.sty
 Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
 \heavyrulewidth=\dimen166
 \lightrulewidth=\dimen167
@@ -153,9 +128,7 @@ Package: booktabs 2020/01/12 v1.61803398 Publication quality tables
 \@thisruleclass=\count300
 \@lastruleclass=\count301
 \@thisrulewidth=\dimen178
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/tools\array.st
-y
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/tools\array.sty
 Package: array 2025/09/25 v2.6n Tabular extension package (FMi)
 \col@sep=\dimen179
 \ar@mcellbox=\box55
@@ -164,9 +137,7 @@ Package: array 2025/09/25 v2.6n Tabular extension package (FMi)
 \extratabsurround=\skip54
 \backup@length=\skip55
 \ar@cellbox=\box56
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/tools\longtabl
-e.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/tools\longtable.sty
 Package: longtable 2025-10-13 v4.24 Multi-page Table package (DPC)
 \LTleft=\skip56
 \LTright=\skip57
@@ -184,23 +155,15 @@ Package: longtable 2025-10-13 v4.24 Multi-page Table package (DPC)
 \c@LT@tables=\count305
 \c@LT@chunks=\count306
 \LT@p@ftn=\toks25
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/xcolor\xcolor.
-sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/xcolor\xcolor.sty
 Package: xcolor 2024/09/29 v3.02 LaTeX color extensions (UK)
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\c
-olor.cfg
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\color.cfg
 File: color.cfg 2016/01/02 v1.6 sample color configuration
 )
 Package xcolor Info: Driver file: pdftex.def on input line 274.
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics-def\p
-dftex.def
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics-def\pdftex.def
 File: pdftex.def 2025/09/29 v1.2d Graphics/color driver for pdftex
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics\mathc
-olor.ltx)
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics\mathcolor.ltx)
 Package xcolor Info: Model `cmy' substituted by `cmy0' on input line 1349.
 Package xcolor Info: Model `hsb' substituted by `rgb' on input line 1353.
 Package xcolor Info: Model `RGB' extended on input line 1365.
@@ -210,90 +173,54 @@ Package xcolor Info: Model `tHsb' substituted by `hsb' on input line 1369.
 Package xcolor Info: Model `HSB' substituted by `hsb' on input line 1370.
 Package xcolor Info: Model `Gray' substituted by `gray' on input line 1371.
 Package xcolor Info: Model `wave' substituted by `hsb' on input line 1372.
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hyper
-ref.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hyperref.sty
 Package: hyperref 2026-01-29 v7.01p Hypertext links for LaTeX
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/kvsetkeys\kvse
-tkeys.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/kvsetkeys\kvsetkeys.sty
 Package: kvsetkeys 2022-10-05 v1.19 Key value parser (HO)
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/kvdefinekeys
-\kvdefinekeys.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/kvdefinekeys\kvdefinekeys.sty
 Package: kvdefinekeys 2019-12-19 v1.6 Define keys (HO)
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/pdfescape\pd
-fescape.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/pdfescape\pdfescape.sty
 Package: pdfescape 2019/12/09 v1.15 Implements pdfTeX's escape features (HO)
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/ltxcmds\ltxc
-mds.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/ltxcmds\ltxcmds.sty
 Package: ltxcmds 2023-12-04 v1.26 LaTeX kernel commands for general use (HO)
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/pdftexcmds\p
-dftexcmds.sty
-Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO
-)
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/infwarerr\in
-fwarerr.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/pdftexcmds\pdftexcmds.sty
+Package: pdftexcmds 2020-06-27 v0.33 Utility functions of pdfTeX for LuaTeX (HO)
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/infwarerr\infwarerr.sty
 Package: infwarerr 2019/12/03 v1.5 Providing info/warning/error messages (HO)
 )
 Package pdftexcmds Info: \pdf@primitive is available.
 Package pdftexcmds Info: \pdf@ifprimitive is available.
 Package pdftexcmds Info: \pdfdraftmode found.
-))
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hycolor\hycolo
-r.sty
+)) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hycolor\hycolor.sty
 Package: hycolor 2020-01-27 v1.10 Color options for hyperref/bookmark (HO)
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\namer
-ef.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\nameref.sty
 Package: nameref 2026-01-29 v2.58 Cross-referencing by name of section
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/refcount\refco
-unt.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/refcount\refcount.sty
 Package: refcount 2019/12/15 v3.6 Data extraction from label references (HO)
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/gettitlestri
-ng\gettitlestring.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/gettitlestring\gettitlestring.sty
 Package: gettitlestring 2019/12/15 v1.6 Cleanup title references (HO)
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/kvoptions\kvop
-tions.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/kvoptions\kvoptions.sty
 Package: kvoptions 2022-06-15 v3.15 Key value format for package options (HO)
 ))
 \c@section@level=\count307
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/etoolbox\etool
-box.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/etoolbox\etoolbox.sty
 Package: etoolbox 2025/10/02 v2.5m e-TeX tools for LaTeX (JAW)
 \etb@tempcnta=\count308
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/stringenc\st
-ringenc.sty
-Package: stringenc 2019/11/29 v1.12 Convert strings between diff. encodings (HO
-)
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/stringenc\stringenc.sty
+Package: stringenc 2019/11/29 v1.12 Convert strings between diff. encodings (HO)
 )
 \@linkdim=\dimen182
 \Hy@linkcounter=\count309
 \Hy@pagecounter=\count310
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\pd1en
-c.def
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\pd1enc.def
 File: pd1enc.def 2026-01-29 v7.01p Hyperref: PDFDocEncoding definition (HO)
 Now handling font encoding PD1 ...
 ... no UTF-8 mapping file for font encoding PD1
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/intcalc\intc
-alc.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/intcalc\intcalc.sty
 Package: intcalc 2019/12/15 v1.3 Expandable calculations with integers (HO)
 )
 \Hy@SavedSpaceFactor=\count311
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\puenc
-.def
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\puenc.def
 File: puenc.def 2026-01-29 v7.01p Hyperref: PDF Unicode definition (HO)
 Now handling font encoding PU ...
 ... no UTF-8 mapping file for font encoding PU
@@ -306,22 +233,16 @@ Package hyperref Info: Backreferencing OFF on input line 4221.
 Package hyperref Info: Implicit mode ON; LaTeX internals redefined.
 Package hyperref Info: Bookmarks ON on input line 4468.
 \c@Hy@tempcnt=\count312
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/url\url.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/url\url.sty
 \Urlmuskip=\muskip18
 Package: url 2013/09/16  ver 3.4  Verb mode for urls, etc.
 )
 LaTeX Info: Redefining \url on input line 4807.
 \XeTeXLinkMargin=\dimen183
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/bitset\bitse
-t.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/bitset\bitset.sty
 Package: bitset 2019/12/09 v1.3 Handle bit-vector datatype (HO)
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/bigintcalc\b
-igintcalc.sty
-Package: bigintcalc 2019/12/15 v1.5 Expandable calculations on big integers (HO
-)
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/bigintcalc\bigintcalc.sty
+Package: bigintcalc 2019/12/15 v1.5 Expandable calculations on big integers (HO)
 ))
 \Fld@menulength=\count313
 \Field@Width=\dimen184
@@ -338,53 +259,34 @@ Package hyperref Info: PDF/A mode OFF on input line 6114.
 \c@Hfootnote=\count316
 )
 Package hyperref Info: Driver (autodetected): hpdftex.
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hpdft
-ex.def
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/hyperref\hpdftex.def
 File: hpdftex.def 2026-01-29 v7.01p Hyperref driver for pdfTeX
 \Fld@listcount=\count317
 \c@bookmark@seq@number=\count318
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/rerunfilecheck
-\rerunfilecheck.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/rerunfilecheck\rerunfilecheck.sty
 Package: rerunfilecheck 2025-06-21 v1.11 Rerun checks for auxiliary files (HO)
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/uniquecounte
-r\uniquecounter.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/generic/uniquecounter\uniquecounter.sty
 Package: uniquecounter 2019/12/15 v1.4 Provide unlimited unique counter (HO)
 )
-Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 2
-84.
+Package uniquecounter Info: New unique counter `rerunfilecheck' on input line 284.
 )
 \Hy@SectionHShift=\skip60
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graph
-icx.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphicx.sty
 Package: graphicx 2024/12/31 v1.2e Enhanced LaTeX Graphics (DPC,SPQR)
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graph
-ics.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics\graphics.sty
 Package: graphics 2024/08/06 v1.4g Standard LaTeX Graphics (DPC,SPQR)
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics\trig.
-sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics\trig.sty
 Package: trig 2023/12/02 v1.11 sin cos tan (DPC)
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\g
-raphics.cfg
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/graphics-cfg\graphics.cfg
 File: graphics.cfg 2016/06/04 v1.11 sample graphics configuration
 )
 Package graphics Info: Driver file: pdftex.def on input line 106.
 )
 \Gin@req@height=\dimen186
 \Gin@req@width=\dimen187
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/caption\captio
-n.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/caption\caption.sty
 Package: caption 2023/08/05 v3.6o Customizing captions (AR)
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/caption\captio
-n3.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/caption\caption3.sty
 Package: caption3 2023/07/31 v2.4d caption3 kernel (AR)
 \caption@tempdima=\dimen188
 \captionmargin=\dimen189
@@ -400,17 +302,11 @@ Package caption Info: Standard document class detected.
 \c@continuedfloat=\count320
 Package caption Info: hyperref package is loaded.
 Package caption Info: longtable package is loaded.
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/caption\ltcapt
-ion.sty
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/caption\ltcaption.sty
 Package: ltcaption 2021/01/08 v1.4c longtable captions (AR)
-))
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/placeins\place
-ins.sty
+)) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/placeins\placeins.sty
 Package: placeins 2005/04/18  v 2.2
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3ba
-ckend-pdftex.def
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/l3backend\l3backend-pdftex.def
 File: l3backend-pdftex.def 2025-10-09 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count321
 ) (verification_appendix.aux)
@@ -469,9 +365,7 @@ LaTeX Font Info:    ... okay on input line 58.
 * \@reversemarginfalse
 * (1in=72.27pt=25.4mm, 1cm=28.453pt)
 
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\su
-pp-pdf.mkii
+(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/context/base/mkii\supp-pdf.mkii
 [Loading MPS to PDF converter (version 2006.09.02).]
 \scratchcounter=\count322
 \scratchdimen=\dimen196
@@ -484,15 +378,10 @@ pp-pdf.mkii
 \MPnumerator=\count326
 \makeMPintoPDFobject=\count327
 \everyMPtoPDFconversion=\toks27
-)
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\e
-pstopdf-base.sty
+) (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/epstopdf-pkg\epstopdf-base.sty
 Package: epstopdf-base 2020-01-24 v2.11 Base part for package epstopdf
-Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 4
-85.
-
-(C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/00miktex\epsto
-pdf-sys.cfg
+Package epstopdf-base Info: Redefining graphics rule for `.eps' on input line 485.
+ (C:\Users\MOHAMMAD UMAIR\AppData\Local\Programs\MiKTeX\tex/latex/00miktex\epstopdf-sys.cfg
 File: epstopdf-sys.cfg 2021/03/18 v2.0 Configuration of epstopdf for MiKTeX
 ))
 Package hyperref Info: Link coloring OFF on input line 58.
@@ -506,245 +395,187 @@ Package caption Info: End \AtBeginDocument code.
 ignored: Infinite glue shrinkage found in box being split [1
 
 {C:/Users/MOHAMMAD UMAIR/AppData/Local/MiKTeX/fonts/map/pdftex/pdftex.map}] [2]
-<../main_report/figures/main_ui.png, id=66, 1443.89438pt x 773.89125pt>
+<../main_report/figures/main_ui.png, id=62, 1443.89438pt x 773.89125pt>
 File: ../main_report/figures/main_ui.png Graphic file (type png)
 <use ../main_report/figures/main_ui.png>
-Package pdftex.def Info: ../main_report/figures/main_ui.png  used on input line
- 127.
+Package pdftex.def Info: ../main_report/figures/main_ui.png  used on input line 129.
 (pdftex.def)             Requested size: 436.67474pt x 234.04674pt.
-<../main_report/figures/quick_start.png, id=68, 1443.14156pt x 773.13844pt>
+<figures/model_validation_menu.png, id=64, 347.79938pt x 148.30406pt>
+File: figures/model_validation_menu.png Graphic file (type png)
+<use figures/model_validation_menu.png>
+Package pdftex.def Info: figures/model_validation_menu.png  used on input line 130.
+(pdftex.def)             Requested size: 436.69582pt x 186.21008pt.
+<figures/property_panel.png, id=65, 1431.84938pt x 694.84593pt>
+File: figures/property_panel.png Graphic file (type png)
+<use figures/property_panel.png>
+Package pdftex.def Info: figures/property_panel.png  used on input line 131.
+(pdftex.def)             Requested size: 436.6588pt x 211.90118pt.
+<figures/export_buttons.png, id=66, 841.64438pt x 641.39626pt>
+File: figures/export_buttons.png Graphic file (type png)
+<use figures/export_buttons.png>
+Package pdftex.def Info: figures/export_buttons.png  used on input line 132.
+(pdftex.def)             Requested size: 331.68176pt x 252.76642pt.
+<../main_report/figures/quick_start.png, id=67, 1443.14156pt x 773.13844pt>
 File: ../main_report/figures/quick_start.png Graphic file (type png)
 <use ../main_report/figures/quick_start.png>
-Package pdftex.def Info: ../main_report/figures/quick_start.png  used on input 
-line 128.
+Package pdftex.def Info: ../main_report/figures/quick_start.png  used on input line 133.
 (pdftex.def)             Requested size: 436.66728pt x 233.93704pt.
-<../main_report/figures/shear_frame_template.png, id=69, 1439.3775pt x 776.9025
-pt>
+<../main_report/figures/shear_frame_template.png, id=68, 1439.3775pt x 776.9025pt>
 File: ../main_report/figures/shear_frame_template.png Graphic file (type png)
 <use ../main_report/figures/shear_frame_template.png>
-Package pdftex.def Info: ../main_report/figures/shear_frame_template.png  used 
-on input line 129.
+Package pdftex.def Info: ../main_report/figures/shear_frame_template.png  used on input line 134.
 (pdftex.def)             Requested size: 436.67043pt x 235.6924pt.
-<../main_report/figures/property_panel.png, id=70, 1443.89438pt x 776.9025pt>
-File: ../main_report/figures/property_panel.png Graphic file (type png)
-<use ../main_report/figures/property_panel.png>
-Package pdftex.def Info: ../main_report/figures/property_panel.png  used on inp
-ut line 130.
-(pdftex.def)             Requested size: 436.67474pt x 234.95741pt.
-<../main_report/figures/member_load_assignment.png, id=71, 1443.14156pt x 773.8
-9125pt>
+<../main_report/figures/member_load_assignment.png, id=69, 1443.14156pt x 773.89125pt>
 File: ../main_report/figures/member_load_assignment.png Graphic file (type png)
-
 <use ../main_report/figures/member_load_assignment.png>
-Package pdftex.def Info: ../main_report/figures/member_load_assignment.png  use
-d on input line 131.
+Package pdftex.def Info: ../main_report/figures/member_load_assignment.png  used on input line 135.
 (pdftex.def)             Requested size: 436.66728pt x 234.16481pt.
-<../main_report/figures/support_assignment.png, id=72, 1443.14156pt x 773.13844
-pt>
+<../main_report/figures/support_assignment.png, id=70, 1443.14156pt x 773.13844pt>
 File: ../main_report/figures/support_assignment.png Graphic file (type png)
 <use ../main_report/figures/support_assignment.png>
-Package pdftex.def Info: ../main_report/figures/support_assignment.png  used on
- input line 132.
+Package pdftex.def Info: ../main_report/figures/support_assignment.png  used on input line 136.
 (pdftex.def)             Requested size: 436.66728pt x 233.93704pt.
-<../main_report/figures/mass_assignments.png, id=73, 1443.89438pt x 773.89125pt
->
+<../main_report/figures/mass_assignments.png, id=71, 1443.89438pt x 773.89125pt>
 File: ../main_report/figures/mass_assignments.png Graphic file (type png)
 <use ../main_report/figures/mass_assignments.png>
-Package pdftex.def Info: ../main_report/figures/mass_assignments.png  used on i
-nput line 133.
+Package pdftex.def Info: ../main_report/figures/mass_assignments.png  used on input line 137.
 (pdftex.def)             Requested size: 436.67474pt x 234.04674pt.
-<../main_report/figures/succesful_model_validation.png, id=74, 1443.14156pt x 7
-72.38562pt>
-File: ../main_report/figures/succesful_model_validation.png Graphic file (type 
-png)
+<../main_report/figures/succesful_model_validation.png, id=72, 1443.14156pt x 772.38562pt>
+File: ../main_report/figures/succesful_model_validation.png Graphic file (type png)
 <use ../main_report/figures/succesful_model_validation.png>
-Package pdftex.def Info: ../main_report/figures/succesful_model_validation.png 
- used on input line 134.
+Package pdftex.def Info: ../main_report/figures/succesful_model_validation.png  used on input line 138.
 (pdftex.def)             Requested size: 436.66728pt x 233.70924pt.
-<../main_report/figures/unsuccessful_validation.png, id=75, 1439.3775pt x 776.9
-025pt>
-File: ../main_report/figures/unsuccessful_validation.png Graphic file (type png
-)
+<../main_report/figures/unsuccessful_validation.png, id=73, 1439.3775pt x 776.9025pt>
+File: ../main_report/figures/unsuccessful_validation.png Graphic file (type png)
 <use ../main_report/figures/unsuccessful_validation.png>
-Package pdftex.def Info: ../main_report/figures/unsuccessful_validation.png  us
-ed on input line 135.
+Package pdftex.def Info: ../main_report/figures/unsuccessful_validation.png  used on input line 139.
 (pdftex.def)             Requested size: 436.67043pt x 235.6924pt.
-<../main_report/figures/static_frame_result_summary.png, id=76, 1443.14156pt x 
-775.39688pt>
-File: ../main_report/figures/static_frame_result_summary.png Graphic file (type
- png)
+<../main_report/figures/static_frame_result_summary.png, id=74, 1443.14156pt x 775.39688pt>
+File: ../main_report/figures/static_frame_result_summary.png Graphic file (type png)
 <use ../main_report/figures/static_frame_result_summary.png>
-Package pdftex.def Info: ../main_report/figures/static_frame_result_summary.png
-  used on input line 136.
+Package pdftex.def Info: ../main_report/figures/static_frame_result_summary.png  used on input line 140.
 (pdftex.def)             Requested size: 436.66728pt x 234.62039pt.
-<../main_report/figures/static_dof_map.png, id=77, 1443.14156pt x 772.38562pt>
+<../main_report/figures/static_dof_map.png, id=75, 1443.14156pt x 772.38562pt>
 File: ../main_report/figures/static_dof_map.png Graphic file (type png)
 <use ../main_report/figures/static_dof_map.png>
-Package pdftex.def Info: ../main_report/figures/static_dof_map.png  used on inp
-ut line 137.
+Package pdftex.def Info: ../main_report/figures/static_dof_map.png  used on input line 141.
 (pdftex.def)             Requested size: 436.66728pt x 233.70924pt.
-<../main_report/figures/static_k.png, id=78, 1443.89438pt x 773.13844pt>
+<../main_report/figures/static_k.png, id=76, 1443.89438pt x 773.13844pt>
 File: ../main_report/figures/static_k.png Graphic file (type png)
 <use ../main_report/figures/static_k.png>
-Package pdftex.def Info: ../main_report/figures/static_k.png  used on input lin
-e 138.
+Package pdftex.def Info: ../main_report/figures/static_k.png  used on input line 142.
 (pdftex.def)             Requested size: 436.67474pt x 233.81906pt.
-<../main_report/figures/static_test_frame.png, id=79, 1443.89438pt x 776.14969p
-t>
+<../main_report/figures/static_test_frame.png, id=77, 1443.89438pt x 776.14969pt>
 File: ../main_report/figures/static_test_frame.png Graphic file (type png)
 <use ../main_report/figures/static_test_frame.png>
-Package pdftex.def Info: ../main_report/figures/static_test_frame.png  used on 
-input line 139.
+Package pdftex.def Info: ../main_report/figures/static_test_frame.png  used on input line 143.
 (pdftex.def)             Requested size: 436.67474pt x 234.72975pt.
-<../main_report/figures/static_frame_deformed.png, id=80, 1441.63594pt x 773.13
-844pt>
+<../main_report/figures/static_frame_deformed.png, id=78, 1441.63594pt x 773.13844pt>
 File: ../main_report/figures/static_frame_deformed.png Graphic file (type png)
 <use ../main_report/figures/static_frame_deformed.png>
-Package pdftex.def Info: ../main_report/figures/static_frame_deformed.png  used
- on input line 140.
+Package pdftex.def Info: ../main_report/figures/static_frame_deformed.png  used on input line 144.
 (pdftex.def)             Requested size: 436.67366pt x 234.18477pt.
-<../main_report/figures/static_frame_axial.png, id=81, 1443.14156pt x 773.89125
-pt>
+<../main_report/figures/static_frame_axial.png, id=79, 1443.14156pt x 773.89125pt>
 File: ../main_report/figures/static_frame_axial.png Graphic file (type png)
 <use ../main_report/figures/static_frame_axial.png>
-Package pdftex.def Info: ../main_report/figures/static_frame_axial.png  used on
- input line 141.
+Package pdftex.def Info: ../main_report/figures/static_frame_axial.png  used on input line 145.
 (pdftex.def)             Requested size: 436.66728pt x 234.16481pt.
-<../main_report/figures/static_frame_shear.png, id=82, 1443.14156pt x 776.14969
-pt>
+<../main_report/figures/static_frame_shear.png, id=80, 1443.14156pt x 776.14969pt>
 File: ../main_report/figures/static_frame_shear.png Graphic file (type png)
 <use ../main_report/figures/static_frame_shear.png>
-Package pdftex.def Info: ../main_report/figures/static_frame_shear.png  used on
- input line 142.
+Package pdftex.def Info: ../main_report/figures/static_frame_shear.png  used on input line 146.
 (pdftex.def)             Requested size: 436.66728pt x 234.84818pt.
-<../main_report/figures/static_frame_moment.png, id=83, 1441.63594pt x 775.3968
-8pt>
+<../main_report/figures/static_frame_moment.png, id=81, 1441.63594pt x 775.39688pt>
 File: ../main_report/figures/static_frame_moment.png Graphic file (type png)
 <use ../main_report/figures/static_frame_moment.png>
-Package pdftex.def Info: ../main_report/figures/static_frame_moment.png  used o
-n input line 143.
+Package pdftex.def Info: ../main_report/figures/static_frame_moment.png  used on input line 147.
 (pdftex.def)             Requested size: 436.67366pt x 234.86885pt.
-<../main_report/figures/static_frame_individual_member.png, id=84, 1443.14156pt
- x 775.39688pt>
-File: ../main_report/figures/static_frame_individual_member.png Graphic file (t
-ype png)
+<../main_report/figures/static_frame_individual_member.png, id=82, 1443.14156pt x 775.39688pt>
+File: ../main_report/figures/static_frame_individual_member.png Graphic file (type png)
 <use ../main_report/figures/static_frame_individual_member.png>
-Package pdftex.def Info: ../main_report/figures/static_frame_individual_member.
-png  used on input line 144.
+Package pdftex.def Info: ../main_report/figures/static_frame_individual_member.png  used on input line 148.
 (pdftex.def)             Requested size: 436.66728pt x 234.62039pt.
-<../main_report/figures/static_settlement.png, id=85, 1441.63594pt x 773.89125p
-t>
+<../main_report/figures/static_settlement.png, id=83, 1441.63594pt x 773.89125pt>
 File: ../main_report/figures/static_settlement.png Graphic file (type png)
 <use ../main_report/figures/static_settlement.png>
-Package pdftex.def Info: ../main_report/figures/static_settlement.png  used on 
-input line 145.
+Package pdftex.def Info: ../main_report/figures/static_settlement.png  used on input line 149.
 (pdftex.def)             Requested size: 436.67366pt x 234.4128pt.
-<../main_report/figures/static_temperature.png, id=86, 1439.3775pt x 776.14969p
-t>
+<../main_report/figures/static_temperature.png, id=84, 1439.3775pt x 776.14969pt>
 File: ../main_report/figures/static_temperature.png Graphic file (type png)
 <use ../main_report/figures/static_temperature.png>
-Package pdftex.def Info: ../main_report/figures/static_temperature.png  used on
- input line 146.
+Package pdftex.def Info: ../main_report/figures/static_temperature.png  used on input line 150.
 (pdftex.def)             Requested size: 436.67043pt x 235.46402pt.
-<../main_report/figures/modal_analysis_settings.png, id=87, 1443.89438pt x 776.
-14969pt>
-File: ../main_report/figures/modal_analysis_settings.png Graphic file (type png
-)
+<../main_report/figures/modal_analysis_settings.png, id=85, 1443.89438pt x 776.14969pt>
+File: ../main_report/figures/modal_analysis_settings.png Graphic file (type png)
 <use ../main_report/figures/modal_analysis_settings.png>
-Package pdftex.def Info: ../main_report/figures/modal_analysis_settings.png  us
-ed on input line 147.
+Package pdftex.def Info: ../main_report/figures/modal_analysis_settings.png  used on input line 151.
 (pdftex.def)             Requested size: 436.67474pt x 234.72975pt.
-<../main_report/figures/modal_analysis_results_summary.png, id=88, 1440.13031pt
- x 776.14969pt>
-File: ../main_report/figures/modal_analysis_results_summary.png Graphic file (t
-ype png)
+<../main_report/figures/modal_analysis_results_summary.png, id=86, 1440.13031pt x 776.14969pt>
+File: ../main_report/figures/modal_analysis_results_summary.png Graphic file (type png)
 <use ../main_report/figures/modal_analysis_results_summary.png>
-Package pdftex.def Info: ../main_report/figures/modal_analysis_results_summary.
-png  used on input line 148.
+Package pdftex.def Info: ../main_report/figures/modal_analysis_results_summary.png  used on input line 152.
 (pdftex.def)             Requested size: 436.65709pt x 235.33374pt.
-<../main_report/figures/modal_stiffness_matrix.png, id=89, 1439.3775pt x 250.68
-657pt>
+<../main_report/figures/modal_stiffness_matrix.png, id=87, 1439.3775pt x 250.68657pt>
 File: ../main_report/figures/modal_stiffness_matrix.png Graphic file (type png)
-
 <use ../main_report/figures/modal_stiffness_matrix.png>
-Package pdftex.def Info: ../main_report/figures/modal_stiffness_matrix.png  use
-d on input line 149.
+Package pdftex.def Info: ../main_report/figures/modal_stiffness_matrix.png  used on input line 153.
 (pdftex.def)             Requested size: 436.67043pt x 76.0519pt.
-<../main_report/figures/modal_mass_matrix.png, id=90, 1443.89438pt x 336.50719p
-t>
+<../main_report/figures/modal_mass_matrix.png, id=88, 1443.89438pt x 336.50719pt>
 File: ../main_report/figures/modal_mass_matrix.png Graphic file (type png)
 <use ../main_report/figures/modal_mass_matrix.png>
-Package pdftex.def Info: ../main_report/figures/modal_mass_matrix.png  used on 
-input line 150.
+Package pdftex.def Info: ../main_report/figures/modal_mass_matrix.png  used on input line 154.
 (pdftex.def)             Requested size: 436.67474pt x 101.76933pt.
-<../main_report/figures/mode_shapes.png, id=91, 1443.14156pt x 772.38562pt>
+<../main_report/figures/mode_shapes.png, id=89, 1443.14156pt x 772.38562pt>
 File: ../main_report/figures/mode_shapes.png Graphic file (type png)
 <use ../main_report/figures/mode_shapes.png>
-Package pdftex.def Info: ../main_report/figures/mode_shapes.png  used on input 
-line 151.
+Package pdftex.def Info: ../main_report/figures/mode_shapes.png  used on input line 155.
 (pdftex.def)             Requested size: 436.66728pt x 233.70924pt.
-
-[3 <../main_report/figures/main_ui.png>] [4 <../main_report/figures/quick_start
-.png> <../main_report/figures/shear_frame_template.png>] [5 <../main_report/fig
-ures/property_panel.png> <../main_report/figures/member_load_assignment.png>]
-[6 <../main_report/figures/support_assignment.png> <../main_report/figures/mass
-_assignments.png>] [7 <../main_report/figures/succesful_model_validation.png> <
-../main_report/figures/unsuccessful_validation.png>] [8 <../main_report/figures
-/static_frame_result_summary.png> <../main_report/figures/static_dof_map.png>]
-[9 <../main_report/figures/static_k.png> <../main_report/figures/static_test_fr
-ame.png>] [10 <../main_report/figures/static_frame_deformed.png> <../main_repor
-t/figures/static_frame_axial.png>] [11 <../main_report/figures/static_frame_she
-ar.png> <../main_report/figures/static_frame_moment.png>] [12 <../main_report/f
-igures/static_frame_individual_member.png> <../main_report/figures/static_settl
-ement.png>] [13 <../main_report/figures/static_temperature.png> <../main_report
-/figures/modal_analysis_settings.png>] [14 <../main_report/figures/modal_analys
-is_results_summary.png> <../main_report/figures/modal_stiffness_matrix.png> <..
-/main_report/figures/modal_mass_matrix.png>] [15 <../main_report/figures/mode_s
-hapes.png>] [16] [17] [18] [19]
-<../main_report/figures/test_suite_output.png, id=226, 1108.14pt x 416.30531pt>
-
+ [3 <../main_report/figures/main_ui.png>] [4 <./figures/model_validation_menu.png> <./figures/property_panel.png>] [5 <./figures/export_buttons.png> <../main_report/figures/quick_start.png>] [6 <../main_report/figures/shear_frame_template.png> <../main_report/figures/member_load_assignment.png>] [7 <../main_report/figures/support_assignment.png> <../main_report/figures/mass_assignments.png>] [8 <../main_report/figures/succesful_model_validation.png> <../main_report/figures/unsuccessful_validation.png>] [9 <../main_report/figures/static_frame_result_summary.png> <../main_report/figures/static_dof_map.png>] [10 <../main_report/figures/static_k.png> <../main_report/figures/static_test_frame.png>] [11 <../main_report/figures/static_frame_deformed.png> <../main_report/figures/static_frame_axial.png>] [12 <../main_report/figures/static_frame_shear.png> <../main_report/figures/static_frame_moment.png>] [13 <../main_report/figures/static_frame_individual_member.png> <../main_report/figures/static_settlement.png>] [14 <../main_report/figures/static_temperature.png> <../main_report/figures/modal_analysis_settings.png>] [15 <../main_report/figures/modal_analysis_results_summary.png> <../main_report/figures/modal_stiffness_matrix.png> <../main_report/figures/modal_mass_matrix.png>]
+File: ../main_report/figures/static_test_frame.png Graphic file (type png)
+<use ../main_report/figures/static_test_frame.png>
+Package pdftex.def Info: ../main_report/figures/static_test_frame.png  used on input line 210.
+(pdftex.def)             Requested size: 436.67474pt x 234.72975pt.
+ [16 <../main_report/figures/mode_shapes.png>] [17]
+File: ../main_report/figures/static_settlement.png Graphic file (type png)
+<use ../main_report/figures/static_settlement.png>
+Package pdftex.def Info: ../main_report/figures/static_settlement.png  used on input line 240.
+(pdftex.def)             Requested size: 436.67366pt x 234.4128pt.
+File: ../main_report/figures/static_temperature.png Graphic file (type png)
+<use ../main_report/figures/static_temperature.png>
+Package pdftex.def Info: ../main_report/figures/static_temperature.png  used on input line 268.
+(pdftex.def)             Requested size: 436.67043pt x 235.46402pt.
+ [18] [19] [20]
+<../main_report/figures/test_suite_output.png, id=229, 1108.14pt x 416.30531pt>
 File: ../main_report/figures/test_suite_output.png Graphic file (type png)
 <use ../main_report/figures/test_suite_output.png>
-Package pdftex.def Info: ../main_report/figures/test_suite_output.png  used on 
-input line 308.
+Package pdftex.def Info: ../main_report/figures/test_suite_output.png  used on input line 320.
 (pdftex.def)             Requested size: 436.67061pt x 164.04813pt.
 
-ignored: Infinite glue shrinkage found in box being split [20 <../main_report/figures/te
-st_suite_output.png>] [21] [22] (verification_appendix.aux)
+ignored: Infinite glue shrinkage found in box being split [21 <../main_report/figures/test_suite_output.png>]
+File: figures/export_buttons.png Graphic file (type png)
+<use figures/export_buttons.png>
+Package pdftex.def Info: figures/export_buttons.png  used on input line 355.
+(pdftex.def)             Requested size: 331.68176pt x 252.76642pt.
+ [22] [23] (verification_appendix.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
  ***********
 Package rerunfilecheck Info: File `verification_appendix.out' has not changed.
-(rerunfilecheck)             Checksum: 0353DC57A74E92B08D93C5FF07D1E0CA;2036.
+(rerunfilecheck)             Checksum: A6DBD9734164086BCB957781F3BDA5AB;1835.
  ) 
 Here is how much of TeX's memory you used:
- 11984 strings out of 467867
- 198956 string characters out of 5413942
- 629505 words of memory out of 5000000
- 40669 multiletter control sequences out of 15000+600000
- 634645 words of font info for 64 fonts, out of 8000000 for 9000
+ 11989 strings out of 467867
+ 199476 string characters out of 5413942
+ 633541 words of memory out of 5000000
+ 40674 multiletter control sequences out of 15000+600000
+ 633650 words of font info for 61 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 75i,12n,79p,531b,599s stack positions out of 10000i,1000n,20000p,200000b,200000s
- <C:\Users\MOHAMMAD UMAIR\AppData\Local\MiKTeX\fonts/pk/ljfour/jknappen/ec/dp
-i600\tcrm1095.pk><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/t
-ype1/public/amsfonts/cm/cmbx10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Progr
-ams/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/MOHAMMAD UMAIR/A
-ppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmex10.pfb><C:/User
-s/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/c
-mmi10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/pu
-blic/amsfonts/cm/cmmi8.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKT
-eX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Lo
-cal/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/MOHAMMAD
- UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr8.pfb><C
-:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfont
-s/cm/cmsy10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/ty
-pe1/public/amsfonts/cm/cmsy8.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Program
-s/MiKTeX/fonts/type1/public/amsfonts/cm/cmti10.pfb><C:/Users/MOHAMMAD UMAIR/App
-Data/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
-Output written on verification_appendix.pdf (22 pages, 1602896 bytes).
+ 75i,12n,79p,584b,598s stack positions out of 10000i,1000n,20000p,200000b,200000s
+<C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmbx12.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmex10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmmi8.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr12.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmr8.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy10.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmsy8.pfb><C:/Users/MOHAMMAD UMAIR/AppData/Local/Programs/MiKTeX/fonts/type1/public/amsfonts/cm/cmtt10.pfb>
+Output written on verification_appendix.pdf (23 pages, 1755289 bytes).
 PDF statistics:
- 320 PDF objects out of 1000 (max. 8388607)
- 76 named destinations out of 1000 (max. 500000)
- 219 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 310 PDF objects out of 1000 (max. 8388607)
+ 77 named destinations out of 1000 (max. 500000)
+ 221 words of extra memory for PDF output out of 10000 (max. 10000000)
 
