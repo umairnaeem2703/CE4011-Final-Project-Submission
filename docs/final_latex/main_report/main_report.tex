@@ -8,6 +8,7 @@
 \usepackage{xcolor}
 \usepackage[hidelinks]{hyperref}
 \usepackage{caption}
+\usepackage{graphicx}
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{4pt}
@@ -27,10 +28,46 @@
 \end{figure}
 }
 
+\newcommand{\reportfigure}[3]{%
+\begin{figure}[htbp]
+\centering
+\IfFileExists{figures/#2}{%
+\includegraphics[width=0.92\linewidth,height=0.34\textheight,keepaspectratio]{figures/#2}%
+}{%
+\fbox{%
+\begin{minipage}[c][0.11\textheight][c]{0.88\linewidth}
+\centering
+\textbf{#1}\\[0.4em]
+\small #3\\[0.4em]
+\textit{TODO: Insert final screenshot, diagram, or verified table capture.}
+\end{minipage}}%
+}
+\caption{#1}
+\end{figure}
+}
+
+\newcommand{\diagramfigure}[3]{%
+\begin{figure}[htbp]
+\centering
+\IfFileExists{#2}{%
+\includegraphics[width=0.95\linewidth,height=0.30\textheight,keepaspectratio]{#2}%
+}{%
+\fbox{%
+\begin{minipage}[c][0.11\textheight][c]{0.88\linewidth}
+\centering
+\textbf{#1}\\[0.4em]
+\small #3\\[0.4em]
+\textit{Render the matching PlantUML source in \texttt{../diagrams/plantuml/}.}
+\end{minipage}}%
+}
+\caption{#1}
+\end{figure}
+}
+
 \newcommand{\codeterm}[1]{\texttt{#1}}
 
-\title{\textbf{CE 4011 Static and Modal Structural Analysis Desktop MVP}}
-\author{Final Project Report}
+\title{\textbf{CE 4011 Static and Modal Structural Analysis\\Desktop MVP}}
+\author{Final Project Report\\[0.5em]Mohammad Umair Naeem\\2416055}
 \date{Spring Semester 2025--2026}
 
 \begin{document}

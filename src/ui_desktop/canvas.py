@@ -308,7 +308,7 @@ class ModelCanvas(ttk.Frame):
         self.selected_id = node_id
         self.selected_node_ids = {node_id}
         self.selected_element_ids.clear()
-        self._apply_selection_highlight()
+        self._refresh_selection_display()
         self.selection_callback("node", self.builder.model.nodes.get(node_id))
 
     def select_element(self, element_id: str) -> None:
@@ -316,7 +316,7 @@ class ModelCanvas(ttk.Frame):
         self.selected_id = element_id
         self.selected_node_ids.clear()
         self.selected_element_ids = {element_id}
-        self._apply_selection_highlight()
+        self._refresh_selection_display()
         self.selection_callback("element", self.builder.model.elements.get(element_id))
 
     def clear_selection(self, *, notify: bool = True) -> None:
@@ -324,7 +324,7 @@ class ModelCanvas(ttk.Frame):
         self.selected_id = None
         self.selected_node_ids.clear()
         self.selected_element_ids.clear()
-        self._apply_selection_highlight()
+        self._refresh_selection_display()
         if notify:
             self.selection_callback(None, None)
 
@@ -699,7 +699,7 @@ class ModelCanvas(ttk.Frame):
         if count == 0:
             self.selected_kind = None
             self.selected_id = None
-            self._apply_selection_highlight()
+            self._refresh_selection_display()
             self.selection_callback(None, None)
             self.status_callback("Selection cleared.")
             return
@@ -707,7 +707,7 @@ class ModelCanvas(ttk.Frame):
             node_id = next(iter(self.selected_node_ids))
             self.selected_kind = "node"
             self.selected_id = node_id
-            self._apply_selection_highlight()
+            self._refresh_selection_display()
             self.selection_callback("node", self.builder.model.nodes.get(node_id))
             self.status_callback(f"Selected node {node_id}.")
             return
@@ -715,14 +715,14 @@ class ModelCanvas(ttk.Frame):
             element_id = next(iter(self.selected_element_ids))
             self.selected_kind = "element"
             self.selected_id = element_id
-            self._apply_selection_highlight()
+            self._refresh_selection_display()
             self.selection_callback("element", self.builder.model.elements.get(element_id))
             self.status_callback(f"Selected member {element_id}.")
             return
 
         self.selected_kind = "multi"
         self.selected_id = None
-        self._apply_selection_highlight()
+        self._refresh_selection_display()
         selection = {
             "nodes": sorted(self.selected_node_ids),
             "elements": sorted(self.selected_element_ids),
@@ -1169,8 +1169,9 @@ class ModelCanvas(ttk.Frame):
         end_node = self.builder.model.nodes[end_node_id]
         x1, y1 = self._model_to_canvas(start_node.x, start_node.y)
         x2, y2 = self._model_to_canvas(end_node.x, end_node.y)
-        color = MEMBER_COLOR if element_type == "frame" else MEMBER_TRUSS_COLOR
-        item_id = self.canvas.create_line(x1, y1, x2, y2, fill=color, width=3)
+        color = SELECTED_COLOR if element_id in self.selected_element_ids else self._element_color(element_type)
+        width = 5 if element_id in self.selected_element_ids else 3
+        item_id = self.canvas.create_line(x1, y1, x2, y2, fill=color, width=width)
         self.canvas.tag_lower(item_id)
         self.item_to_element_id[item_id] = element_id
         self.element_id_to_item[element_id] = item_id
@@ -1476,17 +1477,30 @@ class ModelCanvas(ttk.Frame):
         self.canvas.create_line(0, self.view_origin_y, width, self.view_origin_y, fill=GRID_AXIS_COLOR, tags="grid")
         self.canvas.create_line(self.view_origin_x, 0, self.view_origin_x, height, fill=GRID_AXIS_COLOR, tags="grid")
 
+    def _refresh_selection_display(self) -> None:
+        if self.canvas.find_all():
+            self.redraw_model()
+        else:
+            self._apply_selection_highlight()
+
     def _apply_selection_highlight(self) -> None:
         for node_id, item_id in self.node_id_to_item.items():
             node = self.builder.model.nodes.get(node_id)
             fill, outline, width = self._node_style(node)
             self.canvas.itemconfigure(item_id, fill=fill, outline=outline, width=width)
-        for item_id in self.element_id_to_item.values():
-            self.canvas.itemconfigure(item_id, width=3)
+        for element_id, item_id in self.element_id_to_item.items():
+            element = self.builder.model.elements.get(element_id)
+            color = self._element_color(getattr(element, "type", "frame"))
+            self.canvas.itemconfigure(item_id, fill=color, width=3)
 
         for node_id in self.selected_node_ids:
             if node_id in self.node_id_to_item:
-                self.canvas.itemconfigure(self.node_id_to_item[node_id], outline=SELECTED_COLOR, width=4)
+                self.canvas.itemconfigure(
+                    self.node_id_to_item[node_id],
+                    fill=SELECTED_COLOR,
+                    outline=SELECTED_COLOR,
+                    width=4,
+                )
         for element_id in self.selected_element_ids:
             if element_id in self.element_id_to_item:
                 self.canvas.itemconfigure(self.element_id_to_item[element_id], width=5, fill=SELECTED_COLOR)
@@ -1495,6 +1509,9 @@ class ModelCanvas(ttk.Frame):
         if node is not None and getattr(node, "is_hinged", False):
             return "", NODE_OUTLINE_COLOR, 2
         return NODE_FILL_COLOR, "", 1
+
+    def _element_color(self, element_type: str) -> str:
+        return MEMBER_COLOR if element_type == "frame" else MEMBER_TRUSS_COLOR
 
     def _find_node_near_canvas_point(self, canvas_x: float, canvas_y: float) -> int | None:
         for node_id, item_id in self.node_id_to_item.items():

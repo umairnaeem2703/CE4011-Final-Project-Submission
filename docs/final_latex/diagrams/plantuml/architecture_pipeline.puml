@@ -1,0 +1,62 @@
+@startuml
+title Static + Modal Desktop MVP Architecture Pipeline
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam rectangle {
+  BorderColor #333333
+  BackgroundColor #FFFFFF
+}
+
+left to right direction
+
+rectangle "Tkinter UI\ncanvas, tables,\nproperty panels" as UI
+rectangle "Templates\nblank model,\n2D shear frame" as Templates
+rectangle "XML\nsave, load,\nexport" as XML
+
+rectangle "ModelBuilder\nprogrammatic and UI\nmodel creation API" as Builder
+rectangle "StructuralModel\nnodes, elements,\nmaterials, sections,\nsupports, loads,\nmasses" as Model
+rectangle "StructuralValidator\nshared model checks" as Validator
+rectangle "DOF + matrix assembly\nDOF map, K, M, F,\nKff, Mff, Ff" as Assembly
+
+rectangle "Static solver\nKff uf = Ff" as StaticSolver
+rectangle "Modal solver\nK phi = lambda M phi" as ModalSolver
+
+rectangle "StaticResults\nDOF map, K, Kff,\nF, Ff, displacements,\nreactions, forces,\nN/V/M data" as StaticResults
+rectangle "ModalResults\nK, M, eigenvalues,\nfrequencies, periods,\nmode shapes,\nparticipation data" as ModalResults
+
+rectangle "Tables\neducational result views" as Tables
+rectangle "Plots\nmatplotlib previews,\ndeformed shape,\nN/V/M, modes" as Plots
+rectangle "Export\nXML, TXT, CSV, PNG\nwhere implemented" as Export
+
+UI --> Builder
+Templates --> Builder
+XML --> Builder
+Builder --> Model
+Model --> Validator
+Validator --> Assembly
+Assembly --> StaticSolver
+Assembly --> ModalSolver
+StaticSolver --> StaticResults
+ModalSolver --> ModalResults
+StaticResults --> Tables
+StaticResults --> Plots
+StaticResults --> Export
+ModalResults --> Tables
+ModalResults --> Plots
+ModalResults --> Export
+Model --> XML : reproducible model data
+
+note bottom of StaticSolver
+Final submitted scope:
+Static Analysis only for this branch.
+end note
+
+note bottom of ModalSolver
+Final submitted scope:
+Modal Analysis only for this branch.
+Massless stiffness-coupled DOFs are condensed.
+end note
+
+@enduml

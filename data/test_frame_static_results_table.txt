@@ -1,0 +1,9 @@
+Item	Value
+Model	New Model
+Load Case	LC1
+Nodes	4
+Members	4
+Displacement Rows	4
+Reaction Rows	2
+Member Force Groups	4
+Units	kN_m_tonne

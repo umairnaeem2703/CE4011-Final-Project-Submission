@@ -4,6 +4,7 @@
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{xcolor}
+\usepackage{graphicx}
 \usepackage[hidelinks]{hyperref}
 
 \setlength{\parindent}{0pt}
@@ -24,7 +25,7 @@
 }
 
 \title{\textbf{CE 4011 Static + Modal Desktop MVP Installation Manual}}
-\author{Final Documentation Package}
+\author{Final Documentation Package\\[0.5em]Mohammad Umair Naeem\\2416055}
 \date{Spring Semester 2025--2026}
 
 \begin{document}
@@ -58,7 +59,11 @@ The core numerical solver is designed around the Python standard library. Matplo
 
 Place the repository in a normal user-writable folder. Open a terminal in the repository root, which is the folder containing \texttt{README.md}, \texttt{src/}, \texttt{tests/}, and \texttt{data/}.
 
-\placeholderfigure{Terminal setup screenshot}{Screenshot of the terminal opened at the repository root after obtaining the project folder.}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/terminal_setup_screenshot.png}
+\caption{Terminal opened at the repository root after obtaining the project folder.}
+\end{figure}
 
 \section{Virtual Environment Setup}
 
@@ -87,7 +92,11 @@ From the repository root, run:
 python -m src.ui_desktop.app
 \end{verbatim}
 
-\placeholderfigure{Launched application screenshot}{Screenshot of the Tkinter desktop application immediately after launch.}
+\begin{figure}[htbp]
+\centering
+\includegraphics[width=0.92\linewidth]{figures/launched_app_screenshot.png}
+\caption{Tkinter desktop application immediately after launch.}
+\end{figure}
 
 \section{Test Command}
 
@@ -144,4 +153,3 @@ python -m pytest tests/
 Use the desktop application to create or load a model, assign supports/properties/loads/masses, validate the model, run Static or Modal analysis, inspect result tables and plots, and export visible result data where implemented. RSA and THA are future-extension work only.
 
 \end{document}
-

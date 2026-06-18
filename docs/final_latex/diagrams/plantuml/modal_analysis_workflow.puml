@@ -1,0 +1,39 @@
+@startuml
+title Modal Analysis Workflow
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+start
+:Load or edit model with stiffness\nproperties, supports, and masses;
+:Build StructuralModel through ModelBuilder;
+:Run StructuralValidator;
+
+if (Model valid?) then (yes)
+  :Create DOF map and free DOFs;
+  :Assemble stiffness matrix K;
+  :Assemble lumped/element mass matrix M;
+  :Select active dynamic DOFs;
+  :Classify zero-mass DOFs;
+
+  if (Massless DOFs stiffness-coupled?) then (yes)
+    :Condense massless coupled DOFs;\nKeff = Kaa - Kam Kmm^-1 Kma;\nMeff = Maa;
+  else (no)
+    :Remove only disconnected zero-mass DOFs;
+  endif
+
+  :Solve generalized eigenproblem\nK phi = lambda M phi;
+  :Compute circular frequencies,\nfrequencies, and periods;
+  :Normalize mode shapes;
+  :Compute modal mass, participation factors,\neffective modal mass, and ratios;
+  :Create ModalResults;
+  :Display K, M, reduced/condensed matrices,\neigenvalues, frequencies, periods,\nmode shapes, modal properties;
+  :Plot mode shapes;
+  :Export visible tables/plots\nwhere implemented;
+else (no)
+  :Show validation messages;\nreturn to model editing;
+endif
+
+stop
+@enduml

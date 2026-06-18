@@ -1,10 +1,9 @@
 \section{Introduction}
 
-The objective of the CE 4011 term project is to develop structural analysis software that combines a computational engine, an organized user interface for model definition, and post-processing tools for interpreting results. This project implements that objective as a Python desktop MVP for two-dimensional structural models.
+The CE 4011 term project requires structural analysis software with a computational engine, a usable input workflow, post-processing tools, object-oriented design, and validation. This project implements that requirement as a Python Tkinter desktop MVP for educational two-dimensional Static Analysis and Modal Analysis.
 
-The submitted application is intended for educational structural analysis. Its main value is not only solving models, but also exposing the intermediate data normally hidden inside commercial programs: degree-of-freedom maps, stiffness and mass matrices, load vectors, reduced systems, displacements, reactions, member forces, modal properties, and visualization data. These outputs support classroom checking, debugging, and comparison with hand or commercial reference solutions.
+The software is designed for transparent learning rather than commercial-scale production modeling. It exposes the model data, DOF map, stiffness and mass matrices, reduced systems, force vectors, displacement and reaction results, member force recovery, N/V/M diagram data, and modal participation quantities so students can trace how idealized structures become numerical results.
 
-\placeholderfigure{Main UI}{Final Tkinter desktop window showing the canvas, object tree, property editing area, analysis actions, and result access controls.}
+\reportfigure{Main UI}{main_ui.png}{Final Tkinter desktop window showing the canvas, object tree, property editing area, analysis actions, and result access controls.}
 
-The final submitted desktop scope is Static Analysis and Modal Analysis. Response Spectrum Analysis and Time-History Analysis are discussed only as future extensions because they are not part of the final user-facing desktop MVP.
-
+The final submitted desktop scope is Static Analysis and Modal Analysis only. Response Spectrum Analysis and Time-History Analysis may remain in the repository as deferred future work, but they are not claimed as submitted desktop workflows. Detailed derivations, screenshot evidence, and benchmark tables are moved to the verification appendix to keep this main report within the CE 4011 main-body limit.

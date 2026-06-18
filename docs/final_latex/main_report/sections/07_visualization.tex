@@ -1,14 +1,7 @@
 \section{Result Visualization and Post-Processing}
 
-Post-processing is provided through Tkinter result windows and matplotlib plots. Plotting functions consume the model and result objects; they do not perform solver math. This separation keeps the visual layer replaceable and makes plotted data traceable to numerical result containers.
+Post-processing is provided through Tkinter result windows and matplotlib plots. Plotting functions consume the model and result objects; they do not perform solver math. This separation keeps each plotted result traceable to \codeterm{StaticResults}, \codeterm{ModalResults}, and post-processor data.
 
-\placeholderfigure{Static deformed shape}{Screenshot placeholder for the static deformed-shape plot.}
+\reportfigure{Results and visualization}{static_frame_individual_member.png}{Representative result-view visualization. Detailed static, modal, N/V/M, and export screenshots are provided in the verification appendix.}
 
-\placeholderfigure{N/V/M diagram}{Screenshot placeholder for axial force, shear force, and bending moment diagrams.}
-
-\placeholderfigure{Mode shape plot}{Screenshot placeholder for a modal mode-shape plot.}
-
-\placeholderfigure{Export buttons}{Screenshot placeholder for visible table and plot export controls.}
-
-The main educational visual outputs are model preview, deformed shape, internal force diagrams, and modal mode shapes. Result tables provide the numerical counterpart of these plots, including matrices, vectors, displacements, reactions, member forces, and modal participation data.
-
+The main visual outputs are model preview, static deformed shape, axial/shear/moment diagrams (with individual member intermediate internal forces and displacement inspection), and modal mode shapes. Result tables provide the numerical counterpart: matrices, vectors, DOF labels, displacements, reactions, member forces, diagram values, eigenvalues, frequencies, periods, mode-shape components, and participation quantities. Visible result tables can be exported as text or CSV where implemented, visible plots can be exported as PNG where implemented, and XML remains the reproducible model format.

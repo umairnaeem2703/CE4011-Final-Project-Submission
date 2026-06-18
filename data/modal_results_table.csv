@@ -1,0 +1,4 @@
+Mode,Eigenvalue (ω²),Omega (ω),Frequency,Period,Modal Mass,Participation Factor,Effective Modal Mass,Mass Participation Ratio,Modal Damping Ratio
+1,20.737,4.554,0.725,1.38,1,6.296,39.637,79.274%,5%
+2,209.652,14.479,2.304,0.434,1,2.821,7.958,15.917%,5%
+3,807.042,28.408,4.521,0.221,1,1.551,2.404,4.809%,8.073%

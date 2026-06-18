@@ -1,0 +1,24 @@
+\begin{thebibliography}{1}
+
+\bibitem{ce4011project}
+{CE 4011 Course Staff}.
+\newblock Ce 4011 term project requirements, 2026.
+\newblock Special Topics in Civil Engineering: Structural Analysis Software
+  Development, Spring Semester 2025--2026.
+
+\bibitem{projectarchitecture}
+{Project Repository}.
+\newblock Architecture documentation for ce 4011 static + modal mvp, 2026.
+\newblock Repository root ARCHITECTURE.md.
+
+\bibitem{projectreadme}
+{Project Repository}.
+\newblock Ce 4011 static + modal structural analysis mvp readme, 2026.
+\newblock Repository root README.md.
+
+\bibitem{projectmathspec}
+{Project Repository}.
+\newblock Mathematical specification for static and modal desktop mvp, 2026.
+\newblock Repository root MATH\_SPEC.md.
+
+\end{thebibliography}

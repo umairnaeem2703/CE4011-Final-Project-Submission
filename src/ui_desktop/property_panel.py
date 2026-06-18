@@ -125,7 +125,7 @@ class PropertyPanel(ttk.LabelFrame):
     def show_selection(self, kind: str | None, obj: object | None) -> None:
         self.selected_kind = kind
         self.selected_object = obj
-        if self.current_command in ("Select / Inspect", "Draw Node", "Replicate"):
+        if self.current_command in ("Select / Inspect", "Draw Node", "Draw Member", "Replicate"):
             self.show_command(self.current_command)
         elif self.current_command == "Assign Diaphragm":
             self.show_command("Assign Diaphragm")
@@ -162,19 +162,33 @@ class PropertyPanel(ttk.LabelFrame):
         ttk.Button(self, text="Add Node", command=self._add_node).grid(row=2, column=0, sticky="ew", pady=(8, 0))
         if self.selected_kind == "node" and self.selected_object is not None:
             node = self.selected_object
+            self.selected_node_id_var.set(str(node.id))
+            self.selected_node_x_var.set(f"{node.x:.6g}")
+            self.selected_node_y_var.set(f"{node.y:.6g}")
             self.selected_node_hinge_var.set(bool(getattr(node, "is_hinged", False)))
             self._sync_draw_node_hinge()
             editor = ttk.LabelFrame(self, text="Selected Node", padding=6)
             editor.grid(row=3, column=0, sticky="ew", pady=(8, 0))
             editor.columnconfigure(1, weight=1)
-            ttk.Label(editor, text=f"Node {node.id}").grid(row=0, column=0, columnspan=2, sticky="w", pady=2)
+            ttk.Label(editor, text="Node id").grid(row=0, column=0, sticky="w", pady=2)
+            ttk.Entry(editor, textvariable=self.selected_node_id_var, width=12).grid(row=0, column=1, sticky="ew", pady=2)
+            ttk.Button(editor, text="Apply Node ID", command=self._apply_node_id).grid(
+                row=1, column=0, columnspan=2, sticky="ew", pady=(4, 0)
+            )
+            ttk.Label(editor, text="x").grid(row=2, column=0, sticky="w", pady=(8, 2))
+            ttk.Entry(editor, textvariable=self.selected_node_x_var, width=12).grid(row=2, column=1, sticky="ew", pady=(8, 2))
+            ttk.Label(editor, text="y").grid(row=3, column=0, sticky="w", pady=2)
+            ttk.Entry(editor, textvariable=self.selected_node_y_var, width=12).grid(row=3, column=1, sticky="ew", pady=2)
+            ttk.Button(editor, text="Apply Coordinates", command=self._apply_node_coordinates).grid(
+                row=4, column=0, columnspan=2, sticky="ew", pady=(4, 0)
+            )
             ttk.Checkbutton(
                 editor,
                 text="Hinged node (release frame end moments)",
                 variable=self.selected_node_hinge_var,
                 command=self._apply_node_hinge_from_draw_node,
-            ).grid(row=1, column=0, columnspan=2, sticky="w", pady=(6, 2))
-            reset_row = 4
+            ).grid(row=5, column=0, columnspan=2, sticky="w", pady=(6, 2))
+            reset_row = 6
         else:
             self._sync_draw_node_hinge()
             reset_row = 3
@@ -209,8 +223,28 @@ class PropertyPanel(ttk.LabelFrame):
         ttk.Label(form, text="Angle").grid(row=5, column=0, sticky="w", pady=2)
         ttk.Entry(form, textvariable=self.angle_var, width=12).grid(row=5, column=1, sticky="ew", pady=2)
         ttk.Button(self, text="Draw From Start", command=self._draw_member).grid(row=2, column=0, sticky="ew", pady=(8, 0))
+        if self.selected_kind == "element" and self.selected_object is not None:
+            element = self.selected_object
+            self.selected_member_id_var.set(element.id)
+            self.member_material_var.set(element.material.id)
+            self.member_section_var.set(element.section.id)
+            self.member_type_var.set(element.type)
+            editor = ttk.LabelFrame(self, text="Selected Member", padding=6)
+            editor.grid(row=3, column=0, sticky="ew", pady=(8, 0))
+            editor.columnconfigure(1, weight=1)
+            ttk.Label(editor, text="Member id").grid(row=0, column=0, sticky="w", pady=2)
+            ttk.Entry(editor, textvariable=self.selected_member_id_var, width=12).grid(row=0, column=1, sticky="ew", pady=2)
+            ttk.Button(editor, text="Apply Member ID", command=self._apply_member_id).grid(
+                row=1, column=0, columnspan=2, sticky="ew", pady=(4, 0)
+            )
+            ttk.Button(editor, text="Apply Member Properties", command=self._apply_member_properties).grid(
+                row=2, column=0, columnspan=2, sticky="ew", pady=(8, 0)
+            )
+            reset_row = 4
+        else:
+            reset_row = 3
         ttk.Button(self, text="Reset to Default", command=self._reset_current_command).grid(
-            row=3,
+            row=reset_row,
             column=0,
             sticky="ew",
             pady=(6, 0),

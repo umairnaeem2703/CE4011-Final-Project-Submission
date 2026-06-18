@@ -1,0 +1,76 @@
+@startuml
+title Compact Domain Model and Results
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+
+left to right direction
+hide members
+
+package "Structural model" {
+  class StructuralModel
+  class Node
+  class Element
+  class Material
+  class Section
+  class Support
+  class LumpedMass
+}
+
+package "Loads" {
+  abstract class Load
+  class NodalLoad
+  abstract class MemberLoad
+  class PointLoad
+  class UniformlyDL
+  class TemperatureL
+  class LoadCase
+}
+
+package "Analysis results" {
+  class StaticResults
+  class ModalResults
+}
+
+StructuralModel *-- Node
+StructuralModel *-- Element
+StructuralModel *-- Material
+StructuralModel *-- Section
+StructuralModel *-- Support
+StructuralModel *-- LoadCase
+StructuralModel *-- LumpedMass
+
+Element --> Node : node i / node j
+Element --> Material
+Element --> Section
+Support --> Node
+LumpedMass --> Node
+
+Load <|-- NodalLoad
+Load <|-- MemberLoad
+MemberLoad <|-- PointLoad
+MemberLoad <|-- UniformlyDL
+MemberLoad <|-- TemperatureL
+LoadCase *-- Load
+NodalLoad --> Node
+MemberLoad --> Element
+
+StaticResults ..> StructuralModel : reports static state
+ModalResults ..> StructuralModel : reports modal state
+
+note bottom of StaticResults
+K, Kff, F, Ff, DOF map,
+displacements, reactions,
+member forces, N/V/M data
+end note
+
+note bottom of ModalResults
+K, M, eigenvalues,
+frequencies, periods,
+mode shapes, modal properties
+end note
+
+@enduml

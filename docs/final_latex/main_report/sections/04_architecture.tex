@@ -1,40 +1,22 @@
 \section{Software Architecture and Object-Oriented Design}
 
-The architecture follows a single analysis pipeline:
+The architecture follows one object-oriented pipeline:
 \begin{center}
 \begin{tabular}{c}
-Tkinter canvas/templates/XML \\
+Tkinter canvas/tables/templates/XML \\
 \(\rightarrow\) \codeterm{ModelBuilder}
 \(\rightarrow\) \codeterm{StructuralModel}
 \(\rightarrow\) DOF/K/M/F assembly \\
 \(\rightarrow\) Static or Modal solver
 \(\rightarrow\) result object
-\(\rightarrow\) plots/tables/export
+\(\rightarrow\) tables/plots/export
 \end{tabular}
 \end{center}
 
-\placeholderfigure{Architecture diagram}{Pipeline from Tkinter canvas, templates, and XML through ModelBuilder, StructuralModel, assembly, solvers, result objects, and post-processing/export.}
+This design keeps responsibilities separated. \codeterm{ModelBuilder} creates models from programmatic calls, templates, XML, tables, and desktop actions. \codeterm{StructuralModel} stores nodes, elements, materials, sections, supports, loads, masses, releases, and validation state; it does not solve or plot. \codeterm{StructuralValidator} centralizes validity checks. DOF and assembly modules create \(K\), \(M\), \(F\), and reduced systems. Static and Modal solvers operate on assembled matrices and return result objects. UI and controller code coordinate user actions and display results without owning solver math.
 
-\placeholderfigure{Static class diagram}{Final class diagram showing major responsibilities and relationships among ModelBuilder, StructuralModel, StructuralValidator, assembly modules, solvers, result objects, post-processor, visualizer, Controller, and Tkinter views.}
+\diagramfigure{Architecture pipeline}{../diagrams/rendered/architecture_pipeline.png}{Pipeline from Tkinter canvas, tables, templates, and XML through ModelBuilder, StructuralModel, validation, assembly, Static and Modal solvers, result objects, visualization, and export.}
 
-\begin{table}[htbp]
-\centering
-\caption{Main responsibilities}
-\begin{tabular}{p{0.28\linewidth}p{0.58\linewidth}}
-\toprule
-Component & Responsibility \\
-\midrule
-\codeterm{ModelBuilder} & Creates models from programmatic calls, templates, tables, XML, and graphical input. \\
-\codeterm{StructuralModel} & Stores nodes, elements, supports, properties, loads, masses, releases, and validation state. It does not solve or plot. \\
-\codeterm{StructuralValidator} & Centralizes model validation checks so UI code does not duplicate structural rules. \\
-Assembly modules & Create DOF maps, stiffness matrices, force vectors, mass matrices, and reduced systems. \\
-Static and Modal solvers & Operate on assembled matrices/vectors and return traceable result objects. \\
-\codeterm{Controller} & Coordinates user actions without owning solver math or Tkinter-specific drawing logic. \\
-Visualization/export & Consume models and result objects to create tables, plots, XML exports, text/CSV exports, and PNG plot exports. \\
-\bottomrule
-\end{tabular}
-\end{table}
+\diagramfigure{Domain model classes}{../diagrams/rendered/domain_model_classes.png}{Compact class diagram for StructuralModel, Node, Element, Material, Section, Support, LoadCase, load classes, LumpedMass, StaticResults, and ModalResults.}
 
-The solver does not branch by structure family. A shear frame template, a truss model, a cantilever, and a SAP2000 benchmark all become ordinary instances of the same model representation before assembly. This design keeps the computational engine reusable and makes verification tests more meaningful because every model family exercises the same numerical path.
-
-XML is the reproducibility and interchange backend. Users are not expected to hand-write XML; the desktop workflow creates, saves, loads, and exports models through the same backend representation.
+Frames, trusses, shear frames, cantilevers, and benchmark problems all become ordinary model instances before assembly. This avoids duplicate solver logic by model family and makes validation stronger because each model type exercises the same Static and Modal computational path.

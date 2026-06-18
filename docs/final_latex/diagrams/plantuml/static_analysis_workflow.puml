@@ -1,0 +1,34 @@
+@startuml
+title Static Analysis Workflow
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+start
+:Load or edit model through Tkinter,\ntemplates, tables, or XML;
+:Build StructuralModel through ModelBuilder;
+:Run StructuralValidator;
+
+if (Model valid?) then (yes)
+  :Create DOF map;
+  :Identify free and restrained DOFs;
+  :Assemble global stiffness K;
+  :Assemble global load vector F;
+  :Apply support conditions and settlements;
+  :Form reduced system Kff uf = Ff;
+  :Solve for free displacements uf;
+  :Reconstruct full displacement vector u;
+  :Recover reactions R = K u - F;
+  :Recover member-end forces in local axes;
+  :Generate axial N, shear V,\nand bending M data;
+  :Create StaticResults;
+  :Display DOF map, K, Kff, F, Ff,\ndisplacements, reactions, forces;
+  :Plot deformed shape and N/V/M diagrams;
+  :Export visible TXT/CSV/PNG results\nwhere implemented;
+else (no)
+  :Show validation messages;\nreturn to model editing;
+endif
+
+stop
+@enduml

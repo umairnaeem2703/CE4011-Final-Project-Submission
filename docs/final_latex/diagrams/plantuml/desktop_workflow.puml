@@ -1,0 +1,42 @@
+@startuml
+title Desktop User Workflow
+
+skinparam monochrome true
+skinparam shadowing false
+skinparam defaultFontName Arial
+
+start
+if (Starting point?) then (Blank Model)
+  :Create blank model;
+elseif (2D Shear Frame)
+  :Generate template model;
+else (Open XML)
+  :Load XML fixture or saved model;
+endif
+
+:Draw or inspect geometry\non the Tkinter canvas;
+:Assign materials and sections;
+:Assign supports;
+:Assign static loads for Static Analysis;
+:Assign lumped masses and diaphragms\nfor Modal Analysis where needed;
+:Validate model;
+
+if (Validation passes?) then (yes)
+  if (Analysis choice?) then (Static)
+    :Run Static Analysis;
+    :Inspect DOF map, K, Kff, F, Ff,\ndisplacements, reactions,\nmember forces, N/V/M;
+  else (Modal)
+    :Run Modal Analysis;
+    :Inspect K, M, reduced matrices,\neigenvalues, frequencies, periods,\nmode shapes and participation data;
+  endif
+
+  :Inspect plots;
+  :Export TXT/CSV table data\nand PNG plots where implemented;
+  :Save/export XML for reproducibility;
+else (no)
+  :Read validation messages;
+  :Edit geometry/properties/supports/loads/masses;
+endif
+
+stop
+@enduml
