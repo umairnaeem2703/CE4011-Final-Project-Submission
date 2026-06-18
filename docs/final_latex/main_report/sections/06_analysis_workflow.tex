@@ -1,20 +1,46 @@
-\section{Static and Modal Analysis Workflow}
+\section{Analysis Procedure}
 
-\subsection{Static Analysis}
+\subsection{Static Analysis Workflow}
 
-The static workflow starts after a valid \codeterm{StructuralModel} is available. The validator checks the model, the DOF manager classifies free and restrained DOFs, the global stiffness and load vector are assembled, and the reduced system \(K_{ff}u_f=F_f\) is solved. The full displacement vector is reconstructed, reactions are computed, member-end forces are recovered, and diagram data is generated for visualization.
+Static analysis begins only after a \codeterm{StructuralModel} exists and validation succeeds. The desktop UI collects user input, but the numerical path is performed by model, assembly, solver, and post-processing modules:
 
-\placeholderfigure{Static result summary}{Screenshot placeholder for the static result summary table showing displacements, reactions, and member-force access.}
+\begin{enumerate}
+\item The desktop command obtains the current model from \codeterm{ModelBuilder}.
+\item \codeterm{StructuralValidator} checks that the model is structurally meaningful.
+\item The DOF optimizer assigns equation numbers and identifies free and restrained DOFs.
+\item The matrix assembler forms the global stiffness matrix \(K\), force vector \(F\), reduced stiffness matrix \(K_{ff}\), and reduced force vector \(F_f\).
+\item The static linear system is solved for free displacements.
+\item The full displacement vector is reconstructed and reactions are recovered from \(R=Ku-F\).
+\item The post-processor recovers local member-end forces and N/V/M diagram data.
+\item A \codeterm{StaticResults} object is passed to result tables, plots, and export helpers.
+\end{enumerate}
 
-\placeholderfigure{Static DOF map / K / Kff table}{Screenshot placeholder for educational static tables exposing the DOF map, full stiffness matrix, and reduced stiffness matrix.}
+\reportfigure{Static result summary}{static_frame_result_summary.png}{Screenshot placeholder for the static result summary table showing displacements, reactions, and member-force access.}
 
-\subsection{Modal Analysis}
+\reportfigure{Static DOF map}{static_dof_map.png}{Screenshot placeholder for the educational static DOF map table.}
 
-The modal workflow assembles stiffness and mass information from the same model pipeline. Active dynamic DOFs are selected, disconnected zero-mass DOFs may be removed, and stiffness-coupled massless DOFs are condensed before solving the eigenproblem. The result object stores eigenvalues, frequencies, periods, normalized mode shapes, modal masses, participation factors, effective modal masses, and participation ratios.
+\reportfigure{Static stiffness matrix}{static_k.png}{Screenshot placeholder for the full or reduced static stiffness matrix table.}
 
-\placeholderfigure{Modal result summary}{Screenshot placeholder for modal eigenvalue, frequency, period, and participation summary tables.}
+The static result path is educational by design. A student can compare the visible displacement and reaction results with the governing reduced system, then inspect member-end forces and force diagrams to verify equilibrium and sign conventions.
 
-\placeholderfigure{Modal K/M/reduced matrix view}{Screenshot placeholder for modal stiffness, mass, and reduced or condensed dynamic matrix tables.}
+\subsection{Modal Analysis Workflow}
 
-Both workflows preserve intermediate data for educational inspection and test verification. This is intentional: the project is designed for students to trace the calculation path from model definition to result plots.
+Modal analysis uses the same input model but adds mass assembly and dynamic DOF handling. The workflow is:
 
+\begin{enumerate}
+\item The model is validated and DOFs are numbered.
+\item The stiffness assembler builds the full stiffness matrix needed for the dynamic system.
+\item The dynamic assembler forms the active dynamic stiffness and mass matrices using the selected mass representation.
+\item Dynamic DOFs with mass are retained; disconnected zero-mass DOFs may be removed.
+\item Stiffness-coupled massless DOFs are statically condensed before solving the eigenproblem.
+\item \codeterm{ModalSolver} solves \(K\phi=\lambda M\phi\), computes frequencies and periods, normalizes mode shapes, and evaluates modal participation quantities.
+\item A \codeterm{ModalResults} object is displayed through modal summary tables, matrix views, and mode-shape plots.
+\end{enumerate}
+
+\reportfigure{Modal result summary}{modal_analysis_results_summary.png}{Screenshot placeholder for modal eigenvalue, frequency, period, and participation summary tables.}
+
+\reportfigure{Modal stiffness matrix}{modal_stiffness_matrix.png}{Screenshot placeholder for modal stiffness or reduced stiffness matrix table.}
+
+\reportfigure{Modal mass matrix}{modal_mass_matrix.png}{Screenshot placeholder for modal mass or reduced mass matrix table.}
+
+Both workflows preserve intermediate data for reports, classroom inspection, and automated tests. This traceability is why the software returns result objects rather than only drawing a final plot or printing a final answer.

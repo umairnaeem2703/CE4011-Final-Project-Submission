@@ -8,6 +8,7 @@
 \usepackage{xcolor}
 \usepackage[hidelinks]{hyperref}
 \usepackage{caption}
+\usepackage{graphicx}
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{4pt}
@@ -23,6 +24,24 @@
 \small #2\\[0.4em]
 \textit{TODO: Insert final screenshot, diagram, or verified table capture.}
 \end{minipage}}
+\caption{#1}
+\end{figure}
+}
+
+\newcommand{\reportfigure}[3]{%
+\begin{figure}[htbp]
+\centering
+\IfFileExists{figures/#2}{%
+\includegraphics[width=0.92\linewidth,height=0.34\textheight,keepaspectratio]{figures/#2}%
+}{%
+\fbox{%
+\begin{minipage}[c][0.11\textheight][c]{0.88\linewidth}
+\centering
+\textbf{#1}\\[0.4em]
+\small #3\\[0.4em]
+\textit{TODO: Insert final screenshot, diagram, or verified table capture.}
+\end{minipage}}%
+}
 \caption{#1}
 \end{figure}
 }

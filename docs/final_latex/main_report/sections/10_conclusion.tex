@@ -1,8 +1,7 @@
 \section{Conclusion}
 
-The project delivers a final CE 4011 desktop MVP centered on transparent two-dimensional Static and Modal structural analysis. The Tkinter workflow supports model creation and editing, XML reproducibility, validation, educational intermediate tables, matplotlib visualization, and export of visible results where implemented.
+The project delivers a CE 4011 desktop MVP centered on transparent two-dimensional Static and Modal structural analysis. The Tkinter workflow supports model creation, property assignment, validation, XML save/load/export, analysis execution, educational result tables, matplotlib visualization, and export of visible results where implemented.
 
-The object-oriented design separates model construction, validation, assembly, solving, post-processing, visualization, and UI responsibilities. Because frames, trusses, shear frames, cantilevers, and benchmark examples are represented as ordinary models, the same computational pipeline is exercised across the submitted scope.
+The main technical contribution is the consistent object-oriented pipeline. \codeterm{ModelBuilder} creates the model, \codeterm{StructuralModel} stores model data, validation is centralized, assembly modules build \(K\), \(M\), and \(F\), solvers operate on assembled systems, and result objects feed post-processing, plots, tables, and exports. This organization keeps solver math out of UI code and allows frames, trusses, shear frames, cantilevers, and benchmark models to exercise the same Static and Modal solver path.
 
-The final validation baseline of 197 passing tests supports the numerical and workflow claims made in this report. Remaining documentation tasks are limited to replacing placeholder screenshots and inserting final benchmark comparison values before submission packaging.
-
+The final reported baseline of 197 passing tests supports the submitted numerical and workflow claims. The verification appendix records detailed benchmark evidence structure for static frame, settlement, temperature, and modal flexible-beam examples. Remaining submission work is limited to replacing placeholder boxes with final screenshots, class/architecture diagrams, and exported benchmark comparison tables.

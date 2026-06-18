@@ -1,40 +1,45 @@
 \section{Software Architecture and Object-Oriented Design}
 
-The architecture follows a single analysis pipeline:
+The software is organized around a single object-oriented pipeline:
 \begin{center}
 \begin{tabular}{c}
-Tkinter canvas/templates/XML \\
+Tkinter canvas/tables/templates/XML \\
 \(\rightarrow\) \codeterm{ModelBuilder}
 \(\rightarrow\) \codeterm{StructuralModel}
 \(\rightarrow\) DOF/K/M/F assembly \\
 \(\rightarrow\) Static or Modal solver
 \(\rightarrow\) result object
-\(\rightarrow\) plots/tables/export
+\(\rightarrow\) tables/plots/export
 \end{tabular}
 \end{center}
 
-\placeholderfigure{Architecture diagram}{Pipeline from Tkinter canvas, templates, and XML through ModelBuilder, StructuralModel, assembly, solvers, result objects, and post-processing/export.}
+This pipeline is the main design decision of the project. UI actions create or modify model data; model data is validated; assembly modules create numerical systems; solvers operate on those systems; result objects preserve outputs; and viewers/exporters consume result objects. Solver math is therefore not duplicated in Tkinter widgets or controller methods.
 
-\placeholderfigure{Static class diagram}{Final class diagram showing major responsibilities and relationships among ModelBuilder, StructuralModel, StructuralValidator, assembly modules, solvers, result objects, post-processor, visualizer, Controller, and Tkinter views.}
+\placeholderfigure{Architecture diagram}{Pipeline from Tkinter canvas, tables, templates, and XML through ModelBuilder, StructuralModel, validation, assembly, solvers, result objects, visualization, and export.}
 
-\begin{table}[htbp]
-\centering
-\caption{Main responsibilities}
-\begin{tabular}{p{0.28\linewidth}p{0.58\linewidth}}
+\placeholderfigure{Static class diagram}{Final class diagram showing ModelBuilder, StructuralModel, StructuralValidator, DOF and assembly modules, StaticResults, ModalResults, PostProcessor, Visualizer, Controller, ModelCanvas, PropertyPanel, and result-window relationships.}
+
+\begin{longtable}{p{0.22\linewidth}p{0.25\linewidth}p{0.43\linewidth}}
+\caption{Major module responsibilities}\\
 \toprule
-Component & Responsibility \\
+Layer & Representative modules/classes & Responsibility \\
 \midrule
-\codeterm{ModelBuilder} & Creates models from programmatic calls, templates, tables, XML, and graphical input. \\
-\codeterm{StructuralModel} & Stores nodes, elements, supports, properties, loads, masses, releases, and validation state. It does not solve or plot. \\
-\codeterm{StructuralValidator} & Centralizes model validation checks so UI code does not duplicate structural rules. \\
-Assembly modules & Create DOF maps, stiffness matrices, force vectors, mass matrices, and reduced systems. \\
-Static and Modal solvers & Operate on assembled matrices/vectors and return traceable result objects. \\
-\codeterm{Controller} & Coordinates user actions without owning solver math or Tkinter-specific drawing logic. \\
-Visualization/export & Consume models and result objects to create tables, plots, XML exports, text/CSV exports, and PNG plot exports. \\
+\endfirsthead
+\toprule
+Layer & Representative modules/classes & Responsibility \\
+\midrule
+\endhead
+Input/model creation & \codeterm{ModelBuilder}, XML parser, Tkinter templates, canvas, tables & Create a model from programmatic calls, desktop actions, template settings, table-backed edits, or XML. \\
+Model storage & \codeterm{StructuralModel}, \codeterm{Node}, \codeterm{Element}, \codeterm{Material}, \codeterm{Section}, \codeterm{Support}, load and mass dataclasses & Store model state: geometry, connectivity, materials, sections, supports, releases, loads, masses, diaphragm groups, unit system, and cached validation or assembly state. \\
+Validation & \codeterm{StructuralValidator} & Centralize structural validity checks so UI code does not duplicate model rules. \\
+DOF and assembly & \codeterm{DOFOptimizer}, \codeterm{MatrixAssembler}, \codeterm{DynamicAssembler}, element-physics helpers & Number DOFs, classify free/restrained/active dynamic DOFs, assemble \(K\), \(F\), \(M\), reduced systems, and dynamic matrices. \\
+Solvers & \codeterm{BandedSolver}, static analysis helpers, \codeterm{ModalSolver} & Solve assembled systems and return mathematically traceable outputs. They do not collect Tkinter input or draw plots. \\
+Results and post-processing & \codeterm{StaticResults}, \codeterm{ModalResults}, \codeterm{PostProcessor} & Preserve displacements, reactions, member forces, N/V/M data, modal properties, matrices, vectors, and metadata needed for reports and tests. \\
+Visualization/export & \codeterm{visualizer.py}, educational exporter, desktop result windows & Create model previews, deformed shapes, N/V/M diagrams, mode shapes, text/CSV table exports, PNG plot exports, and XML model exports. \\
+Coordination/UI & \codeterm{ModelController}, \codeterm{ui\_desktop/} & Coordinate user commands, display editable model state, call model/solver APIs, and show results without owning solver math. \\
 \bottomrule
-\end{tabular}
-\end{table}
+\end{longtable}
 
-The solver does not branch by structure family. A shear frame template, a truss model, a cantilever, and a SAP2000 benchmark all become ordinary instances of the same model representation before assembly. This design keeps the computational engine reusable and makes verification tests more meaningful because every model family exercises the same numerical path.
+\codeterm{ModelBuilder} is the primary creation API. It is used by programmatic examples, templates, XML-backed workflows, and desktop interactions so that a model created through the GUI follows the same path as a model created for a regression test. \codeterm{StructuralModel} stores data and validation state; it does not solve or plot. \codeterm{StructuralValidator} is reused for model validation rather than reimplementing structural checks in each UI command.
 
-XML is the reproducibility and interchange backend. Users are not expected to hand-write XML; the desktop workflow creates, saves, loads, and exports models through the same backend representation.
+The solver layer is intentionally generalized. A shear-frame template, a truss example, a cantilever, and a SAP2000 benchmark all become ordinary model instances before assembly. This is a practical object-oriented design choice: it avoids duplicate static/modal logic by model family and makes verification stronger because multiple structure types exercise the same numerical engine. XML remains the reproducibility backend, while the desktop workflow remains the user-facing model creation and result review path.

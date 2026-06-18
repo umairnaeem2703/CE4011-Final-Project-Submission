@@ -1,14 +1,20 @@
 \documentclass[11pt,a4paper]{article}
 
 \usepackage[margin=0.85in]{geometry}
+\usepackage{amsmath}
 \usepackage{booktabs}
 \usepackage{array}
 \usepackage{longtable}
 \usepackage{xcolor}
 \usepackage[hidelinks]{hyperref}
+\usepackage{graphicx}
+\usepackage{caption}
 
 \setlength{\parindent}{0pt}
 \setlength{\parskip}{6pt}
+\setlength{\tabcolsep}{3pt}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 
 \newcommand{\placeholderfigure}[2]{%
 \begin{figure}[htbp]
@@ -24,20 +30,25 @@
 \end{figure}
 }
 
-\newcommand{\verificationtable}[1]{%
-\begin{table}[htbp]
+\newcommand{\evidencefigure}[3]{%
+\begin{figure}[htbp]
 \centering
-\caption{#1 comparison table placeholder}
-\begin{tabular}{p{0.19\linewidth}p{0.18\linewidth}p{0.18\linewidth}p{0.13\linewidth}p{0.12\linewidth}p{0.1\linewidth}}
-\toprule
-Quantity & Developed software result & Reference result & Percent difference & Tolerance & Pass/fail \\
-\midrule
-TODO displacement/reaction/frequency item & TODO & TODO & TODO & TODO & TODO \\
-TODO member force or modal property & TODO & TODO & TODO & TODO & TODO \\
-\bottomrule
-\end{tabular}
-\end{table}
+\IfFileExists{#2}{%
+\includegraphics[width=0.92\linewidth,height=0.35\textheight,keepaspectratio]{#2}%
+}{%
+\fbox{%
+\begin{minipage}[c][0.13\textheight][c]{0.88\linewidth}
+\centering
+\textbf{#1}\\[0.5em]
+\small #3\\[0.5em]
+\textit{TODO: Insert final screenshot or exported comparison table.}
+\end{minipage}}%
 }
+\caption{#1}
+\end{figure}
+}
+
+\newcommand{\comparisonnote}{Final numerical values to be inserted from the exported developed-software table and the selected reference table before submission packaging.}
 
 \title{\textbf{CE 4011 Static + Modal Desktop MVP Verification Appendix}}
 \author{Final Documentation Package}
@@ -46,41 +57,141 @@ TODO member force or modal property & TODO & TODO & TODO & TODO & TODO \\
 \begin{document}
 \maketitle
 
-\section{Purpose}
+\section{Purpose and Scope Boundary}
 
-This appendix records verification examples and automated validation coverage for the submitted Static + Modal desktop MVP. The final desktop scope is Static Analysis and Modal Analysis only. RSA and THA are future-extension backend work and are not part of the submitted desktop verification claim.
+This appendix records detailed validation evidence for the submitted desktop MVP. The final desktop analysis scope is Static Analysis and Modal Analysis only. RSA and THA may remain in the repository as deferred/future-extension backend work, but they are not part of the submitted desktop verification claim.
+
+The main report summarizes the validation baseline. This appendix provides the longer benchmark descriptions, acceptance criteria, coverage mapping, and comparison-table placeholders. The placeholders are intentional: final screenshots and exported comparison tables should be inserted after the last local run used for submission packaging.
+
+\section{Verification Method}
+
+The verification strategy combines reference benchmarks and automated tests. Static benchmark models are loaded from XML, solved through the same DOF/assembly/solver/post-processing path used by the desktop application, and compared with SAP2000 text-output references. Modal benchmark models are loaded from XML, assembled dynamically, reduced or condensed where needed, and compared with a flexible-beam modal reference solution.
+
+\begin{longtable}{L{0.18\linewidth}L{0.24\linewidth}L{0.30\linewidth}L{0.18\linewidth}}
+\caption{Verification evidence map}\\
+\toprule
+Evidence area & Input/reference & Quantities checked & Acceptance basis \\
+\midrule
+\endfirsthead
+\toprule
+Evidence area & Input/reference & Quantities checked & Acceptance basis \\
+\midrule
+\endhead
+Static frame benchmark & Frame XML; SAP2000 frame text output & Nodal displacements, support reactions, member-end forces, global/reduced matrices retained for inspection & Regression comparison against parsed SAP2000 tables, with relative tolerances used by the automated benchmark tests \\
+Settlement benchmark & Settlement XML; SAP2000 settlement text output & Prescribed support settlement response, nodal displacements, reactions, member forces, SAP2000-display mapping & SAP2000 comparison plus display-mapping tolerance used by desktop/static tests \\
+Temperature benchmark & Temperature XML; SAP2000 temperature text output & Thermal fixed-end effects, inclined truss transformations, displacements, reactions, member-end forces & Strict thermal benchmark tolerances for displacement, force, and moment components \\
+Modal flexible-beam benchmark & Modal XML; flexible-beam modal reference text output & Condensed stiffness, eigenvalues, circular frequencies, periods, mode shapes, mass-normalized modal properties where available & Absolute tolerances used by modal regression tests \\
+Desktop command paths & Headless desktop test doubles and temporary files & XML save/export, XML parse-back, Static table TXT export, Modal table CSV export, Static plot PNG export & Final P0 desktop workflow tests \\
+\bottomrule
+\end{longtable}
+
+The retained benchmark inputs are \path|data/test-frame.xml|, \path|data/test-settlement.xml|, \path|data/test-temperature.xml|, and \path|data/test-modal-flex-beam.xml|. The corresponding reference outputs are stored under \path|sap2000_solutions/| and \path|modal_solution/|.
 
 \section{Static Frame Benchmark}
 
-This benchmark compares static frame displacements, reactions, and member-end forces with a reliable reference solution such as SAP2000, hand calculations, or a textbook example.
+The static frame benchmark verifies the direct stiffness workflow on a two-dimensional frame/truss-style model using retained XML input. The developed software path is:
+\begin{center}
+\begin{tabular}{c}
+\texttt{XMLParser} \(\rightarrow\) \texttt{DOFOptimizer} \(\rightarrow\) \texttt{MatrixAssembler}\\
+\(\rightarrow\) \texttt{BandedSolver} \(\rightarrow\) \texttt{PostProcessor} \(\rightarrow\) \texttt{StaticResults}
+\end{tabular}
+\end{center}
+The SAP2000 output is parsed into the project coordinate convention before comparison. This benchmark checks that the global stiffness assembly, boundary conditions, displacement solution, reaction recovery, and member-end force recovery remain consistent with the reference solution.
 
-\verificationtable{Static frame benchmark}
+\begin{table}[htbp]
+\centering
+\caption{Static frame benchmark comparison table placeholder}
+\begin{tabular}{L{0.22\linewidth}L{0.18\linewidth}L{0.18\linewidth}L{0.13\linewidth}L{0.12\linewidth}L{0.09\linewidth}}
+\toprule
+Quantity & Software result & Reference result & Difference & Tolerance & Status \\
+\midrule
+Representative nodal displacement \(u_x,u_y,r_z\) & TODO & TODO & TODO & Benchmark tolerance & TODO \\
+Representative support reaction \(F_x,F_y,M_z\) & TODO & TODO & TODO & Benchmark tolerance & TODO \\
+Representative member-end force at I end & TODO & TODO & TODO & Benchmark tolerance & TODO \\
+Representative member-end force at J end & TODO & TODO & TODO & Benchmark tolerance & TODO \\
+Selected N/V/M value or diagram endpoint & TODO & TODO & TODO & Engineering check & TODO \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\placeholderfigure{Static frame benchmark screenshot}{TODO placeholder for SAP2000/reference output and developed software static result screenshot or exported table.}
+\placeholderfigure{Static frame benchmark screenshot}{TODO placeholder for SAP2000/reference output and developed software static result screenshot or exported table. \comparisonnote}
 
 \section{Settlement Benchmark}
 
-This benchmark verifies prescribed support displacement handling. The reduced system should solve \(K_{ff}u_f = F_f - K_{fr}u_r\), and reactions should be recovered from the full system.
+The settlement benchmark verifies prescribed support displacement handling. For restrained displacement vector \(u_r\), the reduced system solved by the static workflow is
+\[
+K_{ff}u_f=F_f-K_{fr}u_r.
+\]
+After the full displacement vector is reconstructed, reactions are recovered from \(R=Ku-F\). The retained benchmark includes a vertical settlement at a restrained support and compares the resulting displacement and reaction fields with SAP2000 output.
 
-\verificationtable{Settlement benchmark}
+\begin{table}[htbp]
+\centering
+\caption{Settlement benchmark comparison table placeholder}
+\begin{tabular}{L{0.22\linewidth}L{0.18\linewidth}L{0.18\linewidth}L{0.13\linewidth}L{0.12\linewidth}L{0.09\linewidth}}
+\toprule
+Quantity & Software result & Reference result & Difference & Tolerance & Status \\
+\midrule
+Prescribed settlement value used in assembly & TODO & TODO & TODO & Exact input check & TODO \\
+Representative free nodal displacement & TODO & TODO & TODO & SAP2000 comparison tolerance & TODO \\
+Representative settled-support reaction & TODO & TODO & TODO & SAP2000 comparison tolerance & TODO \\
+Representative member-end force & TODO & TODO & TODO & SAP2000 comparison tolerance & TODO \\
+SAP2000 display-mapping row & TODO & TODO & TODO & \(5.0\times10^{-6}\) display tolerance & TODO \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\placeholderfigure{Settlement benchmark screenshot}{TODO placeholder for settlement model input, displacement/reaction comparison, and tolerance notes.}
+\placeholderfigure{Settlement benchmark screenshot}{TODO placeholder for settlement model input, displacement/reaction comparison, and tolerance notes. \comparisonnote}
 
 \section{Temperature Benchmark}
 
-This benchmark verifies member fixed-end effects and result recovery for temperature or thermal strain loading where supported by the model data path.
+The temperature benchmark verifies thermal fixed-end effects and transformation-sensitive force recovery. The XML input contains uniform and combined temperature loads on frame and truss members. The inclined truss members are especially useful because errors in local/global transformation, thermal force sign, or SAP2000 coordinate mapping create visible force mismatches.
 
-\verificationtable{Temperature benchmark}
+The strict thermal benchmark checks displacements, reactions, and member-end force components. The automated strict test uses a displacement tolerance of \(1.0\times10^{-5}\), a force tolerance of 0.05, and a moment tolerance of 0.6 in the project units used by the benchmark.
 
-\placeholderfigure{Temperature benchmark screenshot}{TODO placeholder for temperature-load comparison output.}
+\begin{table}[htbp]
+\centering
+\caption{Temperature benchmark comparison table placeholder}
+\begin{tabular}{L{0.22\linewidth}L{0.18\linewidth}L{0.18\linewidth}L{0.13\linewidth}L{0.12\linewidth}L{0.09\linewidth}}
+\toprule
+Quantity & Software result & Reference result & Difference & Tolerance & Status \\
+\midrule
+Representative thermal displacement & TODO & TODO & TODO & \(1.0\times10^{-5}\) & TODO \\
+Representative support force reaction & TODO & TODO & TODO & 0.05 & TODO \\
+Representative support moment reaction & TODO & TODO & TODO & 0.6 & TODO \\
+Inclined truss axial force & TODO & TODO & TODO & 0.05 & TODO \\
+Frame member thermal end moment & TODO & TODO & TODO & 0.6 & TODO \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\placeholderfigure{Temperature benchmark screenshot}{TODO placeholder for temperature-load comparison output. \comparisonnote}
 
 \section{Modal Flexible-Beam / Shear-Frame Benchmark}
 
-This benchmark compares modal eigenvalues, frequencies, periods, mode shapes, participation factors, effective modal mass, and mass participation ratios with reference values.
+The modal benchmark verifies that the dynamic workflow preserves stiffness coupling while avoiding invalid massless dynamic DOFs. The benchmark uses a flexible-beam/shear-frame-style model, assembles the stiffness and lumped mass matrices, condenses stiffness-coupled massless DOFs where required, and solves
+\[
+K\phi=\lambda M\phi .
+\]
+The comparison checks the reduced or condensed stiffness matrix, eigenvalues, circular frequencies, periods, and normalized mode shapes against the stored reference solution.
 
-\verificationtable{Modal flexible-beam or shear-frame benchmark}
+\begin{table}[htbp]
+\centering
+\caption{Modal flexible-beam benchmark comparison table placeholder}
+\begin{tabular}{L{0.22\linewidth}L{0.18\linewidth}L{0.18\linewidth}L{0.13\linewidth}L{0.12\linewidth}L{0.09\linewidth}}
+\toprule
+Quantity & Software result & Reference result & Difference & Tolerance & Status \\
+\midrule
+Condensed/reduced \(K_{ff}\) entry & TODO & TODO & TODO & 1.0 absolute & TODO \\
+Eigenvalue \(\lambda_1\) & TODO & TODO & TODO & 0.02 absolute & TODO \\
+Circular frequency \(\omega_1\) & TODO & TODO & TODO & 0.002 absolute & TODO \\
+Period \(T_1\) & TODO & TODO & TODO & 0.002 absolute & TODO \\
+Normalized mode-shape component & TODO & TODO & TODO & \(1.0\times10^{-3}\) & TODO \\
+Modal mass participation & TODO & TODO & TODO & Modal property check & TODO \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\placeholderfigure{Mode shape plot}{TODO placeholder for developed software mode-shape plot and reference mode-shape or frequency table.}
+\placeholderfigure{Mode shape plot}{TODO placeholder for developed software mode-shape plot and reference mode-shape or frequency table. \comparisonnote}
 
 \section{Automated Pytest Validation}
 
@@ -88,14 +199,16 @@ The final stable testing baseline is:
 \begin{verbatim}
 pytest tests/ -q -> 197 passed
 pytest tests/test_ui_desktop_static.py -q -> 63 passed
-pytest tests/test_ui_desktop_static.py tests/test_visualizer.py tests/test_visualizer_integration.py -q -> 76 passed
+pytest tests/test_ui_desktop_static.py
+       tests/test_visualizer.py tests/test_visualizer_integration.py -q
+       -> 76 passed
 \end{verbatim}
 
-The final hardening changed only \texttt{tests/test\_ui\_desktop\_static.py}. No solver math, XML schema, or core behavior changed during final testing hardening. Static benchmark tests now use retained \texttt{data/test-frame.xml} instead of the deleted duplicate \texttt{data/example2\_frame.xml}. The file \texttt{data/ground\_motion.txt} was restored only for legacy/future THA backend compatibility.
+The final hardening changed only \texttt{tests/test\_ui\_desktop\_static.py}. No solver math, XML schema, fixtures, or source behavior changed during final testing hardening. Static benchmark tests now use retained \texttt{data/test-frame.xml}. The file \texttt{data/ground\_motion.txt} was restored only for legacy/future THA backend compatibility and does not change the final desktop scope.
 
-\placeholderfigure{Test suite output}{TODO terminal screenshot placeholder for the final 197-test baseline.}
+\evidencefigure{Test suite output}{../main_report/figures/test_suite_output.png}{TODO terminal screenshot placeholder for the final 197-test baseline.}
 
-\begin{longtable}{p{0.2\linewidth}p{0.26\linewidth}p{0.34\linewidth}p{0.1\linewidth}}
+\begin{longtable}{L{0.19\linewidth}L{0.26\linewidth}L{0.37\linewidth}L{0.08\linewidth}}
 \caption{Automated test coverage summary}\\
 \toprule
 Test area & Representative tests & Checked behavior & Result \\
@@ -108,12 +221,13 @@ Test area & Representative tests & Checked behavior & Result \\
 XML parsing/export & XML parser/export tests and desktop XML command-path test & Save/load/export reproducibility and parse-back through XMLParser & Passed \\
 Model building & ModelBuilder tests and template workflows & Programmatic, template, table, and XML-backed model creation & Passed \\
 DOF and stiffness assembly & Static solver and assembly tests & DOF maps, element stiffness, global \(K\), reduced \(K_{ff}\), and force vectors & Passed \\
-Static result recovery & Static, post-processing, and benchmark tests & Displacements, reactions, member forces, and N/V/M diagram data & Passed \\
-Dynamic/modal assembly & Modal solver tests & Mass assembly, active dynamic DOFs, massless-DOF handling, eigenvalues, frequencies, and periods & Passed \\
-Modal properties & Modal solver tests & Mass normalization, participation factors, effective modal mass, and participation ratios & Passed \\
-Visualization & Visualizer and visualizer integration tests & Model preview, deformed shape, diagrams, and mode-shape plotting adapters & Passed \\
-Desktop workflow/export & UI desktop static tests & Static table TXT export, Modal table CSV export, Static plot PNG export, and shared export path & Passed \\
-Reference validation & SAP2000/reference comparison tests & Agreement with stored reference solutions within tolerance & Passed \\
+Static result recovery & Static, post-processing, and benchmark tests & Displacements, reactions, member forces, member-end force signs, and N/V/M diagram data & Passed \\
+Settlement and temperature behavior & Interface, unit, strict SAP2000, and regression tests & Prescribed support displacement assembly, thermal fixed-end effects, and transformation-sensitive force recovery & Passed \\
+Dynamic/modal assembly & Modal solver, dynamic assembly, and regression tests & Mass assembly, active dynamic DOFs, massless-DOF handling, eigenvalues, frequencies, and periods & Passed \\
+Modal properties & Modal solver and desktop modal tests & Mass normalization, participation factors, effective modal mass, participation ratios, and display normalization options & Passed \\
+Visualization & Visualizer and visualizer integration tests & Model preview, deformed shape, diagrams, mode-shape plotting adapters, and missing-field tolerance & Passed \\
+Desktop workflow/export & UI desktop static tests & Static table TXT export, Modal table CSV export, Static plot PNG export, XML save/export parse-back, stale-result clearing, and final Static/Modal-only desktop scope & Passed \\
+Reference validation & SAP2000/reference comparison tests & Agreement with stored reference solutions within the tolerances described above & Passed \\
 \bottomrule
 \end{longtable}
 
@@ -125,13 +239,21 @@ Two final P0 desktop workflow tests were added during final hardening:
 \item A result export test for Static table TXT export, Modal table CSV export, and Static plot PNG export through the shared export path.
 \end{enumerate}
 
-These tests address the previous main risk area: desktop workflow coverage rather than numerical correctness.
+These tests address the previous main risk area: desktop workflow coverage rather than numerical correctness. They confirm that the final UI command paths reach the XML and result-export backends without requiring a manual GUI session.
 
 \placeholderfigure{Desktop XML/export validation evidence}{TODO placeholder for command-path output or selected test output confirming XML save/export and visible result export.}
 
 \section{Remaining Verification Inserts}
 
-Before final submission, replace the placeholder comparison rows with final numbers from the selected static frame, settlement, temperature, and modal benchmarks. Each table should preserve the required columns: Quantity, Developed software result, Reference result, Percent difference, Tolerance, and Pass/fail.
+Before final submission, replace the placeholder comparison rows with final values from the selected static frame, settlement, temperature, and modal benchmarks. Each table should preserve the required columns: Quantity, Software result, Reference result, Difference, Tolerance, and Status.
+
+Remaining TODO placeholders in this appendix are:
+\begin{itemize}
+\item Static frame SAP2000/reference comparison table and screenshot.
+\item Settlement SAP2000/reference comparison table and screenshot.
+\item Temperature SAP2000/reference comparison table and screenshot.
+\item Modal flexible-beam/reference comparison table and mode-shape evidence.
+\item Desktop XML/export command-path evidence screenshot.
+\end{itemize}
 
 \end{document}
-
