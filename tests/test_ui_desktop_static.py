@@ -60,6 +60,9 @@ class DummyWidget:
     def destroy(self):
         pass
 
+    def tkraise(self):
+        pass
+
 
 class DummyFrame(DummyWidget):
     pass
@@ -96,6 +99,24 @@ class DummyNotebook(DummyWidget):
 
     def select(self, frame):
         self.selected = frame
+
+
+class DummyMenu(DummyWidget):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.entries = []
+
+    def add_cascade(self, **kwargs):
+        self.entries.append(("cascade", kwargs))
+
+    def add_command(self, **kwargs):
+        self.entries.append(("command", kwargs))
+
+    def add_checkbutton(self, **kwargs):
+        self.entries.append(("checkbutton", kwargs))
+
+    def add_separator(self):
+        self.entries.append(("separator", {}))
 
 
 class DummyTreeview(DummyWidget):
@@ -436,12 +457,11 @@ def test_desktop_modal_analysis_rejects_invalid_mode_count(monkeypatch):
     assert window.messages[-1] == "Number of modes must be at least 1."
 
 
-def test_desktop_modal_results_builds_tabbed_layout(monkeypatch):
+def test_desktop_modal_results_builds_dropdown_layout(monkeypatch):
     window = _window_with_model()
     parent = DummyFrame()
     monkeypatch.setattr(main_window.tk, "StringVar", DummyVar)
     monkeypatch.setattr(main_window.ttk, "Frame", DummyFrame)
-    monkeypatch.setattr(main_window.ttk, "Notebook", DummyNotebook)
     monkeypatch.setattr(main_window.ttk, "Label", DummyLabel)
     monkeypatch.setattr(main_window.ttk, "Button", DummyButton)
     monkeypatch.setattr(main_window.ttk, "Combobox", DummyCombobox)
@@ -451,13 +471,58 @@ def test_desktop_modal_results_builds_tabbed_layout(monkeypatch):
 
     window._build_modal_results_tab(parent)
 
-    assert [text for _frame, text in window.result_viewer_dynamic_notebook.tabs] == ["Modal Summary", "Mode Shapes", "Matrices"]
-    assert window.result_viewer_dynamic_notebook.selected is window.result_viewer_dynamic_summary_tab
+    assert window.result_viewer_dynamic_view_selector.configured["values"] == ("Modal Summary", "Mode Shapes", "Matrices")
+    assert window.result_viewer_dynamic_notebook is None
     assert window.result_viewer_dynamic_message.get() == "Run Modal Analysis first."
     assert window.result_viewer_dynamic_summary_tree.rows == [("Run Modal Analysis first.",)]
     assert window.result_viewer_dynamic_mode_selector.configured["state"] == "disabled"
     assert window.result_viewer_dynamic_matrix_selector.configured["state"] == "disabled"
     assert window.result_viewer_dynamic_reference_dof_selector.configured["state"] == "disabled"
+
+
+def test_desktop_static_viewer_builds_dropdown_selector(monkeypatch):
+    window = _window_with_model()
+    parent = DummyFrame()
+    monkeypatch.setattr(main_window.tk, "StringVar", DummyVar)
+    monkeypatch.setattr(main_window.ttk, "Frame", DummyFrame)
+    monkeypatch.setattr(main_window.ttk, "Label", DummyLabel)
+    monkeypatch.setattr(main_window.ttk, "Button", DummyButton)
+    monkeypatch.setattr(main_window.ttk, "Combobox", DummyCombobox)
+    monkeypatch.setattr(main_window.ttk, "Treeview", DummyTreeview)
+    monkeypatch.setattr(main_window.ttk, "Scrollbar", DummyScrollbar)
+
+    window._build_static_results_viewer_tab(parent)
+
+    assert window.result_viewer_plot_view_selector.configured["values"] == ("Deformed Shape", "Axial Force N", "Shear Force V", "Bending Moment M")
+    assert window.result_viewer_plot_notebook is None
+
+
+def test_desktop_command_area_builds_dropdown_menus(monkeypatch):
+    window = _window_with_model()
+    window.root = SimpleNamespace(config=lambda **kwargs: setattr(window, "configured_menu", kwargs.get("menu")))
+    window.grid_visible = DummyVar(True)
+    window.snap_to_grid = DummyVar(False)
+    window.local_axes_visible = DummyVar(False)
+    window.grid_spacing = DummyVar("1.0")
+    window.modal_num_modes_var = DummyVar("3")
+    window.modal_rayleigh_mode_i_var = DummyVar("1")
+    window.modal_rayleigh_zeta_i_var = DummyVar("0.05")
+    window.modal_rayleigh_mode_j_var = DummyVar("2")
+    window.modal_rayleigh_zeta_j_var = DummyVar("0.05")
+    created = []
+
+    def fake_menu(*args, **kwargs):
+        menu = DummyMenu(*args, **kwargs)
+        created.append(menu)
+        return menu
+
+    monkeypatch.setattr(main_window.tk, "Menu", fake_menu)
+
+    window._build_command_area()
+
+    assert window.configured_menu is created[0]
+    assert len(created) == len(main_window.COMMAND_TABS) + 1
+    assert [entry[1]["label"] for entry in created[0].entries if entry[0] == "cascade"] == [name for name, _items in main_window.COMMAND_TABS]
 
 
 def test_desktop_modal_summary_shows_one_row_per_mode():
@@ -1063,6 +1128,7 @@ def test_desktop_results_window_switches_between_static_and_dynamic_modes(monkey
     monkeypatch.setattr(main_window.tk, "Toplevel", fake_toplevel)
     monkeypatch.setattr(main_window.ttk, "Frame", DummyFrame)
     monkeypatch.setattr(main_window.ttk, "Notebook", DummyNotebook)
+    monkeypatch.setattr(main_window.ttk, "Combobox", DummyCombobox)
     monkeypatch.setattr(main_window.ttk, "Label", DummyLabel)
     monkeypatch.setattr(main_window.ttk, "Button", DummyButton)
     monkeypatch.setattr(window, "_build_static_results_table_tab", lambda *_args, **_kwargs: None)
