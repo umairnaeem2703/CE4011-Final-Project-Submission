@@ -3381,6 +3381,7 @@ class MainWindow:
 
     def _write_status(self, message: str) -> None:
         self.status_message.set(message)
+        self._update_status_bar()
         self.log.configure(state="normal")
         if not message.endswith("."):
             message = f"{message}."
